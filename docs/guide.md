@@ -6,6 +6,28 @@ the only lead the pilot targeted.
 
 ## 1. Install the package folder
 
+### One command for Codex
+
+With Node.js 22.20+ (including `npx`) and Git installed, run:
+
+```sh
+npx skills add jaredchu/agents-collab --skill agents-collab --global --agent codex
+```
+
+This uses [Vercel’s Skills CLI](https://github.com/vercel-labs/skills) to install
+only `agents-collab` to `~/.agents/skills/agents-collab`, available across your
+projects. Running it again can replace existing skill files; use the guarded
+manual copy below if you want to preserve them. The command does not create or overwrite
+`~/.config/agents-collab/profile.json` or configure model access.
+
+After installation, skip the manual copy blocks and continue with
+[profile setup](#2-create-or-keep-a-profile). Other lead assistants remain
+unvalidated, even when a skill installer can place files in their directories.
+
+### Manual installation
+
+The ZIP and checkout routes below need Python 3.9+ and no Node.js.
+
 Install only the skill package. In a repository checkout it is
 `skills/agents-collab/`; the downloadable ZIP extracts to `agents-collab/`.
 The website, tests and notes are not part of the skill.

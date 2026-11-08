@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="../favicon.ico" type="image/x-icon" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png" sizes="180x180">
   <title>Guide — Agents Collab</title>
   <meta name="description" content="Install the Agents Collab skill folder, keep or create a personal profile, validate its structure and invoke the skill explicitly.">
   <link rel="stylesheet" href="../assets/site.css">
@@ -48,6 +51,15 @@
       </nav>
 
       <h2 id="install"><span class="num">Step 1</span>Install the package folder</h2>
+      <p>With Node.js 22.20+ (including <code>npx</code>) and Git, install for Codex in one command:</p>
+      <div class="code-block">
+        <p class="code-label">shell · install for Codex</p>
+        <pre><code id="install-command">npx skills add jaredchu/agents-collab --skill agents-collab --global --agent codex</code></pre>
+      </div>
+      <p>This uses <a href="https://github.com/vercel-labs/skills">Vercel’s Skills CLI</a>. The <code>--global</code> flag installs to <code>~/.agents/skills/agents-collab</code>, outside your projects. Running it again can replace existing skill files; the guarded manual copy below preserves them. Your profile at <code>~/.config/agents-collab/profile.json</code> is separate and is not created or overwritten by this command.</p>
+      <p>Continue with <a href="#profile">profile setup</a>; skip the manual copy blocks below. Installing the skill does not configure model access or enable automatic routing. Other lead assistants remain unvalidated.</p>
+      <h3 id="manual">Manual installation without Node.js</h3>
+      <p>These ZIP and checkout routes need Python 3.9+.</p>
       <p>Install only the skill package: nine files, the eight workflow files plus its MIT <code>LICENSE</code>. Keep <code>LICENSE</code> with the folder when you copy or share it. A repository checkout keeps it in <code>skills/agents-collab/</code>; the website ZIP extracts to <code>agents-collab/</code>. The website, tests and notes are not part of the skill.</p>
       <p>Codex’s documented user skills location is described in OpenAI’s <a href="https://learn.chatgpt.com/docs/build-skills#how-chatgpt-and-codex-use-skills">Build skills documentation</a>. Check it for your version. Choose <strong>one</strong> source below, then run the shared install block in the same shell.</p>
       <h3 id="download">From the website ZIP</h3>
@@ -83,6 +95,7 @@ fi</code></pre>
 
       <h2 id="profile"><span class="num">Step 2</span>Create or keep a profile</h2>
       <p>The profile holds personal choices: models, transports, reasoning requests, routing, review recipes, time targets and a private records root. It lives outside every project at <code>~/.config/agents-collab/profile.json</code>.</p>
+      <p>For the writer/reviewer example, first save <a href="../downloads/writer-review.profile.example.json">writer-review.profile.example.json</a>. This separate download works after either CLI or manual installation.</p>
       <p><strong>Keep an existing profile.</strong> Copy a template only if none exists. Run this from the folder where you saved the example file (in a repository checkout it is <code>docs/examples/</code>):</p>
       <div class="code-block">
         <p class="code-label">shell · create the profile only if absent</p>

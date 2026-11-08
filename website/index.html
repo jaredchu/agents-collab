@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="favicon.ico" type="image/x-icon" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" sizes="180x180">
   <title>Agents Collab — a lab notebook on configured model collaboration</title>
   <meta name="description" content="An experimental agent skill that keeps personal model-collaboration settings out of project files, and the notebook of research and small trials behind it.">
   <link rel="stylesheet" href="assets/site.css">
@@ -40,6 +43,13 @@
         <a href="guide/">Install and configure it</a>
         <a href="research/">Read the research notes</a>
       </p>
+
+      <h2 id="install">Install for Codex</h2>
+      <div class="code-block">
+        <p class="code-label">shell · install for Codex</p>
+        <pre><code id="install-command">npx skills add jaredchu/agents-collab --skill agents-collab --global --agent codex</code></pre>
+      </div>
+      <p>Requires Node.js 22.20+ and Git. Running it again can replace existing skill files; the manual route preserves them. The skill installs in your user directory; your personal profile stays separate. Next, <a href="guide/#profile">configure your models</a> and invoke <code>$agents-collab</code>. <a href="guide/#manual">Manual installation without Node.js</a> is also available.</p>
 
       <h2 id="boundary"><span class="num">The idea in one picture</span>Two kinds of knowledge</h2>
       <p>A project needs to know what was decided and why. It does not need to know which model one person prefers to write with, at which reasoning level, or where that person keeps review receipts.</p>

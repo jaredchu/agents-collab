@@ -85,6 +85,18 @@ evidence and diagnostics remain outside this project. Public checks on
 the downloadable ZIP, checksums and profile example matched the validated build.
 DNS and HTTPS were verified after configuration through Cloudflare.
 
+The README and website offer a user-level Codex installation command through
+Vercel’s Skills CLI, with Node.js 22.20+ and Git as prerequisites. Profile setup
+remains separate; the CLI can replace existing skill files on a repeat run, while
+the guarded manual route preserves them. On 2026-11-08 Skills CLI 1.7.6 installed
+all nine matching package files in a temporary home-directory API fixture and
+preserved a separate existing profile. This test did not change the real HOME
+environment or the owner's installed skill/profile. Other leads remain unvalidated.
+
+All five website pages reference the generated abstract evergreen/rust favicon,
+with 16/32/48px ICO entries, a 32px PNG and a 180px Apple touch icon. The 512px
+source mark is retained with the static website assets.
+
 ## Progress
 
 - [x] Preserve the eight-file validated package as the initial source.
