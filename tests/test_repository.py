@@ -31,6 +31,9 @@ WEBSITE = REPO / "website"
 DOC_EXAMPLE = REPO / "docs" / "examples" / "writer-review.profile.example.json"
 PAGES = ("index.html", "guide/index.html", "research/index.html",
          "experiments/index.html", "story/index.html")
+REPO_URL = "https://github.com/jaredchu/agents-collab"
+LICENSE_URL = REPO_URL + "/blob/main/LICENSE"
+WORKFLOW_FILES = 8  # the validated workflow files; LICENSE is the ninth package file
 TEXT_SUFFIXES = {".md", ".json", ".yaml", ".yml", ".py", ".html", ".css", ".js", ".txt"}
 
 _previous_flag = sys.dont_write_bytecode
@@ -80,12 +83,12 @@ def private_terms_pattern(terms_file):
 
 def public_files():
     """Files that are or will be public, excluding this tests/ directory."""
-    roots = [REPO / name for name in ("README.md", "AGENTS.md", "CONTRIBUTING.md")]
+    roots = [REPO / name for name in ("README.md", "AGENTS.md", "CONTRIBUTING.md", "LICENSE")]
     roots += [REPO / name for name in ("docs", "website", "skills", "scripts")]
     for root in roots:
         candidates = [root] if root.is_file() else sorted(root.rglob("*")) if root.is_dir() else []
         for path in candidates:
-            if (path.is_file() and path.suffix in TEXT_SUFFIXES
+            if (path.is_file() and (path.suffix in TEXT_SUFFIXES or path.name == "LICENSE")
                     and "__pycache__" not in path.parts):
                 yield path
 
@@ -130,6 +133,71 @@ class PrivacyGuards(unittest.TestCase):
                 if extra is not None:
                     # Report line numbers only, never the matched private term.
                     self.assertEqual(scan(extra, text), [], "maintainer-listed private term")
+
+
+# --- license ----------------------------------------------------------------------
+
+LICENSE_FILE = REPO / "LICENSE"
+PACKAGE_LICENSE = PACKAGE / "LICENSE"
+MIT_PERMISSION = (
+    "Permission is hereby granted, free of charge, to any person obtaining a copy\n"
+    "of this software and associated documentation files (the \"Software\"), to deal\n"
+    "in the Software without restriction, including without limitation the rights\n"
+    "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n"
+    "copies of the Software, and to permit persons to whom the Software is\n"
+    "furnished to do so, subject to the following conditions:\n"
+    "\n"
+    "The above copyright notice and this permission notice shall be included in all\n"
+    "copies or substantial portions of the Software.\n"
+)
+MIT_WARRANTY_START = "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n"
+# Statements that were true before the owner selected the MIT License.
+STALE_LICENSE = re.compile(
+    r"(?i)license (?:pending|is not chosen|not decided|not chosen)"
+    r"|(?:have|has) not been chosen|not (?:yet )?(?:chosen|decided|selected)\b[^.]*license"
+    r"|license[^.]*not (?:yet )?(?:chosen|decided|selected)|no license (?:is granted|has been|file exists)")
+
+
+class License(unittest.TestCase):
+    def test_root_license_is_canonical_mit(self):
+        text = LICENSE_FILE.read_text(encoding="utf-8")
+        self.assertTrue(text.startswith("MIT License\n\nCopyright (c) 2026 Jared Chu\n\n"))
+        self.assertIn(MIT_PERMISSION, text)
+        self.assertIn(MIT_WARRANTY_START, text)
+        self.assertTrue(text.endswith("DEALINGS IN THE\nSOFTWARE.\n"))
+        self.assertNotIn("\r", text)
+
+    def test_package_license_is_identical(self):
+        self.assertEqual(PACKAGE_LICENSE.read_bytes(), LICENSE_FILE.read_bytes())
+
+    def test_package_is_eight_workflow_files_plus_license(self):
+        self.assertIn("LICENSE", build.PACKAGE_FILES)
+        self.assertEqual(len(build.PACKAGE_FILES), WORKFLOW_FILES + 1)
+        self.assertEqual(len(set(build.PACKAGE_FILES)), len(build.PACKAGE_FILES))
+
+    def test_documents_state_the_license_and_link_it(self):
+        docs = [REPO / "README.md", REPO / "CONTRIBUTING.md", REPO / "docs" / "guide.md",
+                REPO / "docs" / "history.md", REPO / "docs" / "project-context.md"]
+        for path in docs:
+            text = path.read_text(encoding="utf-8")
+            with self.subTest(file=path.relative_to(REPO).as_posix()):
+                self.assertIn("MIT", text)
+                self.assertIn(REPO_URL, text)
+                self.assertIsNone(STALE_LICENSE.search(text))
+        readme = (REPO / "README.md").read_text(encoding="utf-8")
+        self.assertIn("](LICENSE)", readme)
+        self.assertIn("](skills/agents-collab/LICENSE)", readme)
+
+    def test_stale_pattern_with_synthetic_statements(self):
+        for text in ("Repository owner and license pending; no license is granted yet.",
+                     "No license has been chosen yet.", "The license is not chosen yet.",
+                     "Public owner and license are not decided."):
+            with self.subTest(hit=text):
+                self.assertIsNotNone(STALE_LICENSE.search(text))
+        for text in ("Licensed under the MIT License.", "Publication is still pending.",
+                     "The skill is MIT-licensed; deployment is not verified."):
+            with self.subTest(miss=text):
+                self.assertIsNone(STALE_LICENSE.search(text))
 
 
 # --- documentation ----------------------------------------------------------------
@@ -204,14 +272,22 @@ class Website(unittest.TestCase):
         # downloads/ is generated by the build and checked there.
         self.assertEqual(build.check_links(WEBSITE, skip_prefixes=("downloads/",)), [])
 
-    def test_no_placeholder_repository_links(self):
+    def test_repository_and_license_links(self):
+        allowed = {REPO_URL, LICENSE_URL}
         for rel in PAGES:
             with self.subTest(page=rel):
                 text = self.read(rel)
-                # The public repository owner is undecided: no guessed repo links.
-                self.assertNotRegex(text, r'href="https?://github\.com/[^"]*agents-collab')
+                # Every page links the selected repository and its LICENSE, and
+                # no other repository location for this project.
+                self.assertIn(f'href="{REPO_URL}"', text)
+                self.assertIn(f'href="{LICENSE_URL}"', text)
+                for ref in re.findall(r'href="(https?://github\.com/[^"]*agents-collab[^"]*)"', text):
+                    self.assertIn(ref, allowed)
                 self.assertNotRegex(text, r'href="[^"]*(?:OWNER|your-org|example-org)')
                 self.assertNotIn('href="#"', text)
+                self.assertIn("MIT License", text)
+                # The license choice is made; stale "pending" statements must go.
+                self.assertIsNone(STALE_LICENSE.search(text))
 
 
 # --- build script -------------------------------------------------------------------
@@ -230,6 +306,9 @@ class BuildScript(unittest.TestCase):
                     with self.subTest(file=name):
                         self.assertEqual(archive.read("agents-collab/" + name),
                                          (PACKAGE / name).read_bytes())
+                # The MIT notice travels with every download.
+                self.assertEqual(archive.read("agents-collab/LICENSE"),
+                                 (REPO / "LICENSE").read_bytes())
 
     def test_curated_list_matches_package_folder(self):
         actual = sorted(p.relative_to(PACKAGE).as_posix() for p in PACKAGE.rglob("*")

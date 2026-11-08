@@ -10,6 +10,11 @@ Install only the skill package. In a repository checkout it is
 `skills/agents-collab/`; the downloadable ZIP extracts to `agents-collab/`.
 The website, tests and notes are not part of the skill.
 
+The package is licensed under the MIT License and includes its own `LICENSE`
+file; keep it with the installed folder when you copy or redistribute it. The
+source repository is https://github.com/jaredchu/agents-collab
+(license: https://github.com/jaredchu/agents-collab/blob/main/LICENSE).
+
 Codex discovers user skills from a documented user skills directory. OpenAI's
 [Build skills documentation](https://learn.chatgpt.com/docs/build-skills#how-chatgpt-and-codex-use-skills)
 describes locations and selection; check it for your version.
@@ -27,9 +32,10 @@ python3 -m zipfile -e agents-collab-skill.zip "$collab_unpack"
 collab_source="$collab_unpack/agents-collab"
 ```
 
-The ZIP contains exactly the eight package files under `agents-collab/`.
-`SHA256SUMS` is available beside the download; compare the ZIP's SHA-256 hash
-with its corresponding entry. No license has been selected yet.
+The ZIP contains exactly the nine package files under `agents-collab/`: the
+eight workflow files plus `LICENSE`, the MIT notice. `SHA256SUMS` is available
+beside the download; compare the ZIP's SHA-256 hash with its corresponding
+entry.
 
 ### From a repository checkout
 

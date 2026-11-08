@@ -4,14 +4,16 @@ An experimental skill for configured model collaboration and independent review,
 plus the lab notebook of how it came about.
 
 > **Status: experimental, pre-release.** The skill comes from a Codex-led pilot.
-> No public repository owner, license or release has been chosen yet; until
-> then, no license is granted. The website in `website/` is a prototype for the
-> planned agents-collab.com, and no custom-domain deployment is established.
+> Licensed under the [MIT License](LICENSE).
+> [Source](https://github.com/jaredchu/agents-collab) ·
+> [Website and experiment journal](https://agents-collab.com).
+> No versioned release has been made.
 
 ## What it is
 
 `skills/agents-collab/` is an agent skill: Markdown instructions, a reference
-contract, inert templates and one dependency-free validator script. It helps a
+contract, inert templates, one dependency-free validator script and a copy of
+the MIT `LICENSE`. It helps a
 lead assistant session:
 
 - choose a writer and independent reviewers from a **personal profile** kept
@@ -63,7 +65,8 @@ The full procedure, with guarded copy commands and examples, is in the
 
 | Path | Purpose |
 | --- | --- |
-| [`skills/agents-collab/`](skills/agents-collab/SKILL.md) | The distributable skill package (eight files) |
+| [`skills/agents-collab/`](skills/agents-collab/SKILL.md) | The distributable skill package (nine files: eight workflow files plus `LICENSE`) |
+| [`LICENSE`](LICENSE) | MIT License for the repository |
 | [`docs/guide.md`](docs/guide.md) | Installation, profile setup, invocation and limits |
 | [`docs/examples/`](docs/examples/writer-review.profile.example.json) | Illustrative profile with deliberate placeholders |
 | [`docs/research.md`](docs/research.md) | Sanitized research notes |
@@ -90,4 +93,16 @@ by whoever runs them; this README does not pre-claim a pass count.
 
 `website/` is buildless HTML, CSS and a small optional script. Pages are readable
 without JavaScript. The build copies it to `dist/`, adds a reproducible zip of the
-eight package files with SHA-256 sums, and checks internal links.
+nine package files (including `LICENSE`) with SHA-256 sums, and checks internal
+links.
+
+## License
+
+Agents Collab is licensed under the [MIT License](LICENSE), copyright 2026
+Jared Chu. The skill package carries an identical copy,
+[`skills/agents-collab/LICENSE`](skills/agents-collab/LICENSE), so the notice
+travels with every installation and with the website download. That copy is the
+only package addition; the eight workflow files are unchanged. The license
+covers the code and text; it does not change the experimental status or the
+evidence limits above. The license is also available at
+https://github.com/jaredchu/agents-collab/blob/main/LICENSE.

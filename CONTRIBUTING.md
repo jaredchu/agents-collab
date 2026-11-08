@@ -1,9 +1,9 @@
 # Contributing
 
-Thanks for your interest. The project is pre-release: the public repository
-owner and license are not chosen yet, so outside contributions cannot be
-accepted until a license exists. These guidelines describe how changes and
-evidence are handled.
+Thanks for your interest. The project is pre-release and licensed under the
+[MIT License](LICENSE). Source repository: https://github.com/jaredchu/agents-collab.
+Any contribution you submit is offered under the same MIT License. These
+guidelines describe how changes and evidence are handled.
 
 ## Ground rules
 
@@ -33,7 +33,8 @@ never the term.
 Tests write temporary files only to the system temporary area.
 
 Package changes also need the [configuration contract](skills/agents-collab/references/configuration.md),
-validator, examples and guide to stay consistent. Website changes need a check
+validator, examples and guide to stay consistent, and `skills/agents-collab/LICENSE`
+must stay byte-identical to the root `LICENSE`. Website changes need a check
 without JavaScript, at narrow and wide widths, and with keyboard navigation.
 
 ## Evidence guidelines

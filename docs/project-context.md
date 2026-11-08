@@ -10,9 +10,14 @@ were separated from project knowledge.
 
 ## Boundaries
 
-- The distributable skill is the eight files in `skills/agents-collab/`. Users
-  install that folder, not this repository. In this release preparation those
-  files stay byte-for-byte unchanged from the validated source.
+- The distributable skill is the nine files in `skills/agents-collab/`: the
+  eight workflow files plus `LICENSE`. Users install that folder, not this
+  repository. In this release preparation the eight workflow files stay
+  byte-for-byte unchanged from the validated source; `LICENSE` is
+  byte-identical to the root `LICENSE`.
+- The project is licensed under the MIT License, copyright 2026 Jared Chu
+  ([LICENSE](../LICENSE)). The license does not change the experimental status
+  or evidence limits.
 - Personal profiles, credentials, raw traces, private or client project
   information and machine-specific paths stay outside this repository and site.
 - The package is a prompt-led workflow with a structural profile validator. It
@@ -43,22 +48,33 @@ were separated from project knowledge.
 | [Experiments](experiments.md) | Validation and pilot summaries |
 | [History](history.md) | How the project emerged |
 | [Contributing](../CONTRIBUTING.md) | Contribution and evidence guidelines |
+| [License](../LICENSE) | MIT License (identical copy in the skill package) |
 
 ## Current status
 
-Pre-release. Public repository owner and license are pending the owner's
-decision; no license file exists and no public repository, release, domain
-ownership or custom-domain deployment has been verified. `tests/` holds the portable suite
-(validator tests ported without the private-profile test, plus privacy, website
-and build checks). Local validation on 2026-11-08 passed all 65 tests, including
-private-identifier checks using a separate, unpublished terms list. The eight
-distributable package hashes match the validated source.
+Pre-release. On 2026-11-08 the owner selected the MIT License and
+https://github.com/jaredchu/agents-collab as the public repository
+(license URL: https://github.com/jaredchu/agents-collab/blob/main/LICENSE);
+https://agents-collab.com is the intended public website. Publication to that
+destination and the custom-domain deployment are pending verification; no
+release has been made. Root and package `LICENSE` files exist, the website and
+documentation link the repository and its license, and the download archive
+now holds nine files.
+
+`tests/` holds the portable suite (validator tests ported without the
+private-profile test, plus privacy, license, website and build checks). On
+2026-11-08 all 70 tests passed, including checks against a separate unpublished
+private-identifier list. The eight workflow-file hashes match the validated
+source. The deterministic download contains those eight files and the identical
+MIT notice; documented ZIP and checkout installation flows preserve existing
+installations and profiles.
+
 `scripts/build_website.py` builds `website/` into `dist/`, the static directory
-the hosting configuration declares; its internal-link and reproducible-download
-checks pass. Local Chrome checks covered all five routes at 1440px and 390px,
-page overflow, code-copy success and denial, keyboard skip/navigation, and content
-with JavaScript disabled. These are bounded browser checks, not a complete
-accessibility audit. Private evidence and diagnostics remain outside this project.
+in the hosting configuration. The build and internal links pass. Bounded local
+Chrome checks cover all five routes at 1440px and 390px, page overflow,
+code-copy success and denial, keyboard skip/navigation and content without
+JavaScript. These checks are not a complete accessibility audit. Private
+evidence and diagnostics remain outside this project.
 
 ## Progress
 
@@ -66,5 +82,8 @@ accessibility audit. Private evidence and diagnostics remain outside this projec
 - [x] Draft reusable documentation, portable tests and sanitized experiment summaries.
 - [x] Draft the static website and build script.
 - [x] Run local tests, website build, bounded browser and privacy checks.
-- [x] Complete independent source review of the private prototype; public release choices remain pending.
-- [ ] Owner selects repository owner and license; then add LICENSE and repository links.
+- [x] Complete independent source review of the private prototype.
+- [x] Owner selects repository owner and license (MIT; jaredchu/agents-collab).
+- [x] Add root and package LICENSE, nine-file download and repository/license links.
+- [x] Rerun tests, build, installation and browser checks after the license additions.
+- [ ] Publish the repository and deploy agents-collab.com; verify both.

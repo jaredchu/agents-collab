@@ -2,7 +2,8 @@
 """Build the static Agents Collab website into this repository's dist/ folder.
 
 Copies website/ to dist/, adds curated downloads (a deterministic zip of the
-generic skill package and an illustrative profile) with SHA-256 sums, and
+generic skill package, including its MIT LICENSE, and an illustrative profile)
+with SHA-256 sums, and
 checks that every internal link in the output resolves.
 
 The script manages only <repo>/dist. It refuses to run if dist is a symlink or
@@ -32,9 +33,11 @@ DOWNLOADS = "downloads"
 ZIP_NAME = "agents-collab-skill.zip"
 EXAMPLE_PROFILE = REPO / "docs" / "examples" / "writer-review.profile.example.json"
 
-# The curated distributable package. Only these files are zipped, under the
-# top-level folder name users install. Nothing else from the repository ships.
+# The curated distributable package: the eight workflow files plus the MIT
+# LICENSE. Only these files are zipped, under the top-level folder name users
+# install. Nothing else from the repository ships.
 PACKAGE_FILES = (
+    "LICENSE",
     "SKILL.md",
     "agents/openai.yaml",
     "assets/review-packet.md",

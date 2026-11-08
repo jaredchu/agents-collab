@@ -72,6 +72,8 @@ preferences never enter project files, there is nothing to migrate later.
 
 ## Where it stands
 
-Experimental and pre-release. Public owner and license are not decided. The
+Experimental and pre-release. On 8 November 2026 the owner chose the MIT
+License and https://github.com/jaredchu/agents-collab as the public repository,
+with https://agents-collab.com as the experiment journal. The
 evidence supports the configuration boundary as a workable idea; it does not
 show general productivity gains or a novel orchestration method.
