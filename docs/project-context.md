@@ -93,7 +93,10 @@ at a prompt left no target file. No real user profile or HOME environment was
 changed. These checks establish configuration behavior, not model availability
 or runtime reasoning support. Local browser checks at 1440px and 390px passed, including the wizard command
 copy buttons and content without JavaScript. Independent review found and resolved one staging-cleanup reporting issue;
-the focused follow-up independently passed all 19 wizard tests. A saved profile
+the focused follow-up independently passed all 19 wizard tests. The live
+package matches the checked ten-file build; its downloaded wizard created a
+valid mode-0600 profile at a temporary output path, and the published home/guide
+setup-command copy buttons passed desktop/mobile checks. A saved profile
 with incomplete staging cleanup now reports its saved state and remaining file
 with exit 3, rather than claiming a clean save or raising an uncaught error.
 
@@ -140,4 +143,4 @@ source mark is retained with the static website assets.
 - [x] Run the suite, build, metadata, installation and interactive checks for the setup wizard.
 - [x] Check browser layout, copy buttons and content without JavaScript.
 - [x] Complete independent review and the focused cleanup-error correction.
-- [ ] Publish and verify the updated package and setup instructions.
+- [x] Publish and verify the updated package and setup instructions.
