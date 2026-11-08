@@ -378,5 +378,85 @@ class Targets(WizardCase):
         self.assertOnlyEntries(self.out.parent, ["profile.json"])
 
 
+class CleanupFailures(WizardCase):
+    """Staging-file removal refused (EACCES): reported, never hidden or crashing."""
+
+    def refuse_unlink(self, refused):
+        def refuse(path, *args, **kwargs):
+            refused.append(Path(path))
+            raise PermissionError(errno.EACCES, "Permission denied", os.fspath(path))
+        return mock.patch.object(sp.os, "unlink", side_effect=refuse)
+
+    def assertLeftover(self, refused, err, entries):
+        self.assertEqual(len(refused), 1)
+        leftover = refused[0]
+        self.assertEqual(leftover.parent, self.out.parent)
+        self.assertTrue(leftover.name.startswith(".profile.json."))
+        self.assertIn(f"(Permission denied): {leftover}", err)
+        self.assertIn("Delete it manually", err)
+        self.assertNotIn("nothing was written", err.lower())
+        self.assertNotIn("Traceback", err)
+        self.assertOnlyEntries(self.out.parent, entries + [leftover.name])
+        self.assertEqual(mode(leftover), 0o600)
+        return leftover
+
+    def test_after_publication_saved_but_not_clean_success(self):
+        refused = []
+        with self.refuse_unlink(refused):
+            code, out, err = self.run_main(["--output", str(self.out)], SOLO_ANSWERS)
+        self.assertEqual(code, 3)
+        self.assertEqual(self.load(self.out)["name"], "personal")  # valid, complete target
+        self.assertEqual(mode(self.out), 0o600)
+        self.assertIn(f"Saved {self.out} (mode 0600).", out)
+        self.assertIn("error: the profile was saved, but cleanup is incomplete", err)
+        self.assertIn("does not affect the saved profile", err)
+        leftover = self.assertLeftover(refused, err, ["profile.json"])
+        self.assertTrue(os.path.samefile(leftover, self.out))  # same private data
+        leftover.unlink()
+        self.assertEqual(self.load(self.out)["name"], "personal")
+
+    def test_before_new_publication_keeps_the_original_cause(self):
+        refused = []
+        with mock.patch.object(sp.os, "link", side_effect=OSError(errno.EIO, "synthetic failure")), \
+                self.refuse_unlink(refused):
+            code, out, err = self.run_main(["--output", str(self.out)], SOLO_ANSWERS)
+        self.assertEqual(code, 2)
+        self.assertIn("error: cannot publish without risking an overwrite here "
+                      "(synthetic failure)", err)
+        self.assertIn("The profile was not saved.", err)
+        self.assertNotIn("Saved", out)
+        self.assertFalse(os.path.lexists(self.out))
+        self.assertLeftover(refused, err, [])
+
+    def test_before_replacement_keeps_the_original_cause(self):
+        self.out.parent.mkdir()
+        self.out.write_text("old profile", encoding="utf-8")
+        refused = []
+        with mock.patch.object(sp.os, "replace", side_effect=OSError(errno.EIO, "synthetic failure")), \
+                self.refuse_unlink(refused):
+            code, out, err = self.run_main(["--output", str(self.out), "--replace"], SOLO_ANSWERS)
+        self.assertEqual(code, 2)
+        self.assertIn("error: cannot write the profile: synthetic failure.", err)
+        self.assertIn("The profile was not saved.", err)
+        self.assertNotIn("Saved", out)
+        self.assertEqual(self.out.read_text(encoding="utf-8"), "old profile")
+        self.assertLeftover(refused, err, ["profile.json"])
+
+    def test_interrupted_publication_reports_a_remaining_staging_file(self):
+        with mock.patch.object(sp.os, "link", side_effect=KeyboardInterrupt):
+            code, _, err = self.run_main(["--output", str(self.out)], SOLO_ANSWERS)
+        self.assertEqual(code, 130)
+        self.assertIn("Interrupted; nothing was written.", err)
+        self.assertOnlyEntries(self.out.parent, [])
+        refused = []
+        with mock.patch.object(sp.os, "link", side_effect=KeyboardInterrupt), \
+                self.refuse_unlink(refused):
+            code, _, err = self.run_main(["--output", str(self.out)], SOLO_ANSWERS)
+        self.assertEqual(code, 130)
+        self.assertIn("Interrupted; the profile was not saved.", err)
+        self.assertFalse(os.path.lexists(self.out))
+        self.assertLeftover(refused, err, [])
+
+
 if __name__ == "__main__":
     unittest.main()

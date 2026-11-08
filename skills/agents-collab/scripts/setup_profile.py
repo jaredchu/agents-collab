@@ -28,12 +28,16 @@ is never followed or replaced. The file is staged beside the target with mode
 file that appeared meanwhile; a replacement is refused if the original changed
 after the wizard started (a best-effort check, not OS-level isolation). Missing
 parent directories are created with mode 0700; existing ones are not changed.
-No backups, transcripts or other files are kept.
+No backups or transcripts are kept. The staging file is removed afterwards; if
+the filesystem refuses that removal, the wizard names the remaining private
+staging file (delete it by hand) and does not report a clean success.
 
 Exit status: 0 profile written, or preview completed with --dry-run;
 1 cancelled (declined, end of input or repeated invalid answers), nothing
-written; 2 usage, output-path or write error, nothing written; 130 interrupted
-with Ctrl-C, nothing written.
+written; 2 usage, output-path or write error, profile not saved (any staging
+file that could not be removed is named); 3 profile saved, but its staging file
+could not be removed (named); 130 interrupted with Ctrl-C (any remaining
+staging file is named).
 Requires Python 3.9+ and no third-party packages.
 """
 
@@ -109,8 +113,27 @@ class Cancelled(Exception):
     """The user declined, input ended or answers stayed invalid."""
 
 
+# A private staging file that could not be removed: (path, reason).
+Leftover = Tuple[Path, str]
+
+
 class TargetError(Exception):
-    """The output path cannot be written safely; nothing was written."""
+    """The output path cannot be written safely; the profile was not saved.
+
+    leftover names a staging file that could not be removed, or is None.
+    """
+
+    def __init__(self, message: str, leftover: Optional[Leftover] = None) -> None:
+        super().__init__(message)
+        self.leftover = leftover
+
+
+class PublishInterrupted(Exception):
+    """Ctrl-C during publication; leftover as for TargetError."""
+
+    def __init__(self, leftover: Optional[Leftover] = None) -> None:
+        super().__init__("interrupted")
+        self.leftover = leftover
 
 
 # --- prompting -----------------------------------------------------------------
@@ -421,6 +444,7 @@ def ensure_parent(parent: Path) -> None:
 
 
 def _fsync_directory(directory: Path) -> None:
+    """Best-effort directory fsync; never raises OSError."""
     try:
         fd = os.open(directory, os.O_RDONLY)
     except OSError:
@@ -430,15 +454,37 @@ def _fsync_directory(directory: Path) -> None:
     except OSError:
         pass
     finally:
-        os.close(fd)
+        try:
+            os.close(fd)
+        except OSError:
+            pass
 
 
-def publish(target: Path, text: str, original: Optional[Identity]) -> None:
-    """Atomically write text to target with mode 0600.
+def _discard_staging(tmp: Path) -> Optional[Leftover]:
+    """Remove the staging file; return (path, reason) if it remains."""
+    try:
+        os.unlink(tmp)
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        return (tmp, exc.strerror or type(exc).__name__)
+    return None
+
+
+def publish(target: Path, text: str, original: Optional[Identity]) -> Optional[Leftover]:
+    """Atomically write text to target with mode 0600; no backup is kept.
 
     original None: target must still be absent (no clobber). Otherwise target
     must still be the same regular file observed when the wizard started.
-    The staged temporary file is always removed; no backup is kept.
+
+    The private staging file beside the target is removed afterwards. Removal
+    can fail (for example a permission error); that is reported, not hidden:
+    returns None when saved and nothing remains; returns (path, reason) when
+    the profile was saved but the staging file (another name for the same
+    data) remains; raises TargetError when the profile was not saved (target
+    neither created nor replaced), keeping the original cause as its message
+    and any remaining staging file in its leftover attribute; raises
+    PublishInterrupted on Ctrl-C with the same leftover report.
     """
     parent = target.parent
     ensure_parent(parent)
@@ -449,7 +495,7 @@ def publish(target: Path, text: str, original: Optional[Identity]) -> None:
     except OSError as exc:
         raise TargetError(f"cannot stage the profile: {exc.strerror or type(exc).__name__}") from None
     tmp = Path(tmp_name)
-    published = False
+    staged = True  # tmp still names the staging file (os.replace consumes it)
     try:
         try:
             if hasattr(os, "fchmod"):
@@ -475,19 +521,28 @@ def publish(target: Path, text: str, original: Optional[Identity]) -> None:
                 raise TargetError("the existing profile changed or disappeared after the wizard "
                                   "started; nothing was replaced")
             os.replace(tmp, target)
-            published = True
+            staged = False
+        # Publication is complete; this never raises OSError, so the error
+        # branches below only see failures from before publication.
         _fsync_directory(parent)
+    except TargetError as exc:
+        exc.leftover = _discard_staging(tmp)
+        raise
     except OSError as exc:
-        raise TargetError(f"cannot write the profile: {exc.strerror or type(exc).__name__}") from None
-    finally:
-        if not published:
-            try:
-                os.unlink(tmp)
-            except FileNotFoundError:
-                pass
+        raise TargetError(f"cannot write the profile: {exc.strerror or type(exc).__name__}",
+                          _discard_staging(tmp)) from None
+    except KeyboardInterrupt:
+        raise PublishInterrupted(_discard_staging(tmp) if staged else None) from None
+    return _discard_staging(tmp) if staged else None
 
 
 # --- command line --------------------------------------------------------------
+
+
+def staging_note(leftover: Leftover) -> str:
+    path, reason = leftover
+    return (f"A private staging file holding the generated profile could not be removed "
+            f"({reason}): {path}. Delete it manually.")
 
 
 def resolve_output(value: Optional[str]) -> Path:
@@ -514,8 +569,12 @@ def main(argv: Optional[List[str]] = None, stdin: Optional[TextIO] = None,
                         help="allow replacing an existing regular profile after confirmation")
     args = parser.parse_args(argv)
 
-    def fail(message: str) -> int:
-        print(f"error: {message}. Nothing was written.", file=stderr)
+    def fail(message: str, leftover: Optional[Leftover] = None) -> int:
+        if leftover is None:
+            print(f"error: {message}. Nothing was written.", file=stderr)
+        else:
+            print(f"error: {message}. The profile was not saved. {staging_note(leftover)}",
+                  file=stderr)
         return 2
 
     try:
@@ -567,18 +626,29 @@ def main(argv: Optional[List[str]] = None, stdin: Optional[TextIO] = None,
         return 130
 
     try:
-        publish(target, text, original)
+        leftover = publish(target, text, original)
     except TargetError as exc:
-        return fail(str(exc))
-    except KeyboardInterrupt:
-        state = "the profile may have been written" if target.exists() else "nothing was written"
-        print(f"\nInterrupted; {state}.", file=stderr)
+        return fail(str(exc), exc.leftover)
+    except (KeyboardInterrupt, PublishInterrupted) as exc:
+        remaining = getattr(exc, "leftover", None)
+        if target.exists():
+            state = "the profile may have been written."
+        elif remaining is not None:
+            state = "the profile was not saved."
+        else:
+            state = "nothing was written."
+        note = f" {staging_note(remaining)}" if remaining is not None else ""
+        print(f"\nInterrupted; {state}{note}", file=stderr)
         return 130
     p.say(f"Saved {target} (mode 0600).")
     p.say("Check it again any time with:")
     p.say(f"  python3 {_HERE / 'validate_profile.py'} {target}")
     p.say("Before dispatch the lead still checks model access, effort support and that")
     p.say("the resolved records directory is outside the project.")
+    if leftover is not None:
+        print(f"error: the profile was saved, but cleanup is incomplete. {staging_note(leftover)} "
+              "Deleting it does not affect the saved profile.", file=stderr)
+        return 3
     return 0
 
 
