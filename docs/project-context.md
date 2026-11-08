@@ -84,7 +84,7 @@ reuses the unchanged validator, previews, and writes only after confirmation
 (mode 0600, atomic, preserving existing profiles and rejecting symlink or
 nonregular targets). A generated profile does not establish model availability,
 supported effort, access or records-path isolation. The download archive now
-holds ten files. On 2026-11-08 all 86 tests passed after the addition, with
+holds ten files. On 2026-11-08 all 90 tests passed after the addition and cleanup-error correction, with
 profile writes tested only at temporary output paths. Skill metadata validation,
 the website build, both manual install paths and installation of all ten files
 through Skills CLI 1.7.6 passed. The installed wizard produced a valid profile
@@ -92,7 +92,10 @@ with mode 0600; a terminal run exercised a writer and two reviewers, and Ctrl-C
 at a prompt left no target file. No real user profile or HOME environment was
 changed. These checks establish configuration behavior, not model availability
 or runtime reasoning support. Local browser checks at 1440px and 390px passed, including the wizard command
-copy buttons and content without JavaScript. Independent review remains pending.
+copy buttons and content without JavaScript. Independent review found and resolved one staging-cleanup reporting issue;
+the focused follow-up independently passed all 19 wizard tests. A saved profile
+with incomplete staging cleanup now reports its saved state and remaining file
+with exit 3, rather than claiming a clean save or raising an uncaught error.
 
 The complete Markdown setup was also exercised for ZIP and checkout installs
 with both solo and writer/reviewer templates, including expected placeholder
@@ -136,4 +139,5 @@ source mark is retained with the static website assets.
 - [x] Draft the interactive profile setup wizard, its tests, package and documentation updates.
 - [x] Run the suite, build, metadata, installation and interactive checks for the setup wizard.
 - [x] Check browser layout, copy buttons and content without JavaScript.
-- [ ] Complete independent review and publish the setup wizard.
+- [x] Complete independent review and the focused cleanup-error correction.
+- [ ] Publish and verify the updated package and setup instructions.
