@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Research — Agents Collab</title>
+  <meta name="description" content="Research notes: from a fixed architect/builder/reviewer team to a narrower configuration and records problem.">
+  <link rel="stylesheet" href="../assets/site.css">
+  <script src="../assets/site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="inner">
+      <a class="wordmark" href="../">Agents Collab<span>Lab notebook · experimental</span></a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="../">Home</a></li>
+          <li><a href="../guide/">Guide</a></li>
+          <li><a href="../research/" aria-current="page">Research</a></li>
+          <li><a href="../experiments/">Experiments</a></li>
+          <li><a href="../story/">Story</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="page">
+      <p class="kicker">Notebook entry · 7 November 2026</p>
+      <h1>The team that already existed</h1>
+      <p class="lede">The research started with a broad idea, a small fixed team of agents, and ended with a much narrower question about where configuration and records belong.</p>
+
+      <div class="note green" role="note">
+        <span class="label">How to read this</span>
+        <p>These are sanitized notes, not a market survey. Third-party figures collected at the time, such as popularity counts and cost or speed anecdotes, are left out because they were not independently verified.</p>
+      </div>
+
+      <h2 id="start"><span class="num">01 · Starting point</span>One person, one project, one team</h2>
+      <p>Working with a coding assistant is one person, one project, one agent. The first idea was a skill that turned that into a small team inside the same harness. After a first pass it narrowed to a fixed trio coordinated by the lead session:</p>
+      <div class="table-wrap" role="region" aria-labelledby="trio-caption" tabindex="0">
+        <table>
+          <caption id="trio-caption">The fixed trio that was considered, then dropped</caption>
+          <thead><tr><th scope="col">Role</th><th scope="col">Intended job</th><th scope="col">Not allowed</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Architect</th><td>Short spec and acceptance criteria; split work; arbitrate</td><td>Editing code</td></tr>
+            <tr><th scope="row">Builder</th><td>Implement code and tests against the spec</td><td>Editing the spec; self-approval</td></tr>
+            <tr><th scope="row">Reviewer</th><td>Read spec and diff; run checks; report findings</td><td>Editing source</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Three rules seemed essential for review to catch anything: the reviewer never inherits the builder’s conversation; the reviewer uses a different model or prompt frame where possible; and the fix loop has a cap. Names and titles would be handles only; role prompts would carry scope, tool rights, file ownership and done criteria rather than personality.</p>
+
+      <h2 id="existing"><span class="num">02 · Prior work</span>It had been built, in several forms</h2>
+      <p>Native features already offered most of the mechanics. Claude Code has <a href="https://code.claude.com/docs/en/sub-agents.md">subagents</a> and an experimental agent-teams mode. Codex has <a href="https://learn.chatgpt.com/docs/agent-configuration/subagents">subagents</a> with custom agent definitions and parent-to-child coordination.</p>
+      <p>Open projects covered the rest: skill frameworks, persona collections, orchestrators and review plugins with implementer/reviewer loops, fresh-context reviewers, capped fix loops and per-role model selection. For example, <a href="https://github.com/obra/superpowers">superpowers</a> includes a subagent-driven development workflow, and <a href="https://github.com/openai/codex-plugin-cc">codex-plugin-cc</a> provides cross-model review commands inside Claude Code. Feature details came partly from page summaries and may have changed; check current documentation.</p>
+
+      <h2 id="practice"><span class="num">03 · Practitioner reports</span>Recurring themes, held as hypotheses</h2>
+      <ul>
+        <li>Orchestration can cost substantially more tokens, often from re-reading history.</li>
+        <li>Context is lost or distorted at handoffs; a reviewer that inherits the builder’s misunderstanding tends to confirm it.</li>
+        <li>For small tasks, one agent is usually cheaper and faster than a team.</li>
+        <li>Clear file ownership and explicit handoff points work better than free-form messaging.</li>
+        <li>Some argue for cross-vendor review because models have different blind spots. Not tested here.</li>
+      </ul>
+
+      <h2 id="pivot"><span class="num">04 · The turn</span>The real problem was smaller and more personal</h2>
+      <p>Building another general team framework would add little to this experiment. Attention shifted to a narrower problem already visible in daily work:</p>
+      <ul class="limits" aria-label="Problems identified">
+        <li><strong>Configuration in the wrong place.</strong> Personal model choices, reasoning levels and review habits had been copied into several projects’ instructions, where they repeated, drifted and mixed with genuine project rules.</li>
+        <li><strong>Records leaking into project knowledge.</strong> Dispatch receipts, model assignments and review transcripts drifted toward project documentation.</li>
+        <li><strong>Evidence easy to overstate.</strong> “Requested high effort” slid into “ran at high effort”, and “fresh session” into “isolated”.</li>
+      </ul>
+      <p>So the goal changed from <em>a fixed team</em> to <em>a configurable personal profile, one writer per artifact, independent reviewers on demand, and private records kept apart from durable project context</em>. No compulsory architect: the lead keeps scope and integration.</p>
+
+      <h2 id="decisions"><span class="num">05 · Design</span>Decisions that came out of it</h2>
+      <ul>
+        <li>The profile is small JSON outside projects, read as data and validated structurally. No credentials.</li>
+        <li>The skill ships no personal defaults; example profiles are templates.</li>
+        <li>Requested, interface-accepted and runtime-observed settings are recorded separately; unknown stays unknown.</li>
+        <li>Deadlines are either supervised by a real mechanism or labeled advisory.</li>
+        <li>Profile preferences only fill choices the instruction hierarchy leaves open, and never authorize production or publication.</li>
+        <li>A runner would be justified only for repeated mechanics such as snapshot hashing, deadline enforcement or receipts. Version 1 has none.</li>
+      </ul>
+
+      <h2 id="not"><span class="num">06 · Scope</span>What this does not claim</h2>
+      <p>It does not claim Agents Collab is the first, only or best approach to model collaboration. Neighbouring projects solve overlapping problems, often more completely. The contribution here is narrow: a configuration and records boundary, plus an honest account of trying it.</p>
+
+      <p class="next-links">
+        <a href="../experiments/">Next: the experiments</a>
+        <a href="../story/">The longer story</a>
+      </p>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="inner">
+      <p>Agents Collab · experimental and pre-release. Repository owner and license pending; no license is granted yet.</p>
+      <p>The site code adds no analytics or forms. Experiment summaries are sanitized; raw evidence is private.</p>
+    </div>
+  </footer>
+</body>
+</html>

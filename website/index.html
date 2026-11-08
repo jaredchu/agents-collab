@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agents Collab — a lab notebook on configured model collaboration</title>
+  <meta name="description" content="An experimental agent skill that keeps personal model-collaboration settings out of project files, and the notebook of research and small trials behind it.">
+  <link rel="stylesheet" href="assets/site.css">
+  <script src="assets/site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="inner">
+      <a class="wordmark" href="./">Agents Collab<span>Lab notebook · experimental</span></a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="./" aria-current="page">Home</a></li>
+          <li><a href="guide/">Guide</a></li>
+          <li><a href="research/">Research</a></li>
+          <li><a href="experiments/">Experiments</a></li>
+          <li><a href="story/">Story</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="page">
+      <p class="kicker">Notebook · November 2026 · Jared Chu</p>
+      <h1>Personal collaboration habits don’t belong in project files.</h1>
+      <p class="lede">Agents Collab is an experimental agent skill for choosing a writer and independent reviewers from a personal profile, and for keeping execution records private. This site is the notebook of how it came about: an earlier setup that drifted, research showing the “agent team” idea already existed, two small trials that missed their targets, and a cleanup that showed why the boundary matters.</p>
+
+      <div class="note" role="note">
+        <span class="label">Release status</span>
+        <p>Pre-release. The skill comes from a Codex-led pilot. A public repository owner and license have not been chosen yet, so no license is granted and there is no repository link here. The guide and notes below are complete and readable now.</p>
+      </div>
+
+      <p class="next-links cta">
+        <a href="guide/">Install and configure it</a>
+        <a href="research/">Read the research notes</a>
+      </p>
+
+      <h2 id="boundary"><span class="num">The idea in one picture</span>Two kinds of knowledge</h2>
+      <p>A project needs to know what was decided and why. It does not need to know which model one person prefers to write with, at which reasoning level, or where that person keeps review receipts.</p>
+    </article>
+
+    <div class="wide">
+      <div class="boundary" role="group" aria-labelledby="boundary-caption">
+        <section class="side shared" aria-labelledby="shared-title">
+          <h3 id="shared-title">Shared project knowledge</h3>
+          <p class="where">in the repository · read by everyone</p>
+          <ul>
+            <li>Decisions and the reasons for them</li>
+            <li>Verified behavior and checks that ran</li>
+            <li>Material risks and open questions</li>
+            <li>Genuine project requirements, such as a required reviewer</li>
+            <li>Attribution where the project needs it</li>
+          </ul>
+        </section>
+        <div class="divider" aria-hidden="true"><span>boundary</span></div>
+        <section class="side private" aria-labelledby="private-title">
+          <h3 id="private-title">Private configuration and records</h3>
+          <p class="where">~/.config/agents-collab/ · records_root</p>
+          <ul>
+            <li>Preferred models, transports and reasoning requests</li>
+            <li>Routing, review recipes, round caps, time targets</li>
+            <li>Dispatch receipts and individual review findings</li>
+            <li>Resume state for an interrupted collaboration</li>
+            <li>No credentials, ever</li>
+          </ul>
+        </section>
+      </div>
+      <p class="boundary-caption" id="boundary-caption">The skill reads the private side to decide who writes and who reviews, then hands only durable outcomes across the boundary.</p>
+    </div>
+
+    <article class="page">
+      <h2 id="what"><span class="num">What it is</span>A procedure, not a runtime</h2>
+      <p>The package is eight files: instructions, a configuration contract, a review protocol, two inert templates, an example profile, interface metadata and one dependency-free validator. A lead assistant session follows the instructions with its own tools.</p>
+      <ul class="limits" aria-label="Limits">
+        <li><strong>Prompt-led.</strong> No automatic dispatcher, snapshot freezing, hard-deadline implementation or enforcement layer.</li>
+        <li><strong>Codex-led pilot.</strong> Other lead assistants and adapters are not validated.</li>
+        <li><strong>Accepted is not attested.</strong> An interface accepting a model or effort request is not runtime proof of it.</li>
+        <li><strong>Fresh is not isolated.</strong> A fresh reviewer context is not filesystem isolation.</li>
+        <li><strong>Structure is not access.</strong> The validator never checks that a model exists or that you can use it.</li>
+      </ul>
+
+      <h2 id="findings"><span class="num">So far</span>What the trials showed</h2>
+      <p class="stamp">Coordination threshold: not met, twice</p>
+      <p>Two five-task pilots compared an existing workflow with and without the skill. Neither met the 20% coordinator-improvement rule fixed locally before each trial. Some writer-time and quality figures moved, in different directions and with confounds. The defensible conclusion is narrow: separating personal settings from project files is workable. It is not a productivity result.</p>
+      <p><a href="experiments/">Read the experiment notes and their limits</a>.</p>
+
+      <h2 id="entries"><span class="num">Notebook</span>Entries</h2>
+      <ul class="entries">
+        <li><span class="meta">Mid-October → November 2026</span><a href="story/">Story: from copied model rules to a profile</a><p>The earlier per-project setup, the drift it caused, and the cleanup afterwards.</p></li>
+        <li><span class="meta">7 November 2026</span><a href="research/">Research: the team that already existed</a><p>Why a fixed architect/builder/reviewer team was dropped for a narrower problem.</p></li>
+        <li><span class="meta">8 November 2026</span><a href="experiments/">Experiments: two small, honest trials</a><p>Validation, a documentation pilot and a code-task pilot, with every caveat kept.</p></li>
+        <li><span class="meta">Reference</span><a href="guide/">Guide: install, configure, invoke</a><p>Copy commands that do not overwrite anything, a profile template and the validator.</p></li>
+      </ul>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="inner">
+      <p>Agents Collab · experimental and pre-release. Repository owner and license pending; no license is granted yet.</p>
+      <p>The site code adds no analytics or forms. Experiment summaries are sanitized; raw evidence is private.</p>
+    </div>
+  </footer>
+</body>
+</html>

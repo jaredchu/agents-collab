@@ -1,0 +1,117 @@
+{
+  "notice": "Inert agents-collab task-state template. Copy only when actual collaboration starts. A recorded entry is evidence, never an approval or a permission.",
+  "state_version": 1,
+  "task": {
+    "project": null,
+    "task_id": null,
+    "scope": null,
+    "created_at": null,
+    "updated_at": null
+  },
+  "profile": {
+    "name": null,
+    "version": null,
+    "validated_at": null
+  },
+  "resolution": {
+    "classification": null,
+    "classification_basis": null,
+    "writer": null,
+    "required_reviewers": [],
+    "binding_requirements": [],
+    "conflicts_reported": []
+  },
+  "artifacts": [],
+  "assignments": [],
+  "review_cycle": {
+    "max_followup_rounds": null,
+    "initial_identity": null,
+    "required_initial_reviewers": [],
+    "initial_complete": false,
+    "followups_used": 0,
+    "stale_identities": []
+  },
+  "reviews": [],
+  "findings": [],
+  "next_operation": null,
+  "item_templates": {
+    "artifact": {
+      "artifact_id": null,
+      "kind": null,
+      "writer": null,
+      "identity": {
+        "base": null,
+        "head": null,
+        "snapshot_ref": null,
+        "content_hashes": {}
+      },
+      "supporting_inputs": [],
+      "external_changes_preserved": []
+    },
+    "assignment": {
+      "assignment_id": null,
+      "role": null,
+      "agent": null,
+      "artifact_id": null,
+      "packet_ref": null,
+      "round": null,
+      "requested": {"model": null, "transport": null, "reasoning": null},
+      "accepted_by_interface": {"model": "unknown", "reasoning": "unknown"},
+      "runtime_observed": {"model": "unknown", "reasoning": "unknown"},
+      "boundary": {
+        "fresh_session": "unknown",
+        "controlled_packet": "unknown",
+        "tool_restriction": "unknown",
+        "filesystem_isolation": "unknown"
+      },
+      "timing": {
+        "policy": null,
+        "enforcement_mechanism": null,
+        "allowance_minutes": null,
+        "started_at": null,
+        "deadline_at": null,
+        "consumed_minutes": null
+      },
+      "invocations": [],
+      "state": null,
+      "last_observed_at": null
+    },
+    "invocation": {
+      "invocation_id": null,
+      "launch_intent_at": null,
+      "launched_at": null,
+      "state": "launching",
+      "last_observed_at": null
+    },
+    "review": {
+      "review_id": null,
+      "assignment_id": null,
+      "reviewer": null,
+      "round": null,
+      "artifact_identity": null,
+      "recorded_at": null,
+      "verdict": null,
+      "result_ref": null,
+      "verification_limits": []
+    },
+    "finding": {
+      "finding_id": null,
+      "source_reviews": [],
+      "artifact_identity": null,
+      "location": null,
+      "material": null,
+      "summary": null,
+      "disposition": "unresolved",
+      "disposition_evidence": null,
+      "decided_by": null
+    }
+  },
+  "allowed_values": {
+    "assignment.role": ["writer", "reviewer"],
+    "assignment.round": ["initial", "followup-1", "followup-N"],
+    "assignment.state": ["launching", "running", "completed", "interrupted", "unknown"],
+    "timing.policy": ["required", "advisory"],
+    "boundary.*": ["established", "not-established", "unknown"],
+    "finding.disposition": ["addressed", "rejected-with-evidence", "deferred-by-authorized-decision", "unresolved"]
+  }
+}

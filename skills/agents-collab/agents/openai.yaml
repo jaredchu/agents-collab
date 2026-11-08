@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agents Collab"
+  short_description: "Configure model teamwork and independent reviews"
+  default_prompt: "Use $agents-collab with the selected profile to coordinate this task and any required independent review."

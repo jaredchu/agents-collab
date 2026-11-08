@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guide — Agents Collab</title>
+  <meta name="description" content="Install the Agents Collab skill folder, keep or create a personal profile, validate its structure and invoke the skill explicitly.">
+  <link rel="stylesheet" href="../assets/site.css">
+  <script src="../assets/site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="inner">
+      <a class="wordmark" href="../">Agents Collab<span>Lab notebook · experimental</span></a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="../">Home</a></li>
+          <li><a href="../guide/" aria-current="page">Guide</a></li>
+          <li><a href="../research/">Research</a></li>
+          <li><a href="../experiments/">Experiments</a></li>
+          <li><a href="../story/">Story</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="page">
+      <p class="kicker">Reference · Codex-led setup</p>
+      <h1>Install, configure, invoke</h1>
+      <p class="lede">Install one folder, keep your preferences in one private file, check its structure, then ask for the skill by name.</p>
+
+      <div class="note" role="note">
+        <span class="label">Before you start</span>
+        <p>This is an experimental, prompt-led skill from a Codex-led pilot. There is no dispatcher, deadline enforcement or runtime attestation. Other lead assistants are not validated. The license is not chosen yet.</p>
+      </div>
+
+      <nav aria-label="On this page">
+        <ol>
+          <li><a href="#install">Install the package folder</a></li>
+          <li><a href="#profile">Create or keep a profile</a></li>
+          <li><a href="#validate">Validate the structure</a></li>
+          <li><a href="#invoke">Invoke it</a></li>
+          <li><a href="#native">Native settings stay separate</a></li>
+          <li><a href="#run">What happens in a run</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="install"><span class="num">Step 1</span>Install the package folder</h2>
+      <p>Install only the skill package: eight files. A repository checkout keeps it in <code>skills/agents-collab/</code>; the website ZIP extracts to <code>agents-collab/</code>. The website, tests and notes are not part of the skill.</p>
+      <p>Codex’s documented user skills location is described in OpenAI’s <a href="https://learn.chatgpt.com/docs/build-skills#how-chatgpt-and-codex-use-skills">Build skills documentation</a>. Check it for your version. Choose <strong>one</strong> source below, then run the shared install block in the same shell.</p>
+      <h3 id="download">From the website ZIP</h3>
+      <p>Save <a href="../downloads/agents-collab-skill.zip">agents-collab-skill.zip</a>, then run this from the folder containing it. It extracts into a fresh system temporary directory. The archive is reproducible; compare its SHA-256 hash with the ZIP entry in <a href="../downloads/SHA256SUMS">SHA256SUMS</a>. No license has been chosen yet.</p>
+      <div class="code-block">
+        <p class="code-label">shell · choose the ZIP source</p>
+        <pre><code id="install-zip-source">collab_unpack="$(mktemp -d)"
+python3 -m zipfile -e agents-collab-skill.zip "$collab_unpack"
+collab_source="$collab_unpack/agents-collab"</code></pre>
+      </div>
+      <h3>From a repository checkout</h3>
+      <p>If you have a checkout instead, run this from its root. Use this source block <strong>instead of</strong> the ZIP block:</p>
+      <div class="code-block">
+        <p class="code-label">shell · choose the checkout source</p>
+        <pre><code id="install-checkout-source">collab_source="skills/agents-collab"</code></pre>
+      </div>
+      <h3>Copy the selected package</h3>
+      <p>Continue in the <strong>same shell</strong>, where <code>collab_source</code> is set. The block below uses <code>~/.agents/skills</code> and preserves an existing installation, including a symlink:</p>
+      <div class="code-block">
+        <p class="code-label">shell · install without replacing existing files</p>
+        <pre><code id="install-copy">collab_skills_root="$HOME/.agents/skills"
+if [ ! -f "$collab_source/SKILL.md" ]; then
+  echo "Choose a package source first; nothing was copied" &gt;&amp;2
+elif [ -e "$collab_skills_root/agents-collab" ] || [ -L "$collab_skills_root/agents-collab" ]; then
+  echo "agents-collab already installed; compare before replacing" &gt;&amp;2
+else
+  mkdir -p "$collab_skills_root"
+  cp -R "$collab_source" "$collab_skills_root/agents-collab"
+fi</code></pre>
+      </div>
+      <p>The delegated-writer example is available separately as <a href="../downloads/writer-review.profile.example.json">writer-review.profile.example.json</a>. Save it for the next step if you want that example.</p>
+      <p>Check the skills catalog after installing. Codex detects skill changes automatically; if the skill does not appear, restart the host or try a fresh session. Seeing it in the catalog confirms discovery, not that it will be picked automatically.</p>
+
+      <h2 id="profile"><span class="num">Step 2</span>Create or keep a profile</h2>
+      <p>The profile holds personal choices: models, transports, reasoning requests, routing, review recipes, time targets and a private records root. It lives outside every project at <code>~/.config/agents-collab/profile.json</code>.</p>
+      <p><strong>Keep an existing profile.</strong> Copy a template only if none exists. Run this from the folder where you saved the example file (in a repository checkout it is <code>docs/examples/</code>):</p>
+      <div class="code-block">
+        <p class="code-label">shell · create the profile only if absent</p>
+        <pre><code>mkdir -p ~/.config/agents-collab
+if [ -e ~/.config/agents-collab/profile.json ] || [ -L ~/.config/agents-collab/profile.json ]; then
+  echo "profile exists; leaving it unchanged" &gt;&amp;2
+else
+  cp writer-review.profile.example.json ~/.config/agents-collab/profile.json
+  chmod 600 ~/.config/agents-collab/profile.json
+fi</code></pre>
+      </div>
+      <p>This template has a delegated writer and one reviewer for consequential work. Its two model fields are angle-bracket placeholders that <strong>fail validation on purpose</strong> until you replace them with exact model identifiers you actually have access to. The package also ships a solo template, <code>examples/profile.example.json</code>, that is valid as shipped.</p>
+      <div class="code-block">
+        <p class="code-label">json · writer-review.profile.example.json</p>
+        <pre><code id="profile-writer-review">{
+  "version": 1,
+  "name": "writer-plus-review-example",
+  "agents": {
+    "lead": {"model": "current", "transport": "host", "reasoning": "inherit"},
+    "writer": {"model": "&lt;writer-model-id&gt;", "transport": "claude-cli", "reasoning": "inherit"},
+    "reviewer": {"model": "&lt;reviewer-model-id&gt;", "transport": "codex-native", "reasoning": "inherit"}
+  },
+  "routing": {"small_writer": "current-session", "substantial_writer": "writer"},
+  "review": {
+    "on_consequential_work": "single",
+    "candidates": ["reviewer"],
+    "prefer_different_model": true,
+    "recipes": {},
+    "max_followup_rounds": 1
+  },
+  "effort_check": "supported-control",
+  "access": "existing-authorized-access",
+  "bounds": {"enforcement": "advisory", "writer_minutes": 30, "reviewer_minutes": 10, "review_output_words": 800},
+  "records_root": "~/.local/state/agents-collab"
+}</code></pre>
+      </div>
+
+      <div class="table-wrap" role="region" aria-labelledby="fields-caption" tabindex="0">
+        <table>
+          <caption id="fields-caption">Fields that cause the most confusion</caption>
+          <thead><tr><th scope="col">Field</th><th scope="col">What it means</th></tr></thead>
+          <tbody>
+            <tr><td><code>"model": "current"</code> + <code>"host"</code></td><td>The lead session you are already in. The skill cannot switch the lead’s model or reasoning.</td></tr>
+            <tr><td><code>reasoning</code></td><td><code>inherit</code> or a lowercase level the interface documents for that model. <code>inherit</code> does not mean high.</td></tr>
+            <tr><td><code>review.recipes</code></td><td>Named reviewer lists, such as <code>{"pair": ["reviewer", "reviewer2"]}</code>, used when you name them or a policy applies.</td></tr>
+            <tr><td><code>bounds.enforcement</code></td><td><code>advisory</code> labels targets; <code>required</code> needs a real supervisor such as a subprocess timeout.</td></tr>
+            <tr><td><code>records_root</code></td><td>Private and outside projects. The lead must confirm the final task directory does not overlap the project; the validator can’t.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="validate"><span class="num">Step 3</span>Validate the structure</h2>
+      <div class="code-block">
+        <p class="code-label">shell · structural check</p>
+        <pre><code>python3 ~/.agents/skills/agents-collab/scripts/validate_profile.py ~/.config/agents-collab/profile.json</code></pre>
+      </div>
+      <div class="table-wrap" role="region" aria-labelledby="exit-caption" tabindex="0">
+        <table>
+          <caption id="exit-caption">Validator exit status</caption>
+          <thead><tr><th scope="col" class="num">Exit</th><th scope="col">Meaning</th></tr></thead>
+          <tbody>
+            <tr><td class="num">0</td><td>Matches the v1 structure</td></tr>
+            <tr><td class="num">1</td><td>Invalid content: malformed JSON, invalid UTF-8, too large, or structural issues listed by field</td></tr>
+            <tr><td class="num">2</td><td>Unreadable or nonregular input, or a usage error</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>A pass is <strong>structural only</strong>. The validator never checks that a model exists, that you can access it, that a reasoning level is supported, permissions, or where records resolve. Diagnostics name fields without echoing values.</p>
+
+      <h2 id="invoke"><span class="num">Step 4</span>Invoke it</h2>
+      <p>Explicit invocation is the reliable path:</p>
+      <div class="code-block">
+        <p class="code-label">prompt · implementation with review</p>
+        <pre><code>Use $agents-collab to implement the export change, with independent review before I merge.</code></pre>
+      </div>
+      <div class="code-block">
+        <p class="code-label">prompt · named recipe, review only</p>
+        <pre><code>Use $agents-collab with the "pair" recipe to review docs/proposal.md. Do not edit it.</code></pre>
+      </div>
+      <p>Automatic selection depends on the skill’s description and on how your host picks skills. It is not an always-on hook, and the trials did not establish reliable unprompted routing. Small solo work normally stays with the lead and creates no records.</p>
+
+      <h2 id="native"><span class="num">Step 5</span>Native settings stay separate</h2>
+      <p>Your host’s own configuration sets the lead model, its reasoning level and subagent defaults. The profile only tells the skill what to request and check for delegated work. Using the skill never requires changing global configuration or bypassing permissions.</p>
+
+      <h2 id="run"><span class="num">In practice</span>What happens in a run</h2>
+      <ol>
+        <li>The lead reads project instructions and the profile, and validates the profile.</li>
+        <li>It classifies the task. Small work stays solo unless review is required.</li>
+        <li>Before delegating, it confirms model, access and controls, recording requested settings separately from what the interface accepted.</li>
+        <li>Reviewers get a neutral packet and the same frozen artifact, not the writer’s conversation.</li>
+        <li>The writer handles findings. Rounds stop at the cap; unresolved material issues are reported, not waived.</li>
+        <li>Private records go under <code>records_root</code>; the project receives durable outcomes.</li>
+      </ol>
+      <p>If a required model, effort or access path is unavailable, the lead says so instead of silently substituting another model or paid access.</p>
+
+      <p class="next-links">
+        <a href="../research/">Why it is shaped this way</a>
+        <a href="../experiments/">What the trials showed</a>
+      </p>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="inner">
+      <p>Agents Collab · experimental and pre-release. Repository owner and license pending; no license is granted yet.</p>
+      <p>The site code adds no analytics or forms. Experiment summaries are sanitized; raw evidence is private.</p>
+    </div>
+  </footer>
+</body>
+</html>

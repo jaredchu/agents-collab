@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Experiments — Agents Collab</title>
+  <meta name="description" content="Structural validation and two five-task pilots of Agents Collab, with mixed results, missed thresholds and every limit stated.">
+  <link rel="stylesheet" href="../assets/site.css">
+  <script src="../assets/site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="inner">
+      <a class="wordmark" href="../">Agents Collab<span>Lab notebook · experimental</span></a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="../">Home</a></li>
+          <li><a href="../guide/">Guide</a></li>
+          <li><a href="../research/">Research</a></li>
+          <li><a href="../experiments/" aria-current="page">Experiments</a></li>
+          <li><a href="../story/">Story</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="page">
+      <p class="kicker">Notebook entry · 8 November 2026</p>
+      <h1>Two small, honest trials</h1>
+      <p class="lede">A structural validation, then two pilots of five paired real tasks each. Neither pilot met its coordination target. Here is what was measured, and what it cannot tell you.</p>
+
+      <div class="note" role="note">
+        <span class="label">Read this first</span>
+        <ul>
+          <li>Five paired real tasks per pilot, one owner, related tasks, <strong>one execution per arm</strong>. No statistical or general causal inference.</li>
+          <li>Durations are <strong>summed observed model-call time</strong>, not human minutes or end-to-end wall time. Shared parent work and native review time are outside them.</li>
+          <li>Unknown usage is unknown, not zero. No complete cost was measured.</li>
+          <li>Raw evidence is private. These are selective, sanitized summaries, not independently auditable traces.</li>
+          <li>Both pilots ran <strong>before</strong> installation. Later real use is not a controlled experiment.</li>
+        </ul>
+      </div>
+
+      <p>Each pilot had a rule fixed in advance: the skill should cut coordinator time or coordinator command count by at least 20%. Reviewers saw unlabeled bundles, but could plausibly infer style; blinding was not guaranteed.</p>
+
+      <h2 id="conditions"><span class="num">Conditions · 8 November 2026</span>Who did what, at what requested effort</h2>
+      <p>Both pilots used the same roles and requests in <strong>both arms</strong>, and every output got a paired assessment from both independent reviewers.</p>
+      <div class="table-wrap" role="region" aria-labelledby="cond-caption" tabindex="0">
+        <table>
+          <caption id="cond-caption">Models and requested effort in both pilots</caption>
+          <thead><tr><th scope="col">Role</th><th scope="col">Model ID</th><th scope="col">Requested effort</th><th scope="col">Sessions</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Lead (coordinator)</th><td><code>gpt-6.1-sol</code></td><td>High</td><td>fresh CLI session per run</td></tr>
+            <tr><th scope="row">Writer</th><td><code>claude-opus-5-5</code></td><td>High</td><td>fresh sessions via subscription CLI</td></tr>
+            <tr><th scope="row">Independent reviewer</th><td><code>gpt-6-astra</code></td><td>High</td><td>fresh native sessions, no history</td></tr>
+            <tr><th scope="row">Independent reviewer</th><td><code>claude-fable-5-1</code></td><td>High</td><td>fresh CLI sessions</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>“High” was <strong>requested and accepted by the interface</strong>; independent runtime attestation of the effort actually applied was not established. Writer usage for the timed-out baseline correction is unknown. These were the conditions of these trials on that date, <strong>not recommended defaults</strong>. The skill and its examples stay model-neutral.</p>
+
+      <h2 id="validation"><span class="num">00 · Before the pilots</span>Structural validation</h2>
+      <p>Privately, 52 unit tests passed for the validator and package assets, and nine simulated initial scenarios plus two focused follow-up scenarios passed. They covered solo work without Git, unsupported required effort, exhausted review caps, resuming a running assignment, delegation restrictions, unenforceable deadlines, records overlap and changed review inputs. Two independent reviewers finished one initial round and one focused follow-up with no remaining material finding.</p>
+      <p>Capability responses in those scenarios were simulated. That shows a coherent procedure, not production safety. The public test suite drops one private-profile test and adds repository checks; its result will be reported when it is run.</p>
+
+      <h2 id="study1"><span class="num">01 · Additive documentation pilot</span>Adding the skill on top of an existing workflow</h2>
+      <p>Five unfinished documentation and decision-support tasks from one project, each done twice: the existing workflow, and the same workflow <strong>plus</strong> the skill and a private profile. Writers, reviewers, sources, acceptance criteria, word limits and round caps were matched; writer order alternated.</p>
+      <div class="table-wrap" role="region" aria-labelledby="s1-caption" tabindex="0">
+        <table>
+          <caption id="s1-caption">Documentation pilot: observed figures</caption>
+          <thead><tr><th scope="col">Measure</th><th scope="col" class="num">Existing</th><th scope="col" class="num">With skill</th><th scope="col" class="num">Change</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Coordinator call time, summed</th><td class="num">404.4 s</td><td class="num">535.9 s</td><td class="num">+32.5%</td></tr>
+            <tr><th scope="row">Coordinator commands</th><td class="num">36</td><td class="num">49</td><td class="num">+36.1%</td></tr>
+            <tr><th scope="row">Writer call time, summed</th><td class="num">507.0 s</td><td class="num">388.4 s</td><td class="num">−23.4%</td></tr>
+            <tr><th scope="row">Coordinator + writer</th><td class="num">911.4 s</td><td class="num">924.2 s</td><td class="num">+1.4%</td></tr>
+            <tr><th scope="row">First-pass tasks without material findings</th><td class="num">4/5</td><td class="num">4/5</td><td class="num">equal</td></tr>
+            <tr><th scope="row">Final material findings addressed</th><td class="num">5/5</td><td class="num">5/5</td><td class="num">equal</td></tr>
+            <tr><th scope="row">Final tasks within word ceiling</th><td class="num">3/5</td><td class="num">4/5</td><td class="num">+1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="stamp">Coordination threshold: not met</p>
+      <p>Coordinator time and commands both rose. Material findings in both arms sat in a single task and were addressed after one bounded correction round. Because the skill was <strong>added alongside</strong> existing rules, the benefit that motivated it, removing duplicated policy, was not measured.</p>
+
+      <h2 id="study2"><span class="num">02 · Replacement code-task pilot</span>Replacing cleaned rules with the skill</h2>
+      <p>Five real implementation tasks in one application, each from the same frozen code. The baseline kept the existing instructions; the skill arm used cleaned copies with personal model clauses removed, plus the skill and a private profile. Models and reasoning requests were explicitly matched, and both arms got the same paired independent review.</p>
+      <div class="table-wrap" role="region" aria-labelledby="s2-caption" tabindex="0">
+        <table>
+          <caption id="s2-caption">Code-task pilot: observed figures</caption>
+          <thead><tr><th scope="col">Measure</th><th scope="col" class="num">Existing</th><th scope="col" class="num">With skill</th><th scope="col" class="num">Change</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Coordinator call time, summed</th><td class="num">378.5 s</td><td class="num">369.1 s</td><td class="num">−2.49%</td></tr>
+            <tr><th scope="row">Coordinator commands</th><td class="num">29</td><td class="num">41</td><td class="num">+41.38%</td></tr>
+            <tr><th scope="row">Writer call time, summed</th><td class="num">1,759.3 s</td><td class="num">1,199.1 s</td><td class="num">−31.84%</td></tr>
+            <tr><th scope="row">Coordinator + writer</th><td class="num">2,137.8 s</td><td class="num">1,568.2 s</td><td class="num">−26.65%*</td></tr>
+            <tr><th scope="row">Initial tasks without confirmed material findings</th><td class="num">4/5</td><td class="num">3/5</td><td class="num">−1</td></tr>
+            <tr><th scope="row">Final scoped tasks ready</th><td class="num">5/5</td><td class="num">5/5</td><td class="num">equal</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="stamp">Coordination threshold: not met</p>
+      <p>* <strong>Not a productivity claim.</strong> One baseline correction hit its supervised 480.510-second deadline and was stopped, leaving an incomplete usage receipt. Identical tool allowlists gave the two arms different permission outcomes for generated in-writer test commands, so their check workloads differed. With one execution per related task pair, these confounds rule out crediting the skill with the apparent reduction.</p>
+      <ul>
+        <li>Final readiness required bounded repairs in both arms. A pre-existing integration race in the application stayed open; not every product risk was resolved.</li>
+        <li>The skill arm’s coordinator followed the profile’s single-review default; the parent imposed the paired review. Automatic or named-recipe routing was <strong>not</strong> established.</li>
+        <li>Moving personal policy out of project files did not break the workflow, and project-facing handoffs passed a limited scan for model and private-path details. That scan is not a privacy guarantee.</li>
+      </ul>
+
+      <h2 id="install"><span class="num">03 · After the pilots</span>Installation and discovery</h2>
+      <p>The unchanged package was then installed for personal use with an existing private profile. A fresh session’s skill catalog listed it, the profile passed structural validation and installed file hashes matched. That verifies discovery and structure at the time, not future routing, automatic selection for every task, or runtime effort.</p>
+
+      <h2 id="reading"><span class="num">04 · Reading</span>What the evidence supports, and what it doesn’t</h2>
+      <div class="boundary" role="group" aria-label="Supported and unsupported conclusions">
+        <section class="side shared" aria-labelledby="sup-title">
+          <h3 id="sup-title">Supported, narrowly</h3>
+          <ul>
+            <li>Separating personal settings from project files is workable in a Codex-led setup.</li>
+            <li>In these samples the skill did not reduce coordination effort.</li>
+          </ul>
+        </section>
+        <div class="divider" aria-hidden="true"><span>evidence line</span></div>
+        <section class="side private" aria-labelledby="unsup-title">
+          <h3 id="unsup-title">Not supported</h3>
+          <ul>
+            <li>General productivity, quality or cost gains</li>
+            <li>Other lead assistants; reliable automatic routing</li>
+            <li>Runtime effort attestation; filesystem isolation</li>
+            <li>Demand for the tool</li>
+          </ul>
+        </section>
+      </div>
+
+      <p class="next-links">
+        <a href="../story/">How this fed into the cleanup</a>
+        <a href="../guide/">Try it yourself</a>
+      </p>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="inner">
+      <p>Agents Collab · experimental and pre-release. Repository owner and license pending; no license is granted yet.</p>
+      <p>The site code adds no analytics or forms. Experiment summaries are sanitized; raw evidence is private.</p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Story — Agents Collab</title>
+  <meta name="description" content="How Agents Collab emerged: per-project model rules, drift, a team idea that already existed, a configurable profile, two trials and a painful cleanup.">
+  <link rel="stylesheet" href="../assets/site.css">
+  <script src="../assets/site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="inner">
+      <a class="wordmark" href="../">Agents Collab<span>Lab notebook · experimental</span></a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="../">Home</a></li>
+          <li><a href="../guide/">Guide</a></li>
+          <li><a href="../research/">Research</a></li>
+          <li><a href="../experiments/">Experiments</a></li>
+          <li><a href="../story/" aria-current="page">Story</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <article class="page">
+      <p class="kicker">Notebook · mid-October to November 2026</p>
+      <h1>From copied model rules to a profile</h1>
+      <p class="lede">Agents Collab didn’t start as a product idea. It started as a mess of repeated personal rules across projects, and the slow realisation that they had been put in the wrong place.</p>
+
+      <ol class="timeline">
+        <li>
+          <p class="when">13 Oct 2026</p>
+          <h3>Per-project model collaboration</h3>
+          <p>The earlier Model Collaboration skill used per-project setup and local agreements for task choices and review boundaries. A setup check on 13 October confirmed that both the Codex and Claude clients discovered and loaded it. That proved loading only, not real review work or effectiveness.</p>
+        </li>
+        <li class="turn">
+          <p class="when">15 Oct 2026</p>
+          <h3>Retired, then copied</h3>
+          <p>That setup was retired and standalone model policies were copied straight into project instruction files instead. It worked locally, but the same personal defaults now lived in many places. Edits in one project didn’t reach the others, the copies drifted, and it became hard to tell a genuine project rule from one person’s habit.</p>
+        </li>
+        <li>
+          <p class="when">7 Nov 2026</p>
+          <h3>Researching fixed teams</h3>
+          <p>The next idea was a fixed architect/builder/reviewer team as a skill. Research showed that such teams, fresh-context reviewers and capped loops already existed. What remained was narrower: keep personal configuration and execution records out of project knowledge. <a href="../research/">Research notes</a>.</p>
+        </li>
+        <li>
+          <p class="when">8 Nov 2026</p>
+          <h3>A profile, scoped roles, private records</h3>
+          <p>A personal profile outside projects; one writer per artifact; independent reviewers with neutral packets; a private records directory; only durable outcomes handed back. Honest labels throughout: requested is not attested, fresh is not isolated, advisory is not enforced. Implemented and structurally validated the same day.</p>
+        </li>
+        <li class="turn">
+          <p class="when">8 Nov 2026</p>
+          <h3>Two small trials, mixed results</h3>
+          <p>A documentation pilot, with the skill added alongside existing rules, and a code-task pilot, with the skill replacing cleaned rules. Five task pairs each. Neither met its coordination target. <a href="../experiments/">Experiment notes</a>.</p>
+        </li>
+        <li>
+          <p class="when">8 Nov 2026, after the trials</p>
+          <h3>Installation and the cleanup</h3>
+          <p>The skill was installed for personal use and duplicated model clauses were removed from personal global instructions. Then came the project-by-project cleanup.</p>
+        </li>
+      </ol>
+
+      <h2 id="cleanup"><span class="num">The painful part</span>What the cleanup taught</h2>
+      <p>Removing copied personal policy from existing projects was the most instructive step, because it was not mechanical.</p>
+      <ul class="limits" aria-label="Lessons from the cleanup">
+        <li><strong>Not bulk deletion.</strong> Matching policy text turned up in instruction files across several repositories, and each needed individual review.</li>
+        <li><strong>Project constraints survived.</strong> Publication, privacy, approval and genuine product constraints had to survive the migration. The current owner decision superseded earlier personal model choices; removing them did not authorize changing product behavior.</li>
+        <li><strong>History must survive.</strong> Earlier decisions and evidence that mention past model assignments are part of the record. Cleaning up must not rewrite it.</li>
+        <li><strong>Defaults had reached runtime.</strong> Some personal defaults had spread beyond prose into runtime checks, so removing them changed behavior, not just documentation.</li>
+        <li><strong>Adoption records are project facts.</strong> A project’s record of which documentation method it adopted, when, and where its entry point is must survive when personal settings are removed. Otherwise later sessions lose track of how the project is maintained.</li>
+      </ul>
+      <p>That is the clearest case for the boundary this project draws. If personal preferences never enter project files, there is nothing to migrate later.</p>
+
+      <h2 id="now"><span class="num">Now</span>Where it stands</h2>
+      <p>Experimental and pre-release. The public repository owner and license are not decided. The evidence supports the configuration boundary as a workable idea. It does not show general productivity gains or a new orchestration method, and it is not offered as one.</p>
+
+      <p class="next-links">
+        <a href="../guide/">Use the skill</a>
+        <a href="../">Back to the notebook</a>
+      </p>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="inner">
+      <p>Agents Collab · experimental and pre-release. Repository owner and license pending; no license is granted yet.</p>
+      <p>The site code adds no analytics or forms. Experiment summaries are sanitized; raw evidence is private.</p>
+    </div>
+  </footer>
+</body>
+</html>

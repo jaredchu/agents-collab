@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "name": "single-assistant-example",
+  "agents": {
+    "lead": {"model": "current", "transport": "host", "reasoning": "inherit"}
+  },
+  "routing": {"small_writer": "lead", "substantial_writer": "lead"},
+  "review": {
+    "on_consequential_work": "none",
+    "candidates": [],
+    "prefer_different_model": true,
+    "recipes": {},
+    "max_followup_rounds": 1
+  },
+  "effort_check": "supported-control",
+  "access": "existing-authorized-access",
+  "bounds": {"enforcement": "advisory", "writer_minutes": 30, "reviewer_minutes": 8, "review_output_words": 800},
+  "records_root": "~/.local/state/agents-collab"
+}
