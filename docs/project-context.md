@@ -3,8 +3,8 @@
 ## Purpose
 
 Agents Collab is a reusable, experimental agent skill for configured model
-collaboration and independent review, together with a public journal (planned
-for agents-collab.com) explaining Jared Chu's research, the earlier per-project
+collaboration and independent review, together with a public journal at
+https://agents-collab.com explaining Jared Chu's research, the earlier per-project
 model-collaboration approach, the experiments and why personal workflow settings
 were separated from project knowledge.
 
@@ -54,12 +54,13 @@ were separated from project knowledge.
 
 Pre-release. On 2026-11-08 the owner selected the MIT License and
 https://github.com/jaredchu/agents-collab as the public repository
-(license URL: https://github.com/jaredchu/agents-collab/blob/main/LICENSE);
-https://agents-collab.com is the intended public website. Publication to that
-destination and the custom-domain deployment are pending verification; no
-release has been made. Root and package `LICENSE` files exist, the website and
-documentation link the repository and its license, and the download archive
-now holds nine files.
+(license URL: https://github.com/jaredchu/agents-collab/blob/main/LICENSE).
+On the same date the repository was published publicly and GitHub recognized
+its MIT License. https://agents-collab.com serves the public website with an
+active custom-domain certificate. No versioned release has been made.
+
+Root and package `LICENSE` files exist, the website and documentation link the
+repository and its license, and the download archive holds nine files.
 
 `tests/` holds the portable suite (validator tests ported without the
 private-profile test, plus privacy, license, website and build checks). On
@@ -69,12 +70,20 @@ source. The deterministic download contains those eight files and the identical
 MIT notice; documented ZIP and checkout installation flows preserve existing
 installations and profiles.
 
+The complete Markdown setup was also exercised for ZIP and checkout installs
+with both solo and writer/reviewer templates, including expected placeholder
+rejection and structural validation with synthetic model IDs. These checks
+do not establish actual provider access.
+
 `scripts/build_website.py` builds `website/` into `dist/`, the static directory
 in the hosting configuration. The build and internal links pass. Bounded local
 Chrome checks cover all five routes at 1440px and 390px, page overflow,
 code-copy success and denial, keyboard skip/navigation and content without
 JavaScript. These checks are not a complete accessibility audit. Private
-evidence and diagnostics remain outside this project.
+evidence and diagnostics remain outside this project. Public checks on
+2026-11-08 repeated the five-route browser checks in fresh anonymous sessions;
+the downloadable ZIP, checksums and profile example matched the validated build.
+DNS and HTTPS were verified after configuration through Cloudflare.
 
 ## Progress
 
@@ -86,4 +95,5 @@ evidence and diagnostics remain outside this project.
 - [x] Owner selects repository owner and license (MIT; jaredchu/agents-collab).
 - [x] Add root and package LICENSE, nine-file download and repository/license links.
 - [x] Rerun tests, build, installation and browser checks after the license additions.
-- [ ] Publish the repository and deploy agents-collab.com; verify both.
+- [x] Resolve the Markdown ZIP profile-setup finding and complete focused source review.
+- [x] Publish the MIT repository and deploy agents-collab.com; verify public access and downloads.
