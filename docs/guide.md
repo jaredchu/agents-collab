@@ -23,8 +23,9 @@ Choose **one** package source, then run the shared copy block in the same shell.
 
 ### From the website ZIP
 
-Save `downloads/agents-collab-skill.zip` from the website. From the folder where
-you saved it, extract into a fresh system temporary directory:
+Save the ZIP from the project website,
+https://agents-collab.com/downloads/agents-collab-skill.zip. From the folder
+where you saved it, extract into a fresh system temporary directory:
 
 ```sh
 collab_unpack="$(mktemp -d)"
@@ -33,9 +34,8 @@ collab_source="$collab_unpack/agents-collab"
 ```
 
 The ZIP contains exactly the nine package files under `agents-collab/`: the
-eight workflow files plus `LICENSE`, the MIT notice. `SHA256SUMS` is available
-beside the download; compare the ZIP's SHA-256 hash with its corresponding
-entry.
+eight workflow files plus `LICENSE`, the MIT notice. Compare the ZIP's SHA-256
+hash with its entry in https://agents-collab.com/downloads/SHA256SUMS.
 
 ### From a repository checkout
 
@@ -77,27 +77,66 @@ outside every project:
 ~/.config/agents-collab/profile.json
 ```
 
-**Preserve an existing profile.** Copy a template only if no profile exists:
+Two templates exist:
+
+- **Solo** (`examples/profile.example.json`, inside the installed package): the
+  lead works alone, with no delegated agents and no default review. It is
+  included in both the ZIP and the checkout, so no extra download is needed, and
+  it passes validation as shipped.
+- **Writer plus review** (`writer-review.profile.example.json`): a delegated
+  writer plus one reviewer for consequential work. It is **not** in the package.
+  Its model fields are `<writer-model-id>` and `<reviewer-model-id>`. Those
+  angle-bracket placeholders deliberately **fail** validation until you replace
+  them with exact model identifiers that you actually have access to.
+
+### Choose one template
+
+Run **one** of these selection lines, in the shell where you will run the copy
+block below.
+
+Solo template, for either package source (any working directory; uses the
+installed copy from step 1, so adjust the path if you installed elsewhere):
+
+```sh
+collab_profile_example="$HOME/.agents/skills/agents-collab/examples/profile.example.json"
+```
+
+Writer-plus-review template, ZIP route: save
+https://agents-collab.com/downloads/writer-review.profile.example.json (its
+SHA-256 entry is in the same `SHA256SUMS` file), then run this from the folder
+where you saved it:
+
+```sh
+collab_profile_example="writer-review.profile.example.json"
+```
+
+Writer-plus-review template, checkout route: run this from the checkout root,
+where the file is
+[`docs/examples/writer-review.profile.example.json`](examples/writer-review.profile.example.json):
+
+```sh
+collab_profile_example="docs/examples/writer-review.profile.example.json"
+```
+
+### Copy the template only if no profile exists
+
+**Preserve an existing profile.** Continue in the **same shell and working
+directory** so `collab_profile_example` remains set and resolves:
 
 ```sh
 mkdir -p ~/.config/agents-collab
-if [ -e ~/.config/agents-collab/profile.json ] || [ -L ~/.config/agents-collab/profile.json ]; then
+if [ ! -f "$collab_profile_example" ]; then
+  echo "Choose a profile template first; nothing was copied" >&2
+elif [ -e ~/.config/agents-collab/profile.json ] || [ -L ~/.config/agents-collab/profile.json ]; then
   echo "profile exists; leaving it unchanged" >&2
 else
-  cp docs/examples/writer-review.profile.example.json ~/.config/agents-collab/profile.json
+  cp "$collab_profile_example" ~/.config/agents-collab/profile.json
   chmod 600 ~/.config/agents-collab/profile.json
 fi
 ```
 
-Then edit it. Two templates exist:
-
-- `skills/agents-collab/examples/profile.example.json`: the lead works alone, no
-  delegated agents and no default review. Valid as shipped.
-- [`docs/examples/writer-review.profile.example.json`](examples/writer-review.profile.example.json):
-  a delegated writer plus one reviewer for consequential work. Its model fields
-  are `<writer-model-id>` and `<reviewer-model-id>`. Those angle-bracket
-  placeholders deliberately **fail** validation until you replace them with exact
-  model identifiers that you actually have access to.
+Then edit `~/.config/agents-collab/profile.json`. With the writer-plus-review
+template, replace both placeholders before validating. Its full contents are:
 
 ```json
 {
@@ -144,9 +183,16 @@ The full contract is in
 
 ## 3. Validate the structure
 
+The validator ships in the installed package, so the same command works for the
+ZIP and checkout routes from any working directory:
+
 ```sh
 python3 ~/.agents/skills/agents-collab/scripts/validate_profile.py ~/.config/agents-collab/profile.json
 ```
+
+An unedited solo template exits 0. An unedited writer-plus-review template exits
+1 and names the two placeholder model fields; it exits 0 once you replace them
+with exact model identifiers and the rest of the structure is valid.
 
 | Exit | Meaning |
 | --- | --- |
