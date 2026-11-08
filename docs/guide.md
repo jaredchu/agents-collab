@@ -8,7 +8,8 @@ the only lead the pilot targeted.
 
 ### One command for Codex
 
-With Node.js 22.20+ (including `npx`) and Git installed, run:
+Installation needs Node.js 22.20+ (including `npx`) and Git. Completing profile
+validation also requires Python 3.9+. Install with:
 
 ```sh
 npx skills add jaredchu/agents-collab --skill agents-collab --global --agent codex
@@ -204,6 +205,8 @@ The full contract is in
 [`references/configuration.md`](../skills/agents-collab/references/configuration.md).
 
 ## 3. Validate the structure
+
+Profile validation requires Python 3.9+, with either installation method.
 
 The validator ships in the installed package, so the same command works for the
 ZIP and checkout routes from any working directory:

@@ -51,7 +51,7 @@
       </nav>
 
       <h2 id="install"><span class="num">Step 1</span>Install the package folder</h2>
-      <p>With Node.js 22.20+ (including <code>npx</code>) and Git, install for Codex in one command:</p>
+      <p>Installation needs Node.js 22.20+ (including <code>npx</code>) and Git. Profile validation also requires Python 3.9+. Install for Codex in one command:</p>
       <div class="code-block">
         <p class="code-label">shell · install for Codex</p>
         <pre><code id="install-command">npx skills add jaredchu/agents-collab --skill agents-collab --global --agent codex</code></pre>
@@ -148,6 +148,7 @@ fi</code></pre>
       </div>
 
       <h2 id="validate"><span class="num">Step 3</span>Validate the structure</h2>
+      <p>Profile validation requires Python 3.9+, with either installation method.</p>
       <div class="code-block">
         <p class="code-label">shell · structural check</p>
         <pre><code>python3 ~/.agents/skills/agents-collab/scripts/validate_profile.py ~/.config/agents-collab/profile.json</code></pre>

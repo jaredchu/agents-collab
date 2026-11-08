@@ -86,8 +86,8 @@ the downloadable ZIP, checksums and profile example matched the validated build.
 DNS and HTTPS were verified after configuration through Cloudflare.
 
 The README and website offer a user-level Codex installation command through
-Vercel’s Skills CLI, with Node.js 22.20+ and Git as prerequisites. Profile setup
-remains separate; the CLI can replace existing skill files on a repeat run, while
+Vercel’s Skills CLI, with Node.js 22.20+ and Git needed for installation and
+Python 3.9+ for profile validation. Profile setup remains separate; the CLI can replace existing skill files on a repeat run, while
 the guarded manual route preserves them. On 2026-11-08 Skills CLI 1.7.6 installed
 all nine matching package files in a temporary home-directory API fixture and
 preserved a separate existing profile. This test did not change the real HOME

@@ -9,7 +9,6 @@ plus the lab notebook of how it came about.
 > [Website and experiment journal](https://agents-collab.com).
 > No versioned release has been made.
 
-
 ## Quick start
 
 Install for Codex with [Vercel’s Skills CLI](https://github.com/vercel-labs/skills):
@@ -18,8 +17,9 @@ Install for Codex with [Vercel’s Skills CLI](https://github.com/vercel-labs/sk
 npx skills add jaredchu/agents-collab --skill agents-collab --global --agent codex
 ```
 
-Requires Node.js 22.20+ (with `npx`) and Git. Running the command again can
-replace existing skill files; use the manual route to preserve them.
+Installation requires Node.js 22.20+ (with `npx`) and Git; profile validation
+also needs Python 3.9+. Running the command again can replace existing skill
+files; use the manual route to preserve them.
 `--global` installs to your user skills directory (`~/.agents/skills`), outside
 project repositories. It does not create or overwrite your collaboration profile.
 
