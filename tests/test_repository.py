@@ -33,7 +33,8 @@ PAGES = ("index.html", "guide/index.html", "research/index.html",
          "experiments/index.html", "story/index.html")
 REPO_URL = "https://github.com/jaredchu/agents-collab"
 LICENSE_URL = REPO_URL + "/blob/main/LICENSE"
-WORKFLOW_FILES = 8  # the validated workflow files; LICENSE is the ninth package file
+# Curated package size: workflow files, the validator and setup scripts, LICENSE.
+PACKAGE_FILE_COUNT = 10
 TEXT_SUFFIXES = {".md", ".json", ".yaml", ".yml", ".py", ".html", ".css", ".js", ".txt"}
 
 _previous_flag = sys.dont_write_bytecode
@@ -170,9 +171,11 @@ class License(unittest.TestCase):
     def test_package_license_is_identical(self):
         self.assertEqual(PACKAGE_LICENSE.read_bytes(), LICENSE_FILE.read_bytes())
 
-    def test_package_is_eight_workflow_files_plus_license(self):
-        self.assertIn("LICENSE", build.PACKAGE_FILES)
-        self.assertEqual(len(build.PACKAGE_FILES), WORKFLOW_FILES + 1)
+    def test_package_includes_license_and_helper_scripts(self):
+        for name in ("LICENSE", "scripts/validate_profile.py", "scripts/setup_profile.py"):
+            with self.subTest(file=name):
+                self.assertIn(name, build.PACKAGE_FILES)
+        self.assertEqual(len(build.PACKAGE_FILES), PACKAGE_FILE_COUNT)
         self.assertEqual(len(set(build.PACKAGE_FILES)), len(build.PACKAGE_FILES))
 
     def test_documents_state_the_license_and_link_it(self):
@@ -221,6 +224,13 @@ class Documentation(unittest.TestCase):
         data["agents"]["writer"]["model"] = "vendor-a-model-1"
         data["agents"]["reviewer"]["model"] = "vendor-b-model-2"
         self.assertEqual(vp.validate_profile(data), [])
+
+    def test_setup_wizard_command_is_documented(self):
+        command = "python3 ~/.agents/skills/agents-collab/scripts/setup_profile.py"
+        for path in (REPO / "README.md", REPO / "docs" / "guide.md",
+                     WEBSITE / "index.html", WEBSITE / "guide" / "index.html"):
+            with self.subTest(file=path.relative_to(REPO).as_posix()):
+                self.assertIn(command, path.read_text(encoding="utf-8"))
 
     def test_website_guide_embeds_the_same_example(self):
         page = (WEBSITE / "guide" / "index.html").read_text(encoding="utf-8")

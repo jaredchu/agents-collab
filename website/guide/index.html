@@ -51,7 +51,7 @@
       </nav>
 
       <h2 id="install"><span class="num">Step 1</span>Install the package folder</h2>
-      <p>Installation needs Node.js 22.20+ (including <code>npx</code>) and Git. Profile validation also requires Python 3.9+. Install for Codex in one command:</p>
+      <p>Installation needs Node.js 22.20+ (including <code>npx</code>) and Git. The profile setup wizard and validator also require Python 3.9+. Install for Codex in one command:</p>
       <div class="code-block">
         <p class="code-label">shell · install for Codex</p>
         <pre><code id="install-command">npx skills add jaredchu/agents-collab --skill agents-collab --global --agent codex</code></pre>
@@ -60,7 +60,7 @@
       <p>Continue with <a href="#profile">profile setup</a>; skip the manual copy blocks below. Installing the skill does not configure model access or enable automatic routing. Other lead assistants remain unvalidated.</p>
       <h3 id="manual">Manual installation without Node.js</h3>
       <p>These ZIP and checkout routes need Python 3.9+.</p>
-      <p>Install only the skill package: nine files, the eight workflow files plus its MIT <code>LICENSE</code>. Keep <code>LICENSE</code> with the folder when you copy or share it. A repository checkout keeps it in <code>skills/agents-collab/</code>; the website ZIP extracts to <code>agents-collab/</code>. The website, tests and notes are not part of the skill.</p>
+      <p>Install only the skill package: the workflow files, the profile validator and setup wizard scripts, and its MIT <code>LICENSE</code>. Keep <code>LICENSE</code> with the folder when you copy or share it. A repository checkout keeps it in <code>skills/agents-collab/</code>; the website ZIP extracts to <code>agents-collab/</code>. The website, tests and notes are not part of the skill.</p>
       <p>Codex’s documented user skills location is described in OpenAI’s <a href="https://learn.chatgpt.com/docs/build-skills#how-chatgpt-and-codex-use-skills">Build skills documentation</a>. Check it for your version. Choose <strong>one</strong> source below, then run the shared install block in the same shell.</p>
       <h3 id="download">From the website ZIP</h3>
       <p>Save <a href="../downloads/agents-collab-skill.zip">agents-collab-skill.zip</a>, then run this from the folder containing it. It extracts into a fresh system temporary directory. The archive is reproducible; compare its SHA-256 hash with the ZIP entry in <a href="../downloads/SHA256SUMS">SHA256SUMS</a>. The ZIP includes the MIT <code>LICENSE</code> notice.</p>
@@ -95,7 +95,23 @@ fi</code></pre>
 
       <h2 id="profile"><span class="num">Step 2</span>Create or keep a profile</h2>
       <p>The profile holds personal choices: models, transports, reasoning requests, routing, review recipes, time targets and a private records root. It lives outside every project at <code>~/.config/agents-collab/profile.json</code>.</p>
-      <p>For the writer/reviewer example, first save <a href="../downloads/writer-review.profile.example.json">writer-review.profile.example.json</a>. This separate download works after either CLI or manual installation.</p>
+      <h3 id="wizard">Interactive setup (recommended)</h3>
+      <p>After installing or updating the skill, with Python 3.9+, run the wizard. Adjust the path if you installed the skill elsewhere:</p>
+      <div class="code-block">
+        <p class="code-label">shell · create your profile</p>
+        <pre><code id="setup-command">python3 ~/.agents/skills/agents-collab/scripts/setup_profile.py</code></pre>
+      </div>
+      <ul>
+        <li>The lead stays your current session (<code>host</code>, <code>current</code>, <code>inherit</code>); the wizard cannot switch its model or reasoning.</li>
+        <li>Choose the current lead or a delegated writer for substantial work; a delegate needs an exact model ID and a transport, <code>codex-native</code> or <code>claude-cli</code>.</li>
+        <li>Add zero or more independent reviewers with the same details.</li>
+        <li>Pick <code>inherit</code>, a common named level or a custom lowercase level per delegate. Levels are <strong>requests</strong>; the wizard cannot check that a model or interface supports them.</li>
+        <li>With reviewers, consequential work can request one reviewer from the pool by default. With several, a named recipe lists them all; it runs only when you name it.</li>
+        <li>Choose a profile label and a private records root (default <code>~/.local/state/agents-collab</code>).</li>
+      </ul>
+      <p>It uses advisory example time targets, <code>supported-control</code> and <code>existing-authorized-access</code>; edit the file to change them. It validates the result, previews it with the target path and writes only after you confirm, with mode 0600. It asks for no credentials and calls no model or service. <code>--dry-run</code> previews without writing, <code>--output PATH</code> writes elsewhere and <code>--replace</code> allows replacing an existing profile after confirmation. Without it an existing profile is kept; a symlink or nonregular target is never followed or replaced. A generated profile is structurally valid, not proof of model access, supported effort, permissions or records isolation.</p>
+      <h3 id="templates">Manual templates</h3>
+      <p>To write the profile by hand instead, for the writer/reviewer example first save <a href="../downloads/writer-review.profile.example.json">writer-review.profile.example.json</a>. This separate download works after either CLI or manual installation.</p>
       <p><strong>Keep an existing profile.</strong> Copy a template only if none exists. Run this from the folder where you saved the example file (in a repository checkout it is <code>docs/examples/</code>):</p>
       <div class="code-block">
         <p class="code-label">shell · create the profile only if absent</p>
@@ -164,7 +180,7 @@ fi</code></pre>
           </tbody>
         </table>
       </div>
-      <p>A pass is <strong>structural only</strong>. The validator never checks that a model exists, that you can access it, that a reasoning level is supported, permissions, or where records resolve. Diagnostics name fields without echoing values.</p>
+      <p>The setup wizard runs these checks before saving; rerun the validator after any hand edit. A pass is <strong>structural only</strong>. The validator never checks that a model exists, that you can access it, that a reasoning level is supported, permissions, or where records resolve. Diagnostics name fields without echoing values.</p>
 
       <h2 id="invoke"><span class="num">Step 4</span>Invoke it</h2>
       <p>Explicit invocation is the reliable path:</p>

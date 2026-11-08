@@ -10,18 +10,23 @@ were separated from project knowledge.
 
 ## Boundaries
 
-- The distributable skill is the nine files in `skills/agents-collab/`: the
-  eight workflow files plus `LICENSE`. Users install that folder, not this
-  repository. In this release preparation the eight workflow files stay
-  byte-for-byte unchanged from the validated source; `LICENSE` is
-  byte-identical to the root `LICENSE`.
+- The distributable skill is the curated file list in
+  `scripts/build_website.py` (all files in `skills/agents-collab/`): workflow
+  files, the profile validator and setup wizard scripts, and `LICENSE`. Users
+  install that folder, not this repository. `LICENSE` is byte-identical to the
+  root `LICENSE`. Through the 2026-11-08 license and publication preparation the
+  eight original workflow files stayed byte-for-byte unchanged from the
+  validated source; adding the setup wizard later changed `SKILL.md` and
+  `references/configuration.md`, so that byte-identity no longer holds for them.
 - The project is licensed under the MIT License, copyright 2026 Jared Chu
   ([LICENSE](../LICENSE)). The license does not change the experimental status
   or evidence limits.
 - Personal profiles, credentials, raw traces, private or client project
   information and machine-specific paths stay outside this repository and site.
-- The package is a prompt-led workflow with a structural profile validator. It
-  has no dispatcher, snapshot freezing, deadline implementation or enforcement.
+- The package is a prompt-led workflow with two configuration helpers: a
+  structural profile validator and an interactive setup wizard that writes a
+  profile only after confirmation. Neither calls a model. It has no dispatcher,
+  snapshot freezing, deadline implementation or enforcement.
 - The pilot targeted a Codex lead. Other leads and adapters are unvalidated.
 
 ## Evidence and limits
@@ -59,16 +64,35 @@ On the same date the repository was published publicly and GitHub recognized
 its MIT License. https://agents-collab.com serves the public website with an
 active custom-domain certificate. No versioned release has been made.
 
-Root and package `LICENSE` files exist, the website and documentation link the
-repository and its license, and the download archive holds nine files.
+Root and package `LICENSE` files exist, and the website and documentation link
+the repository and its license. At publication the download archive held nine
+files.
 
 `tests/` holds the portable suite (validator tests ported without the
-private-profile test, plus privacy, license, website and build checks). On
-2026-11-08 all 70 tests passed, including checks against a separate unpublished
-private-identifier list. The eight workflow-file hashes match the validated
-source. The deterministic download contains those eight files and the identical
-MIT notice; documented ZIP and checkout installation flows preserve existing
-installations and profiles.
+private-profile test, plus setup-wizard, privacy, license, website and build
+checks). On 2026-11-08, before the setup wizard, all 70 tests passed, including
+checks against a separate unpublished private-identifier list. At that point the
+eight workflow-file hashes matched the validated source, and the deterministic
+download contained those eight files and the identical MIT notice; documented
+ZIP and checkout installation flows preserve existing installations and profiles.
+
+The package now also ships `scripts/setup_profile.py`, an offline,
+standard-library profile wizard run explicitly after installation. It keeps the
+lead as `host`/`current`/`inherit`, asks for a writer, zero or more reviewers
+and per-agent reasoning requests, uses neutral access and advisory bounds,
+reuses the unchanged validator, previews, and writes only after confirmation
+(mode 0600, atomic, preserving existing profiles and rejecting symlink or
+nonregular targets). A generated profile does not establish model availability,
+supported effort, access or records-path isolation. The download archive now
+holds ten files. On 2026-11-08 all 86 tests passed after the addition, with
+profile writes tested only at temporary output paths. Skill metadata validation,
+the website build, both manual install paths and installation of all ten files
+through Skills CLI 1.7.6 passed. The installed wizard produced a valid profile
+with mode 0600; a terminal run exercised a writer and two reviewers, and Ctrl-C
+at a prompt left no target file. No real user profile or HOME environment was
+changed. These checks establish configuration behavior, not model availability
+or runtime reasoning support. Local browser checks at 1440px and 390px passed, including the wizard command
+copy buttons and content without JavaScript. Independent review remains pending.
 
 The complete Markdown setup was also exercised for ZIP and checkout installs
 with both solo and writer/reviewer templates, including expected placeholder
@@ -87,7 +111,7 @@ DNS and HTTPS were verified after configuration through Cloudflare.
 
 The README and website offer a user-level Codex installation command through
 Vercel’s Skills CLI, with Node.js 22.20+ and Git needed for installation and
-Python 3.9+ for profile validation. Profile setup remains separate; the CLI can replace existing skill files on a repeat run, while
+Python 3.9+ for profile setup and validation. Profile setup remains separate; the CLI can replace existing skill files on a repeat run, while
 the guarded manual route preserves them. On 2026-11-08 Skills CLI 1.7.6 installed
 all nine matching package files in a temporary home-directory API fixture and
 preserved a separate existing profile. This test did not change the real HOME
@@ -109,3 +133,7 @@ source mark is retained with the static website assets.
 - [x] Rerun tests, build, installation and browser checks after the license additions.
 - [x] Resolve the Markdown ZIP profile-setup finding and complete focused source review.
 - [x] Publish the MIT repository and deploy agents-collab.com; verify public access and downloads.
+- [x] Draft the interactive profile setup wizard, its tests, package and documentation updates.
+- [x] Run the suite, build, metadata, installation and interactive checks for the setup wizard.
+- [x] Check browser layout, copy buttons and content without JavaScript.
+- [ ] Complete independent review and publish the setup wizard.

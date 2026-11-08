@@ -2,8 +2,32 @@
 
 This is the version 1 contract. The executing agent interprets it; neither
 Codex nor Claude automatically applies these JSON fields as native settings.
-The package includes a structural validator (`scripts/validate_profile.py`) and
-inert templates. It does not include a runner, an installer or a dispatcher.
+The package includes a structural validator (`scripts/validate_profile.py`), an
+interactive setup wizard (`scripts/setup_profile.py`) and inert templates. It
+does not include a runner, an installer or a dispatcher.
+
+## Interactive setup
+
+On explicit user request, never silently during other work:
+
+```sh
+python3 path/to/agents-collab/scripts/setup_profile.py [--output PATH] [--dry-run] [--replace]
+```
+
+The wizard keeps the lead as `host`/`current`/`inherit` and asks for a writer
+(current lead or a delegated model ID with `codex-native` or `claude-cli`), zero
+or more reviewers, each agent's reasoning request (`inherit`, a common level or
+a custom lowercase level), a profile label and `records_root`. It uses
+`supported-control`, `existing-authorized-access`, advisory example bounds and
+one follow-up round; edit the file to change them. With reviewers, default
+consequential review is `single`; with several, it adds a named recipe listing
+all of them, which applies only when requested. It validates with the bundled
+validator, previews, and writes only after confirmation (default
+`~/.config/agents-collab/profile.json`, mode 0600, atomic, no backups). It
+keeps an existing profile unless `--replace` is given and confirmed, and never
+follows or replaces a symlink or nonregular target. It requests no credentials
+and calls no model. A generated profile establishes structure only, not model
+availability, supported effort, access or records-path isolation.
 
 ## Location and loading
 

@@ -14,8 +14,8 @@ guidelines describe how changes and evidence are handled.
   logs or transcripts, or details of private or client projects.
 - **One writer per change.** Review findings go to the author; reviewers do not
   silently rewrite the change.
-- **No new runtime dependencies.** The validator, tests and build script use the
-  Python 3.9+ standard library only.
+- **No new runtime dependencies.** The validator, setup wizard, tests and build
+  script use the Python 3.9+ standard library only.
 
 ## Checks before proposing a change
 
@@ -33,7 +33,7 @@ never the term.
 Tests write temporary files only to the system temporary area.
 
 Package changes also need the [configuration contract](skills/agents-collab/references/configuration.md),
-validator, examples and guide to stay consistent, and `skills/agents-collab/LICENSE`
+validator, setup wizard, examples and guide to stay consistent, and `skills/agents-collab/LICENSE`
 must stay byte-identical to the root `LICENSE`. Website changes need a check
 without JavaScript, at narrow and wide widths, and with keyboard navigation.
 

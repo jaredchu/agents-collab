@@ -8,8 +8,8 @@ the only lead the pilot targeted.
 
 ### One command for Codex
 
-Installation needs Node.js 22.20+ (including `npx`) and Git. Completing profile
-validation also requires Python 3.9+. Install with:
+Installation needs Node.js 22.20+ (including `npx`) and Git. The profile setup
+wizard and validator also require Python 3.9+. Install with:
 
 ```sh
 npx skills add jaredchu/agents-collab --skill agents-collab --global --agent codex
@@ -56,9 +56,10 @@ python3 -m zipfile -e agents-collab-skill.zip "$collab_unpack"
 collab_source="$collab_unpack/agents-collab"
 ```
 
-The ZIP contains exactly the nine package files under `agents-collab/`: the
-eight workflow files plus `LICENSE`, the MIT notice. Compare the ZIP's SHA-256
-hash with its entry in https://agents-collab.com/downloads/SHA256SUMS.
+The ZIP contains exactly the curated package files under `agents-collab/`: the
+workflow files, the profile validator and setup wizard scripts, and `LICENSE`,
+the MIT notice. Compare the ZIP's SHA-256 hash with its entry in
+https://agents-collab.com/downloads/SHA256SUMS.
 
 ### From a repository checkout
 
@@ -100,7 +101,48 @@ outside every project:
 ~/.config/agents-collab/profile.json
 ```
 
-Two templates exist:
+### Interactive setup (recommended)
+
+After installing or updating the skill, with Python 3.9+, run:
+
+```sh
+python3 ~/.agents/skills/agents-collab/scripts/setup_profile.py
+```
+
+Adjust the path if you installed the skill elsewhere. The wizard:
+
+- keeps the lead as your current session (`host`, `current`, `inherit`); it
+  cannot switch the lead's model or reasoning;
+- asks whether the current lead or a delegated writer handles substantial work,
+  and for a delegate its exact model ID and transport (`codex-native` or
+  `claude-cli`);
+- asks how many independent reviewers to configure (zero or more), with the same
+  details for each;
+- offers `inherit`, common named levels or a custom lowercase level for each
+  delegate's reasoning. These are **requests**: the wizard cannot check that a
+  model or interface supports them;
+- with reviewers, asks whether consequential work requests one reviewer from the
+  pool by default; with several, it also adds a named recipe listing all of them.
+  A recipe runs only when you name it (or a policy calls for it);
+- asks for a profile label and a private records root (default
+  `~/.local/state/agents-collab`).
+
+It uses advisory example time targets, `supported-control` and
+`existing-authorized-access`; edit the file afterwards to change those. It
+validates the result with the bundled validator, shows a preview and the target
+path, and writes only after you confirm, with mode 0600. It asks for no
+credentials and calls no model or service.
+
+Options: `--dry-run` previews without writing; `--output PATH` writes another
+file; `--replace` allows replacing an existing profile after confirmation.
+Without `--replace` an existing profile is left unchanged, and a symlink or
+nonregular file at the target is never followed or replaced. A generated profile
+is structurally valid, but it does not prove model access, supported effort,
+permissions or that records resolve outside your projects.
+
+### Manual templates
+
+To write the profile by hand instead, start from a template. Two exist:
 
 - **Solo** (`examples/profile.example.json`, inside the installed package): the
   lead works alone, with no delegated agents and no default review. It is
@@ -217,7 +259,9 @@ python3 ~/.agents/skills/agents-collab/scripts/validate_profile.py ~/.config/age
 
 An unedited solo template exits 0. An unedited writer-plus-review template exits
 1 and names the two placeholder model fields; it exits 0 once you replace them
-with exact model identifiers and the rest of the structure is valid.
+with exact model identifiers and the rest of the structure is valid. The setup
+wizard already runs these checks before saving; rerun the validator after any
+hand edit.
 
 | Exit | Meaning |
 | --- | --- |

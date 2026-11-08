@@ -49,7 +49,13 @@
         <p class="code-label">shell · install for Codex</p>
         <pre><code id="install-command">npx skills add jaredchu/agents-collab --skill agents-collab --global --agent codex</code></pre>
       </div>
-      <p>Installation needs Node.js 22.20+ and Git; profile validation also needs Python 3.9+. Running it again can replace existing skill files; the manual route preserves them. The skill installs in your user directory; your personal profile stays separate. Next, <a href="guide/#profile">configure your models</a> and invoke <code>$agents-collab</code>. <a href="guide/#manual">Manual installation without Node.js</a> is also available.</p>
+      <p>Installation needs Node.js 22.20+ and Git; profile setup and validation also need Python 3.9+. Running it again can replace existing skill files; the manual route preserves them. The skill installs in your user directory; your personal profile stays separate. <a href="guide/#manual">Manual installation without Node.js</a> is also available.</p>
+      <p>Then create your profile interactively. The wizard asks for your writer, reviewers and reasoning requests, previews the result and writes only after you confirm. It keeps an existing profile, asks for no credentials and calls no model:</p>
+      <div class="code-block">
+        <p class="code-label">shell · create your profile</p>
+        <pre><code id="setup-command">python3 ~/.agents/skills/agents-collab/scripts/setup_profile.py</code></pre>
+      </div>
+      <p>It cannot check that a model or reasoning level is available to you. Prefer editing JSON? <a href="guide/#profile">Copy a template by hand</a>. Then invoke <code>$agents-collab</code>.</p>
 
       <h2 id="boundary"><span class="num">The idea in one picture</span>Two kinds of knowledge</h2>
       <p>A project needs to know what was decided and why. It does not need to know which model one person prefers to write with, at which reasoning level, or where that person keeps review receipts.</p>
@@ -86,7 +92,7 @@
 
     <article class="page">
       <h2 id="what"><span class="num">What it is</span>A procedure, not a runtime</h2>
-      <p>The package is nine files: eight workflow files (instructions, a configuration contract, a review protocol, two inert templates, an example profile, interface metadata and one dependency-free validator) plus the MIT <code>LICENSE</code>. A lead assistant session follows the instructions with its own tools.</p>
+      <p>The package is a small folder: instructions, a configuration contract, a review protocol, two inert templates, an example profile, interface metadata, two dependency-free configuration helpers (a profile validator and a setup wizard) and the MIT <code>LICENSE</code>. A lead assistant session follows the instructions with its own tools; neither helper calls a model.</p>
       <ul class="limits" aria-label="Limits">
         <li><strong>Prompt-led.</strong> No automatic dispatcher, snapshot freezing, hard-deadline implementation or enforcement layer.</li>
         <li><strong>Codex-led pilot.</strong> Other lead assistants and adapters are not validated.</li>
@@ -105,7 +111,7 @@
         <li><span class="meta">Mid-October → November 2026</span><a href="story/">Story: from copied model rules to a profile</a><p>The earlier per-project setup, the drift it caused, and the cleanup afterwards.</p></li>
         <li><span class="meta">7 November 2026</span><a href="research/">Research: the team that already existed</a><p>Why a fixed architect/builder/reviewer team was dropped for a narrower problem.</p></li>
         <li><span class="meta">8 November 2026</span><a href="experiments/">Experiments: two small, honest trials</a><p>Validation, a documentation pilot and a code-task pilot, with every caveat kept.</p></li>
-        <li><span class="meta">Reference</span><a href="guide/">Guide: install, configure, invoke</a><p>Copy commands that do not overwrite anything, a profile template and the validator.</p></li>
+        <li><span class="meta">Reference</span><a href="guide/">Guide: install, configure, invoke</a><p>Copy commands that do not overwrite anything, the profile setup wizard, a template and the validator.</p></li>
       </ul>
     </article>
   </main>

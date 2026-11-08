@@ -413,7 +413,7 @@ class CommandLine(unittest.TestCase):
         return subprocess.run(
             [sys.executable, "-I", "-B", str(SCRIPT), *args],
             cwd=str(self.tmp), capture_output=True, text=True, timeout=timeout,
-            env={"PATH": os.environ.get("PATH", ""), "HOME": str(self.tmp)},
+            env=dict(os.environ, TMPDIR=str(self.tmp)),
         )
 
     def write(self, name, text):

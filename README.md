@@ -17,14 +17,25 @@ Install for Codex with [Vercel’s Skills CLI](https://github.com/vercel-labs/sk
 npx skills add jaredchu/agents-collab --skill agents-collab --global --agent codex
 ```
 
-Installation requires Node.js 22.20+ (with `npx`) and Git; profile validation
-also needs Python 3.9+. Running the command again can replace existing skill
+Installation requires Node.js 22.20+ (with `npx`) and Git; profile setup and
+validation also need Python 3.9+. Running the command again can replace existing skill
 files; use the manual route to preserve them.
 `--global` installs to your user skills directory (`~/.agents/skills`), outside
 project repositories. It does not create or overwrite your collaboration profile.
 
-Then [create or keep your profile](docs/guide.md#2-create-or-keep-a-profile),
-choose your models and validate its structure. Invoke it with:
+After installing or updating the skill, create your profile with the wizard, which asks for your writer,
+reviewers and reasoning requests, previews the result and writes only after you
+confirm:
+
+```sh
+python3 ~/.agents/skills/agents-collab/scripts/setup_profile.py
+```
+
+It keeps an existing profile unless you pass `--replace`; `--dry-run` previews
+without writing. It asks for no credentials, calls no model and cannot check
+that a model or reasoning level is available to you. You can also
+[copy a template and edit it by hand](docs/guide.md#2-create-or-keep-a-profile)
+and validate its structure. Invoke it with:
 `Use $agents-collab to implement this change with independent review.`
 Installation alone does not configure model access or enable automatic routing.
 
@@ -35,8 +46,9 @@ agent does not establish support for that lead.
 ## What it is
 
 `skills/agents-collab/` is an agent skill: Markdown instructions, a reference
-contract, inert templates, one dependency-free validator script and a copy of
-the MIT `LICENSE`. It helps a
+contract, inert templates, two dependency-free configuration helpers (a profile
+validator and an interactive setup wizard) and a copy of the MIT `LICENSE`. It
+helps a
 lead assistant session:
 
 - choose a writer and independent reviewers from a **personal profile** kept
@@ -53,8 +65,10 @@ lead assistant session:
 Read these before relying on it:
 
 - **Prompt-led, not a runtime.** The lead follows written instructions. The only
-  code is a structural profile validator. There is no automatic dispatcher, no
-  snapshot freezing, no hard-deadline implementation and no enforcement layer.
+  code is two configuration helpers: a structural profile validator and a setup
+  wizard that writes a profile file. Neither calls a model. There is no automatic
+  dispatcher, no snapshot freezing, no hard-deadline implementation and no
+  enforcement layer.
 - **Codex-led pilot only.** The design targets a Codex lead with native subagents
   and optional Claude CLI dispatch. Other lead assistants and adapters are not
   validated; loading the Markdown elsewhere does not establish support.
@@ -65,7 +79,8 @@ Read these before relying on it:
   packet is not filesystem isolation.
 - **The validator checks structure only.** It does not check that a model exists,
   that you can access it, that a reasoning level is supported, permissions, or
-  where records actually resolve.
+  where records actually resolve. A profile made by the setup wizard carries the
+  same limits.
 - **Small evidence.** Two five-task pilots by one owner gave mixed results and did
   not meet their coordination-benefit thresholds. See
   [experiments](docs/experiments.md). No general productivity, quality or cost
@@ -76,7 +91,7 @@ Read these before relying on it:
 
 | Path | Purpose |
 | --- | --- |
-| [`skills/agents-collab/`](skills/agents-collab/SKILL.md) | The distributable skill package (nine files: eight workflow files plus `LICENSE`) |
+| [`skills/agents-collab/`](skills/agents-collab/SKILL.md) | The distributable skill package (workflow files, two helper scripts and `LICENSE`) |
 | [`LICENSE`](LICENSE) | MIT License for the repository |
 | [`docs/guide.md`](docs/guide.md) | Installation, profile setup, invocation and limits |
 | [`docs/examples/`](docs/examples/writer-review.profile.example.json) | Illustrative profile with deliberate placeholders |
@@ -104,7 +119,7 @@ by whoever runs them; this README does not pre-claim a pass count.
 
 `website/` is buildless HTML, CSS and a small optional script. Pages are readable
 without JavaScript. The build copies it to `dist/`, adds a reproducible zip of the
-nine package files (including `LICENSE`) with SHA-256 sums, and checks internal
+curated package files (including `LICENSE`) with SHA-256 sums, and checks internal
 links.
 
 ## License
@@ -112,8 +127,9 @@ links.
 Agents Collab is licensed under the [MIT License](LICENSE), copyright 2026
 Jared Chu. The skill package carries an identical copy,
 [`skills/agents-collab/LICENSE`](skills/agents-collab/LICENSE), so the notice
-travels with every installation and with the website download. That copy is the
-only package addition; the eight workflow files are unchanged. The license
+travels with every installation and with the website download. When the license
+was added, that copy was the only package addition and the eight original
+workflow files were unchanged; the setup wizard was added later. The license
 covers the code and text; it does not change the experimental status or the
 evidence limits above. The license is also available at
 https://github.com/jaredchu/agents-collab/blob/main/LICENSE.

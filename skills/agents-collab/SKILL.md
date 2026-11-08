@@ -15,7 +15,8 @@ CLI dispatch. End-to-end runtime behavior is not yet validated for any host.
 Do not claim other lead assistants are supported until their adapters are tested.
 
 Version 1 contents: these instructions, the references, a structural profile
-validator (`scripts/validate_profile.py`), inert templates
+validator (`scripts/validate_profile.py`), an interactive profile setup wizard
+(`scripts/setup_profile.py`, configuration only), inert templates
 (`assets/task-state.json`, `assets/review-packet.md`), an illustrative example
 profile (`examples/profile.example.json`) and interface metadata
 (`agents/openai.yaml`). The lead drives native
@@ -29,7 +30,9 @@ changing a profile. Use the user-supplied profile path, otherwise
 `~/.config/agents-collab/profile.json`. Do not search unrelated projects or
 create a profile silently. If absent, use explicit assignments already supplied;
 ask only for missing choices necessary for this task. Do not invent model or
-spending defaults from the example profile.
+spending defaults from the example profile. A user who wants a profile can run
+`python3 <skill-dir>/scripts/setup_profile.py` themselves, or have it run on
+explicit request; never launch it as part of ordinary work.
 
 Before relying on a profile for dispatch, run
 `python3 <skill-dir>/scripts/validate_profile.py <profile>`. A nonzero exit is a
