@@ -289,7 +289,14 @@ commits and Wrangler are pinned; GitHub token permission is read-only. The
 Cloudflare account ID and account-scoped Pages Write token are repository secrets
 supplied only to the guarded deploy step. CI has no DNS credential. The five
 macOS/APFS runtime tests require their explicit binary and do not run on Linux.
-The Actions run and Cloudflare deployment receipt establish each release outcome.
+Immediately before deployment, a canonical-main lookup rejects stale commits,
+including old reruns; lookup errors fail closed. The post-deploy step compares
+every public `dist/` file with its HTTPS response, mapping directory indexes to
+their public routes and checking an unknown URL for the built 404 body and status.
+Cloudflare configuration files are excluded. Mismatches or request failures retry
+up to twelve passes within a three-minute step limit, then fail the workflow.
+The Actions run, live-file check and Cloudflare deployment receipt establish each
+release outcome; this single-run check is not continuous availability monitoring.
 
 ## Progress
 
