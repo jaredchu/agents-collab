@@ -127,6 +127,26 @@ All five website pages reference the generated abstract evergreen/rust favicon,
 with 16/32/48px ICO entries, a 32px PNG and a 180px Apple touch icon. The 512px
 source mark is retained with the static website assets.
 
+## Public routing study (9 November 2026)
+
+The [frozen protocol and results](../evals/automatic-routing/2026-11-09/report.md)
+use public ProcLease commit 37975b5 and authored tickets in disposable snapshots.
+The protocol was published at e0cbaa3 before outcomes; initial independent review
+and its one focused follow-up resolved three harness/fixture findings.
+Ordinary prompts matched 1/3 expected routes: routine solo passed, substantial
+writer/review and consequential review stayed solo. The 36-run comparison did
+not start. Separate explicit-skill diagnostics loaded the skill and matched
+all three routes without model names in the prompts. Available provider usage,
+selected sanitized receipts and patches are recorded with all 36 unstarted rows.
+No disabled-skill comparison or general effectiveness claim follows. Raw runs
+are not fully independently auditable. Global instructions, the owner's profile,
+installed skill and the active target checkout were unchanged.
+
+The study-only RPC recorder lives in `evals/`, outside the distributable package.
+Activation/discovery remains the concrete unresolved product issue; the full
+usefulness comparison remains unperformed. Installation alone still provides
+no dependable automatic-routing guarantee.
+
 ## Progress
 
 - [x] Preserve the eight-file validated package as the initial source.
@@ -144,3 +164,8 @@ source mark is retained with the static website assets.
 - [x] Check browser layout, copy buttons and content without JavaScript.
 - [x] Complete independent review and the focused cleanup-error correction.
 - [x] Publish and verify the updated package and setup instructions.
+
+- [x] Publish a reviewed protocol before public routing measurements.
+- [x] Execute the routing gate and separately labelled explicit diagnostics.
+- [x] Record the failed gate and all 36 comparison runs as not started.
+- [ ] Establish reliable implicit activation before attempting the cancelled usefulness comparison.

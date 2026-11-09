@@ -1,0 +1,682 @@
+diff --git a/README.md b/README.md
+index 80d999b..fc22770 100644
+--- a/README.md
++++ b/README.md
+@@ -76,11 +76,13 @@ proclease list
+ proclease list --json
+ proclease list --json --resources
+ proclease list --all
++proclease list --owner claude --task preview
+ proclease logs JOB_ID --tail 50
+ proclease extend JOB_ID --by 1h
+ proclease stop JOB_ID
+ proclease stop --all --task preview --dry-run
+ proclease watch
++proclease watch --task preview
+ proclease prune --dry-run
+ ```
+ 
+@@ -106,6 +108,18 @@ restrictions. Standard input is closed; interactive programs are not supported.
+ `--owner`, `--task`, `--name` and `--url` are declared metadata. A `running` state
+ means the program spawned, not that a web endpoint is ready.
+ 
++`list` and `watch` accept `--owner LABEL` and `--task LABEL` to show only jobs
++whose declared labels match exactly (case-sensitive). Both filters combine with
++AND, and a job without a task never matches `--task`. They work with `--all`,
++`--resources`, `--json`, `watch --once` and `--interval`. Filtering happens
++before the recent-finished window, so up to five matching recently finished jobs
++still appear and every matching active or unverified job stays visible. Scan
++warnings are always reported, because an unreadable record could match. Labels
++must be at most 512 bytes without control characters; an invalid label exits 1
++before anything is listed. Filters are declared labels, not identity or
++authorization. They only narrow the view: they never renew leases, send signals
++or write records, and history collection runs as it does without them.
++
+ <a id="readiness-unreleased-source"></a>
+ 
+ ### Readiness wait
+diff --git a/src/lifecycle.rs b/src/lifecycle.rs
+index d73c226..0f38b3f 100644
+--- a/src/lifecycle.rs
++++ b/src/lifecycle.rs
+@@ -716,12 +716,18 @@ pub fn bulk_selection(
+     let selected = jobs
+         .into_iter()
+         .filter(|r| r.state.active() || r.state == State::Unknown)
+-        .filter(|r| owner.is_none_or(|owner| r.owner == owner))
+-        .filter(|r| task.is_none_or(|task| r.task.as_deref() == Some(task)))
++        .filter(|r| labels_match(r, owner, task))
+         .collect();
+     Ok((selected, warnings, guard))
+ }
+ 
++/// Exact, case-sensitive match of declared labels; filters combine with AND.
++/// A job without a task never matches a task filter.
++pub fn labels_match(record: &Record, owner: Option<&str>, task: Option<&str>) -> bool {
++    owner.is_none_or(|owner| record.owner == owner)
++        && task.is_none_or(|task| record.task.as_deref() == Some(task))
++}
++
+ enum Dispatched {
+     Wait(Instant),
+     Done(Box<Record>),
+diff --git a/src/main.rs b/src/main.rs
+index becc88b..95dc9fc 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -116,6 +116,8 @@ enum Commands {
+         all: bool,
+         #[arg(long, help = "Include sampled CPU/RSS metrics in JSON output")]
+         resources: bool,
++        #[command(flatten)]
++        filters: LabelFilters,
+     },
+     /// Remove confirmed finished history older than 24h or beyond the newest 100.
+     Prune {
+@@ -172,6 +174,8 @@ enum Commands {
+         interval: String,
+         #[arg(long)]
+         once: bool,
++        #[command(flatten)]
++        filters: LabelFilters,
+     },
+     #[command(name = "__keeper", hide = true)]
+     Keeper { id: String },
+@@ -179,6 +183,35 @@ enum Commands {
+     Guard { id: String },
+ }
+ 
++/// Optional view filters for `list` and `watch`. They only narrow what is
++/// shown: no lease renewal, signal or record write.
++#[derive(clap::Args)]
++struct LabelFilters {
++    #[arg(
++        long,
++        value_name = "LABEL",
++        help = "Show only jobs whose declared owner label is exactly LABEL \
++                (case-sensitive; a declared label, not authorization)"
++    )]
++    owner: Option<String>,
++    #[arg(
++        long,
++        value_name = "LABEL",
++        help = "Show only jobs whose declared task label is exactly LABEL \
++                (case-sensitive; jobs without a task never match)"
++    )]
++    task: Option<String>,
++}
++
++impl LabelFilters {
++    fn owner(&self) -> Option<&str> {
++        self.owner.as_deref()
++    }
++    fn task(&self) -> Option<&str> {
++        self.task.as_deref()
++    }
++}
++
+ fn default_state() -> Result<PathBuf> {
+     if let Some(path) = std::env::var_os("XDG_STATE_HOME") {
+         return Ok(PathBuf::from(path).join("proclease"));
+@@ -326,13 +359,20 @@ fn print_readiness(
+     Ok(1)
+ }
+ 
+-fn visible_jobs(store: &Store, all: bool) -> Result<(Vec<Record>, Vec<String>)> {
++/// Filters apply before the recent-finished window, so matching jobs fill it.
++/// Scan warnings are never filtered: an unreadable record could match.
++fn visible_jobs(
++    store: &Store,
++    all: bool,
++    filters: &LabelFilters,
++) -> Result<(Vec<Record>, Vec<String>)> {
+     let mut cleanup_warnings = match store.prune(false, None) {
+         Ok(report) => report.warnings,
+         Err(error) => vec![format!("history cleanup deferred: {error:#}")],
+     };
+     let (mut jobs, mut warnings) = store.list()?;
+     warnings.append(&mut cleanup_warnings);
++    jobs.retain(|r| lifecycle::labels_match(r, filters.owner(), filters.task()));
+     select_visible(&mut jobs, all, now_ms());
+     Ok((jobs, warnings))
+ }
+@@ -458,6 +498,13 @@ fn validate_label(value: &str) -> Result<()> {
+     Ok(())
+ }
+ 
++fn validate_filters(owner: Option<&str>, task: Option<&str>) -> Result<()> {
++    for label in [owner, task].into_iter().flatten() {
++        validate_label(label)?;
++    }
++    Ok(())
++}
++
+ /// Bulk stop of a fixed selection. Exit status 1 when any selected job is not
+ /// confirmed finished (or, for a dry run, is unverified) or the scan warned.
+ fn stop_all(
+@@ -468,9 +515,7 @@ fn stop_all(
+     json_output: bool,
+     color: display::ColorChoice,
+ ) -> Result<i32> {
+-    for label in [owner, task].into_iter().flatten() {
+-        validate_label(label)?;
+-    }
++    validate_filters(owner, task)?;
+     // Dry runs take no retention protection; they consume nothing afterwards.
+     let (selected, warnings, guard) = lifecycle::bulk_selection(store, owner, task, !dry_run)?;
+     let results = if dry_run {
+@@ -698,8 +743,13 @@ fn dispatch(cli: &Cli) -> Result<i32> {
+                 return Ok(1);
+             }
+         }
+-        Commands::List { all, resources } => {
+-            let (jobs, warnings) = visible_jobs(&store, *all)?;
++        Commands::List {
++            all,
++            resources,
++            filters,
++        } => {
++            validate_filters(filters.owner(), filters.task())?;
++            let (jobs, warnings) = visible_jobs(&store, *all, filters)?;
+             let metrics = if !cli.json || *resources {
+                 resources::Sampler::snapshot(&jobs)
+             } else {
+@@ -786,7 +836,9 @@ fn dispatch(cli: &Cli) -> Result<i32> {
+             resources,
+             interval,
+             once,
++            filters,
+         } => {
++            validate_filters(filters.owner(), filters.task())?;
+             let interval = duration_ms(interval)?;
+             if interval < 200 {
+                 bail!("watch interval must be at least 200ms");
+@@ -798,7 +850,7 @@ fn dispatch(cli: &Cli) -> Result<i32> {
+             signal_hook::flag::register(libc::SIGINT, interrupted.clone())?;
+             let mut sampler = resources::Sampler::new();
+             loop {
+-                let (jobs, warnings) = visible_jobs(&store, *all)?;
++                let (jobs, warnings) = visible_jobs(&store, *all, filters)?;
+                 let metrics = if !cli.json || *resources {
+                     if *once {
+                         resources::Sampler::snapshot(&jobs)
+diff --git a/tests/lifecycle.rs b/tests/lifecycle.rs
+index 5695eac..663cf70 100644
+--- a/tests/lifecycle.rs
++++ b/tests/lifecycle.rs
+@@ -2964,3 +2964,475 @@ fn describe(output: &Output) -> String {
+ fn ready_file(path: &std::path::Path) -> Value {
+     ready(path)
+ }
++
++impl Fixture {
++    /// Seed a supervisor-less job from a finished template with declared
++    /// labels, a persisted state and timestamps. A persisted active state is
++    /// observed as unknown without any record write.
++    fn seed_job(
++        &self,
++        id: &str,
++        base: &(Value, Value),
++        labels: (&str, Option<&str>),
++        state: &str,
++        created: u64,
++        finished: Option<u64>,
++    ) {
++        let (mut record, mut launch) = base.clone();
++        for value in [&mut record, &mut launch] {
++            value["id"] = serde_json::json!(id);
++            value["owner"] = serde_json::json!(labels.0);
++            value["task"] = serde_json::json!(labels.1);
++        }
++        record["state"] = serde_json::json!(state);
++        record["created_at_ms"] = serde_json::json!(created);
++        record["finished_at_ms"] = serde_json::json!(finished);
++        self.seed_files(
++            id,
++            &[
++                ("record.json", serde_json::to_vec(&record).unwrap()),
++                ("launch.json", serde_json::to_vec(&launch).unwrap()),
++                ("output.log", b"seeded output".to_vec()),
++            ],
++        );
++    }
++    /// Job IDs of a successful JSON view without warnings, in display order.
++    #[track_caller]
++    fn view_ids(&self, args: &[&str]) -> Vec<String> {
++        let value = self.call(args);
++        assert_eq!(value["warnings"], serde_json::json!([]), "{args:?}");
++        ids_of(&value)
++    }
++    /// Uncolored human output of a successful view without warnings.
++    #[track_caller]
++    fn human_view(&self, args: &[&str]) -> String {
++        let output = self
++            .human(args)
++            .args(["--color", "never"])
++            .env("COLUMNS", "200")
++            .output()
++            .unwrap();
++        assert!(output.status.success(), "{args:?}: {}", describe(&output));
++        assert!(output.stderr.is_empty(), "{args:?}: {}", describe(&output));
++        String::from_utf8(output.stdout).unwrap()
++    }
++}
++
++fn ids_of(value: &Value) -> Vec<String> {
++    value["jobs"]
++        .as_array()
++        .unwrap()
++        .iter()
++        .map(|job| job["id"].as_str().unwrap().to_owned())
++        .collect()
++}
++
++fn joined<'a>(view: &[&'a str], extra: &[&'a str]) -> Vec<&'a str> {
++    view.iter().chain(extra).copied().collect()
++}
++
++fn owned(ids: &[&str]) -> Vec<String> {
++    ids.iter().map(|id| id.to_string()).collect()
++}
++
++#[test]
++fn list_and_watch_filters_select_exact_labels_before_the_recent_window() {
++    let fixture = Fixture::new();
++    let base = fixture.finished_template();
++    let live = fixture.call(&[
++        "run",
++        "--ttl",
++        "60s",
++        "--grace",
++        "100ms",
++        "--owner",
++        "o",
++        "--task",
++        "t",
++        "--",
++        "/bin/sleep",
++        "60",
++    ])["job"]["id"]
++        .as_str()
++        .unwrap()
++        .to_owned();
++    let lease = wait(|| {
++        let job = fixture.job(&live);
++        (job["state"] == "running").then_some(job)
++    });
++    // A test-owned process named by an unverified record; it must never be
++    // signalled by an observation.
++    let mut unrelated = scopeguard_child(Command::new("/bin/sleep").arg("60").spawn().unwrap());
++    let now = now_ms();
++    let old = now - 60_000;
++    let ot = ("o", Some("t"));
++    let xt = ("x", Some("t"));
++    // Six matching recent completions (only five fit the window) and one
++    // matching completion outside the 30-second window.
++    for i in 1..=6u64 {
++        let id = format!("00000000a{i:03x}");
++        fixture.seed_job(&id, &base, ot, "exited", 3000 + i, Some(now - 100 - i));
++    }
++    fixture.seed_job("00000000a0ff", &base, ot, "exited", 3100, Some(old));
++    // Five non-matching completions, each newer than every match: filtering
++    // after the window would hide all matching finished jobs.
++    let others = [
++        ("O", Some("t")),
++        ("o", Some("T")),
++        ("o", None),
++        ("other", Some("t")),
++        ("o", Some("t2")),
++    ];
++    for (i, labels) in others.into_iter().enumerate() {
++        let i = i as u64 + 1;
++        let id = format!("00000000b{i:03x}");
++        fixture.seed_job(&id, &base, labels, "exited", 4000 + i, Some(now - i));
++    }
++    fixture.seed_job("00000000c001", &base, ot, "unknown", 2001, None);
++    fixture.seed_job("00000000c002", &base, ot, "running", 2002, None);
++    fixture.seed_job("00000000c003", &base, xt, "unknown", 2003, None);
++    fixture.seed_job("00000000c004", &base, ("o", None), "unknown", 2004, None);
++    let path = fixture.state.join("00000000c002/record.json");
++    let mut record: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
++    record["guardian_pid"] = serde_json::json!(unrelated.0.id());
++    record["command_pid"] = serde_json::json!(unrelated.0.id());
++    fs::write(&path, serde_json::to_vec(&record).unwrap()).unwrap();
++
++    // Seeded record bytes and modification times; the live keeper's own
++    // record is checked through its lease instead.
++    let records = || {
++        let mut files: Vec<(PathBuf, Vec<u8>, SystemTime)> = fs::read_dir(&fixture.state)
++            .unwrap()
++            .flatten()
++            .filter(|entry| entry.file_name() != live.as_str())
++            .map(|entry| entry.path().join("record.json"))
++            .filter(|path| path.exists())
++            .map(|path| {
++                let modified = fs::metadata(&path).unwrap().modified().unwrap();
++                let bytes = fs::read(&path).unwrap();
++                (path, bytes, modified)
++            })
++            .collect();
++        files.sort();
++        files
++    };
++    let before = records();
++    assert_eq!(before.len(), 16);
++    let mut every: Vec<String> = before
++        .iter()
++        .map(|(path, ..)| {
++            let dir = path.parent().unwrap().file_name().unwrap();
++            dir.to_string_lossy().into_owned()
++        })
++        .collect();
++    every.push(live.clone());
++
++    let l = live.as_str();
++    let scoped = owned(&[
++        l,
++        "00000000c001",
++        "00000000c002",
++        "00000000a001",
++        "00000000a002",
++        "00000000a003",
++        "00000000a004",
++        "00000000a005",
++    ]);
++    let owner_only = owned(&[
++        l,
++        "00000000c001",
++        "00000000c002",
++        "00000000c004",
++        "00000000a001",
++        "00000000a002",
++        "00000000b002",
++        "00000000b003",
++        "00000000b005",
++    ]);
++    let task_only = owned(&[
++        l,
++        "00000000c001",
++        "00000000c002",
++        "00000000c003",
++        "00000000a001",
++        "00000000a002",
++        "00000000a003",
++        "00000000b001",
++        "00000000b004",
++    ]);
++    // The unchanged default view: active, then unverified, then the five
++    // newest recent completions, each group in creation order.
++    let unfiltered = owned(&[
++        l,
++        "00000000c001",
++        "00000000c002",
++        "00000000c003",
++        "00000000c004",
++        "00000000b001",
++        "00000000b002",
++        "00000000b003",
++        "00000000b004",
++        "00000000b005",
++    ]);
++    let exact: [(&[&str], Vec<String>); 8] = [
++        (&["--owner", "O"], owned(&["00000000b001"])),
++        (&["--task", "T"], owned(&["00000000b002"])),
++        (&["--owner", "o", "--task", "T"], owned(&["00000000b002"])),
++        (&["--owner", "O", "--task", "T"], vec![]),
++        (&["--owner", "othe"], vec![]),
++        (&["--owner", ""], vec![]),
++        // A job without a task never matches, not even an empty task label.
++        (&["--task", ""], vec![]),
++        (&["--owner", "o", "--task", ""], vec![]),
++    ];
++    let views: [&[&str]; 3] = [
++        &["list"],
++        &["watch", "--once"],
++        &["watch", "--once", "--interval", "500ms"],
++    ];
++    for view in views {
++        assert_eq!(fixture.view_ids(view), unfiltered, "{view:?}");
++        let both = joined(view, &["--owner", "o", "--task", "t"]);
++        assert_eq!(fixture.view_ids(&both), scoped, "{view:?}");
++        let reversed = joined(view, &["--task", "t", "--owner", "o"]);
++        assert_eq!(fixture.view_ids(&reversed), scoped, "{view:?}");
++        let owner = joined(view, &["--owner", "o"]);
++        assert_eq!(fixture.view_ids(&owner), owner_only, "{view:?}");
++        let task = joined(view, &["--task", "t"]);
++        assert_eq!(fixture.view_ids(&task), task_only, "{view:?}");
++        for (filters, expected) in &exact {
++            let args = joined(view, filters);
++            assert_eq!(&fixture.view_ids(&args), expected, "{args:?}");
++        }
++    }
++
++    // The JSON envelope is identical with and without filters.
++    for args in [
++        &["list"][..],
++        &["list", "--owner", "o", "--task", "t"][..],
++        &["watch", "--once", "--task", "t"][..],
++    ] {
++        let value = fixture.call(args);
++        let mut keys: Vec<_> = value.as_object().unwrap().keys().cloned().collect();
++        keys.sort();
++        assert_eq!(keys, ["jobs", "schema_version", "warnings"], "{args:?}");
++        assert_eq!(value["schema_version"], 1);
++        assert!(value["jobs"]
++            .as_array()
++            .unwrap()
++            .iter()
++            .all(|job| job.get("resources").is_none()));
++    }
++
++    // Human views list exactly the selected IDs.
++    for view in [&["list"][..], &["watch", "--once"][..]] {
++        let cases: [(&[&str], &Vec<String>); 2] = [
++            (&[], &unfiltered),
++            (&["--owner", "o", "--task", "t"], &scoped),
++        ];
++        for (filters, expected) in cases {
++            let text = fixture.human_view(&joined(view, filters));
++            for id in &every {
++                assert_eq!(
++                    text.contains(id.as_str()),
++                    expected.contains(id),
++                    "{view:?} {filters:?} {id}: {text}"
++                );
++            }
++        }
++    }
++
++    // A refreshing watch applies the same filters on every frame.
++    let out = fixture.dir.path().join("watch.out");
++    let mut command = fixture.human(&[
++        "watch",
++        "--interval",
++        "200ms",
++        "--owner",
++        "o",
++        "--task",
++        "t",
++        "--color",
++        "never",
++    ]);
++    command
++        .env("COLUMNS", "200")
++        .stdout(fs::File::create(&out).unwrap())
++        .stderr(std::process::Stdio::null());
++    let mut watch = scopeguard_child(command.spawn().unwrap());
++    wait(|| {
++        let text = fs::read_to_string(&out).unwrap_or_default();
++        (text.matches("00000000c001").count() >= 2).then_some(())
++    });
++    unsafe { libc::kill(watch.0.id() as i32, libc::SIGINT) };
++    let status = wait(|| watch.0.try_wait().unwrap());
++    assert!(status.success(), "{status:?}");
++    let text = fs::read_to_string(&out).unwrap();
++    for id in every.iter().filter(|id| !scoped.contains(id)) {
++        assert!(!text.contains(id.as_str()), "{id}: {text}");
++    }
++
++    // History and resources remain compatible with filters.
++    let scoped_all = owned(&[
++        l,
++        "00000000c001",
++        "00000000c002",
++        "00000000a001",
++        "00000000a002",
++        "00000000a003",
++        "00000000a004",
++        "00000000a005",
++        "00000000a006",
++        "00000000a0ff",
++    ]);
++    for view in [&["list", "--all"][..], &["watch", "--once", "--all"][..]] {
++        let both = joined(view, &["--owner", "o", "--task", "t"]);
++        assert_eq!(fixture.view_ids(&both), scoped_all, "{view:?}");
++        assert_eq!(fixture.view_ids(view).len(), 17, "{view:?}");
++    }
++    let measured: [(&[&str], &Vec<String>); 3] = [
++        (&["list", "--resources"], &scoped),
++        (&["watch", "--once", "--resources"], &scoped),
++        (&["list", "--all", "--resources"], &scoped_all),
++    ];
++    for (view, expected) in measured {
++        let value = fixture.call(&joined(view, &["--owner", "o", "--task", "t"]));
++        assert_eq!(&ids_of(&value), expected, "{view:?}");
++        assert!(
++            value["jobs"]
++                .as_array()
++                .unwrap()
++                .iter()
++                .all(|job| job.get("resources").is_some()),
++            "{value}"
++        );
++    }
++
++    // Observation changed no record, lease or process.
++    assert!(records() == before, "a view rewrote a seeded record");
++    let job = fixture.job(&live);
++    assert_eq!(job["state"], "running");
++    assert_eq!(job["expires_at_ms"], lease["expires_at_ms"]);
++    assert_eq!(job["command_pid"], lease["command_pid"]);
++    assert!(
++        unrelated.0.try_wait().unwrap().is_none(),
++        "a PID named by an unverified record was signalled"
++    );
++    // Teardown must not try to manage the record naming a test process.
++    fs::remove_dir_all(fixture.state.join("00000000c002")).unwrap();
++}
++
++#[test]
++fn list_and_watch_filters_validate_labels_and_never_hide_scan_warnings() {
++    let fixture = Fixture::new();
++    for view in ["list", "watch"] {
++        let output = fixture.human(&[view, "--help"]).output().unwrap();
++        assert!(output.status.success());
++        let text = String::from_utf8(output.stdout).unwrap();
++        let text = text.split_whitespace().collect::<Vec<_>>().join(" ");
++        assert!(text.contains("--owner <LABEL>"), "{text}");
++        assert!(text.contains("--task <LABEL>"), "{text}");
++        assert!(text.contains("declared owner label"), "{text}");
++        assert!(text.contains("not authorization"), "{text}");
++    }
++
++    let base = fixture.finished_template();
++    // Overdue history is collected by any listing, so while it remains, no
++    // listing has happened.
++    let overdue = "00000000d001";
++    fixture.seed_job(overdue, &base, ("o", Some("t")), "exited", 1, Some(1));
++    let long = "x".repeat(513);
++    // 257 characters, but 514 bytes: the limit is in bytes.
++    let wide = "é".repeat(257);
++    let invalid = [
++        long.as_str(),
++        wide.as_str(),
++        "a\nb",
++        "\t",
++        "\x1b[31m",
++        "\u{7f}",
++        "\u{85}",
++    ];
++    for value in invalid {
++        for flag in ["--owner", "--task"] {
++            for view in [
++                &["list", "--all", "--resources"][..],
++                &["watch", "--once", "--interval", "500ms"][..],
++            ] {
++                let args = joined(view, &[flag, value]);
++                let output = fixture.command(&args).output().unwrap();
++                assert_eq!(output.status.code(), Some(1), "{args:?}");
++                let error = parse(&output)["error"].as_str().unwrap().to_owned();
++                assert!(
++                    error.contains("at most 512 bytes without control characters"),
++                    "{args:?}: {error}"
++                );
++            }
++            for view in [&["list"][..], &["watch", "--once"][..]] {
++                let args = joined(view, &[flag, value]);
++                let output = fixture.human(&args).output().unwrap();
++                assert_eq!(output.status.code(), Some(1), "{args:?}");
++                assert!(output.stdout.is_empty(), "{args:?}: {}", describe(&output));
++                assert!(
++                    String::from_utf8_lossy(&output.stderr).contains("labels must be"),
++                    "{args:?}: {}",
++                    describe(&output)
++                );
++            }
++        }
++    }
++    // A refreshing watch also rejects an invalid label instead of looping.
++    let mut command = fixture.human(&["watch", "--task", "\x1b"]);
++    command
++        .stdout(std::process::Stdio::null())
++        .stderr(std::process::Stdio::null());
++    let mut watch = scopeguard_child(command.spawn().unwrap());
++    let status = wait(|| watch.0.try_wait().unwrap());
++    assert_eq!(status.code(), Some(1));
++    assert!(
++        fixture.state.join(overdue).exists(),
++        "an invalid filter listed or collected history"
++    );
++
++    // The boundary values are accepted. Retention is unchanged: a filtered
++    // listing collects overdue history even though it does not match.
++    let max = "x".repeat(512);
++    let max_wide = "é".repeat(256);
++    assert!(fixture.view_ids(&["list", "--owner", &max]).is_empty());
++    assert!(!fixture.state.join(overdue).exists());
++    let ids = fixture.view_ids(&["watch", "--once", "--task", &max_wide]);
++    assert!(ids.is_empty());
++
++    // An unreadable record could match any filter; its warning is kept.
++    let corrupt = "0000000000bb";
++    fixture.seed_files(corrupt, &[("record.json", b"not json".to_vec())]);
++    for args in [
++        &["list", "--owner", "nobody"][..],
++        &["list", "--all", "--resources", "--task", "t"][..],
++        &["watch", "--once", "--owner", "o", "--task", "t"][..],
++    ] {
++        let value = fixture.call(args);
++        assert_eq!(value["jobs"], serde_json::json!([]), "{args:?}");
++        assert!(
++            value["warnings"]
++                .as_array()
++                .unwrap()
++                .iter()
++                .any(|warning| warning.as_str().unwrap().starts_with(corrupt)),
++            "{args:?}: {value}"
++        );
++    }
++    for args in [
++        &["list", "--owner", "nobody"][..],
++        &["watch", "--once", "--task", "t"][..],
++    ] {
++        let output = fixture.human(args).output().unwrap();
++        assert!(output.status.success(), "{args:?}: {}", describe(&output));
++        assert!(
++            String::from_utf8_lossy(&output.stderr).contains(&format!("Warning: {corrupt}")),
++            "{args:?}: {}",
++            describe(&output)
++        );
++    }
++    fs::remove_dir_all(fixture.state.join(corrupt)).unwrap();
++}

@@ -38,6 +38,10 @@ that a model or reasoning level is available to you. You can also
 and validate its structure. Invoke it with:
 `Use $agents-collab to implement this change with independent review.`
 Installation alone does not configure model access or enable automatic routing.
+A [public routing gate](evals/automatic-routing/2026-11-09/report.md) missed both
+required collaboration routes on ordinary prompts. Explicit skill invocation
+matched all three expected routes in that small diagnostic, including staying
+solo for routine work; no model names were supplied in the prompts.
 
 Prefer no Node.js? Use the [manual ZIP or checkout instructions](docs/guide.md#manual-installation).
 The workflow currently targets a Codex lead; installing the files for another
@@ -64,8 +68,8 @@ lead assistant session:
 
 Read these before relying on it:
 
-- **Prompt-led, not a runtime.** The lead follows written instructions. The only
-  code is two configuration helpers: a structural profile validator and a setup
+- **Prompt-led, not a runtime.** The lead follows written instructions. The distributable skill's executable
+  code consists of two configuration helpers: a structural profile validator and a setup
   wizard that writes a profile file. Neither calls a model. There is no automatic
   dispatcher, no snapshot freezing, no hard-deadline implementation and no
   enforcement layer.
@@ -96,7 +100,7 @@ Read these before relying on it:
 | [`docs/guide.md`](docs/guide.md) | Installation, profile setup, invocation and limits |
 | [`docs/examples/`](docs/examples/writer-review.profile.example.json) | Illustrative profile with deliberate placeholders |
 | [`docs/research.md`](docs/research.md) | Sanitized research notes |
-| [`docs/experiments.md`](docs/experiments.md) | Summaries of the validation and two pilots |
+| [`docs/experiments.md`](docs/experiments.md) | Validation, earlier pilots and the public routing gate |
 | [`docs/history.md`](docs/history.md) | How the project emerged |
 | [`docs/project-context.md`](docs/project-context.md) | Current facts, limits and progress |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution and evidence guidelines |

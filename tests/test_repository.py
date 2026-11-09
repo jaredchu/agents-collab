@@ -288,11 +288,16 @@ class Website(unittest.TestCase):
             with self.subTest(page=rel):
                 text = self.read(rel)
                 # Every page links the selected repository and its LICENSE, and
-                # no other repository location for this project.
+                # no unrelated repository location for this project. Frozen
+                # public study references stay under this repository’s evals/.
                 self.assertIn(f'href="{REPO_URL}"', text)
                 self.assertIn(f'href="{LICENSE_URL}"', text)
                 for ref in re.findall(r'href="(https?://github\.com/[^"]*agents-collab[^"]*)"', text):
-                    self.assertIn(ref, allowed)
+                    study_ref = re.fullmatch(
+                        re.escape(REPO_URL) + r"/blob/(?:main|[0-9a-f]{40})/evals/automatic-routing/"
+                        r"[0-9]{4}-[0-9]{2}-[0-9]{2}/(?:protocol\.md|report\.md|runs\.jsonl|evidence\.json)", ref
+                    )
+                    self.assertTrue(ref in allowed or study_ref, ref)
                 self.assertNotRegex(text, r'href="[^"]*(?:OWNER|your-org|example-org)')
                 self.assertNotIn('href="#"', text)
                 self.assertIn("MIT License", text)

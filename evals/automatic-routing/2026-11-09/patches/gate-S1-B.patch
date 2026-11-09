@@ -1,0 +1,450 @@
+diff --git a/README.md b/README.md
+index 80d999b..07e1c80 100644
+--- a/README.md
++++ b/README.md
+@@ -76,11 +76,13 @@ proclease list
+ proclease list --json
+ proclease list --json --resources
+ proclease list --all
++proclease list --owner claude --task preview --all --json
+ proclease logs JOB_ID --tail 50
+ proclease extend JOB_ID --by 1h
+ proclease stop JOB_ID
+ proclease stop --all --task preview --dry-run
+ proclease watch
++proclease watch --owner claude --task preview --interval 2s
+ proclease prune --dry-run
+ ```
+ 
+@@ -100,6 +102,16 @@ The JSON envelope has `schema_version: 1`; command errors return a nonzero exit
+ code and an `error` field when `--json` was supplied. Argument-parser errors use
+ Clap's standard stderr output and exit code 2.
+ 
++`list` and `watch` accept optional `--owner LABEL` and `--task LABEL` filters,
++including with `--all`, `--resources`, `--json`, and `watch --once --interval 2s`.
++These are exact, case-sensitive matches on declared labels, not identity or
++authorization. Both filters must match when combined; jobs without a task never
++match `--task`. Labels allow at most 512 bytes and no control characters.
++Filtering applies before the default five-job recent-finished window; matching
++active and unverified jobs remain visible. Scan warnings are still reported when
++a record's labels cannot be read. Filtered views only read state: they never
++renew leases, signal processes, modify records or collect history.
++
+ Commands are argument vectors after `--`, without implicit shell evaluation.
+ The service inherits the launching caller's directory, environment and execution
+ restrictions. Standard input is closed; interactive programs are not supported.
+@@ -310,8 +322,8 @@ when displaying logs. Logs and argv may contain private application data; keep t
+ state directory out of repositories. Full environment values are not persisted.
+ Confirmed finished metadata and logs are automatically removed after **24 hours**
+ or beyond the **100 newest finished jobs**, whichever comes first. Collection runs
+-on `run`, `list`, each `watch` refresh and job completion. Without CLI activity or
+-job completion, overdue history is collected on the next use; there is no separate
++on `run`, unfiltered `list`, each unfiltered `watch` refresh and job completion.
++Without those triggers, overdue history waits for the next collection; there is no separate
+ background cleanup service. Active jobs, unverified state and jobs whose supervisors
+ cannot be verified absent are preserved. Filesystem errors defer deletion with a
+ warning, so protected or failed-cleanup data can exceed the normal history bound.
+diff --git a/src/main.rs b/src/main.rs
+index becc88b..6cf6ce8 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -112,6 +112,18 @@ enum Commands {
+     },
+     /// List active, unverified and briefly recent jobs; never renew a lease.
+     List {
++        #[arg(
++            long,
++            value_name = "LABEL",
++            help = "Exact declared owner label (not authorization)"
++        )]
++        owner: Option<String>,
++        #[arg(
++            long,
++            value_name = "LABEL",
++            help = "Exact declared task label (not authorization)"
++        )]
++        task: Option<String>,
+         #[arg(long, help = "Include finished jobs from retained history")]
+         all: bool,
+         #[arg(long, help = "Include sampled CPU/RSS metrics in JSON output")]
+@@ -164,6 +176,18 @@ enum Commands {
+     },
+     /// Show the live process table; Ctrl+C closes the view, not the jobs.
+     Watch {
++        #[arg(
++            long,
++            value_name = "LABEL",
++            help = "Exact declared owner label (not authorization)"
++        )]
++        owner: Option<String>,
++        #[arg(
++            long,
++            value_name = "LABEL",
++            help = "Exact declared task label (not authorization)"
++        )]
++        task: Option<String>,
+         #[arg(long, help = "Include finished jobs from retained history")]
+         all: bool,
+         #[arg(long, help = "Include sampled CPU/RSS metrics in JSON output")]
+@@ -326,13 +350,31 @@ fn print_readiness(
+     Ok(1)
+ }
+ 
+-fn visible_jobs(store: &Store, all: bool) -> Result<(Vec<Record>, Vec<String>)> {
+-    let mut cleanup_warnings = match store.prune(false, None) {
+-        Ok(report) => report.warnings,
+-        Err(error) => vec![format!("history cleanup deferred: {error:#}")],
++fn visible_jobs(
++    store: &Store,
++    all: bool,
++    owner: Option<&str>,
++    task: Option<&str>,
++) -> Result<(Vec<Record>, Vec<String>)> {
++    for label in [owner, task].into_iter().flatten() {
++        validate_label(label)?;
++    }
++    // Filtered views only read state. Preserve ordinary collection when no
++    // filters were requested, without collecting unrelated jobs in a scoped view.
++    let mut cleanup_warnings = if owner.is_none() && task.is_none() {
++        match store.prune(false, None) {
++            Ok(report) => report.warnings,
++            Err(error) => vec![format!("history cleanup deferred: {error:#}")],
++        }
++    } else {
++        Vec::new()
+     };
+     let (mut jobs, mut warnings) = store.list()?;
+     warnings.append(&mut cleanup_warnings);
++    jobs.retain(|r| {
++        owner.is_none_or(|owner| r.owner == owner)
++            && task.is_none_or(|task| r.task.as_deref() == Some(task))
++    });
+     select_visible(&mut jobs, all, now_ms());
+     Ok((jobs, warnings))
+ }
+@@ -698,8 +740,13 @@ fn dispatch(cli: &Cli) -> Result<i32> {
+                 return Ok(1);
+             }
+         }
+-        Commands::List { all, resources } => {
+-            let (jobs, warnings) = visible_jobs(&store, *all)?;
++        Commands::List {
++            owner,
++            task,
++            all,
++            resources,
++        } => {
++            let (jobs, warnings) = visible_jobs(&store, *all, owner.as_deref(), task.as_deref())?;
+             let metrics = if !cli.json || *resources {
+                 resources::Sampler::snapshot(&jobs)
+             } else {
+@@ -782,6 +829,8 @@ fn dispatch(cli: &Cli) -> Result<i32> {
+             );
+         }
+         Commands::Watch {
++            owner,
++            task,
+             all,
+             resources,
+             interval,
+@@ -798,7 +847,8 @@ fn dispatch(cli: &Cli) -> Result<i32> {
+             signal_hook::flag::register(libc::SIGINT, interrupted.clone())?;
+             let mut sampler = resources::Sampler::new();
+             loop {
+-                let (jobs, warnings) = visible_jobs(&store, *all)?;
++                let (jobs, warnings) =
++                    visible_jobs(&store, *all, owner.as_deref(), task.as_deref())?;
+                 let metrics = if !cli.json || *resources {
+                     if *once {
+                         resources::Sampler::snapshot(&jobs)
+diff --git a/tests/lifecycle.rs b/tests/lifecycle.rs
+index 5695eac..ff9c9bd 100644
+--- a/tests/lifecycle.rs
++++ b/tests/lifecycle.rs
+@@ -513,6 +513,286 @@ fn recent_finished_views_are_capped_without_hiding_active_or_unverified_jobs() {
+     );
+ }
+ 
++impl Fixture {
++    /// View fixtures need no supervisors or launch: seed only declared state.
++    fn seed_view_record(
++        &self,
++        id: &str,
++        owner: &str,
++        task: Option<&str>,
++        state: &str,
++        finished: Option<u64>,
++    ) {
++        let record = serde_json::json!({
++            "schema_version": 1, "id": id, "argv": ["/usr/bin/true"],
++            "cwd": "/", "owner": owner, "task": task, "name": null, "url": null,
++            "created_at_ms": 1, "expires_at_ms": 30_001, "state": state,
++            "reason": "launch_failed", "keeper_pid": 0, "guardian_pid": null,
++            "command_pid": null, "exit_code": null, "finished_at_ms": finished,
++            "log_limit_bytes": 1_048_576, "logs_truncated": false, "error": null
++        });
++        self.seed_files(id, &[("record.json", serde_json::to_vec(&record).unwrap())]);
++    }
++
++    fn human_view(&self, args: &[&str]) -> Output {
++        Command::new(env!("CARGO_BIN_EXE_proclease"))
++            .arg("--state-dir")
++            .arg(&self.state)
++            .args(["--color", "never"])
++            .args(args)
++            .env("COLUMNS", "120")
++            .output()
++            .unwrap()
++    }
++}
++
++fn view_ids(value: &Value) -> Vec<&str> {
++    let mut ids: Vec<_> = value["jobs"]
++        .as_array()
++        .unwrap()
++        .iter()
++        .map(|job| job["id"].as_str().unwrap())
++        .collect();
++    ids.sort_unstable();
++    ids
++}
++
++#[test]
++fn filtered_views_match_exact_declared_labels_with_and_and_optional_tasks() {
++    let fixture = Fixture::new();
++    fixture.call(&["list"]); // Create a private state root, without launching.
++    for (id, owner, task) in [
++        ("000000000001", "Owner", Some("Task")),
++        ("000000000002", "Owner", Some("Other")),
++        ("000000000003", "owner", Some("Task")),
++        ("000000000004", "Owner", None),
++        ("000000000005", "", Some("")),
++    ] {
++        fixture.seed_view_record(id, owner, task, "failed", Some(now_ms()));
++    }
++    for view in [
++        &["list"][..],
++        &["watch", "--once", "--interval", "200ms"][..],
++    ] {
++        for (filters, expected) in [
++            (
++                vec!["--owner", "Owner"],
++                vec!["000000000001", "000000000002", "000000000004"],
++            ),
++            (vec!["--task", "Task"], vec!["000000000001", "000000000003"]),
++            (
++                vec!["--owner", "Owner", "--task", "Task"],
++                vec!["000000000001"],
++            ),
++            (vec!["--owner", "owner"], vec!["000000000003"]),
++            (vec!["--owner", "Ow"], vec![]),
++            (vec!["--task", "Ta"], vec![]),
++            (vec!["--task", "task"], vec![]),
++            (vec!["--task", ""], vec!["000000000005"]),
++            (vec!["--owner", "owner", "--task", "Other"], vec![]),
++            (vec!["--owner", "", "--task", ""], vec!["000000000005"]),
++        ] {
++            let args = [view, &["--all", "--resources"], &filters].concat();
++            let value = fixture.call(&args);
++            assert_eq!(view_ids(&value), expected, "{args:?}: {value}");
++            assert!(value["jobs"]
++                .as_array()
++                .unwrap()
++                .iter()
++                .all(|j| j["resources"].is_null()));
++            assert_eq!(value["warnings"], serde_json::json!([]));
++        }
++    }
++}
++
++#[test]
++fn filtered_views_select_before_the_recent_window_and_keep_matching_unverified_and_active_jobs() {
++    use std::os::unix::net::UnixListener;
++    let fixture = Fixture::new();
++    fixture.call(&["list"]);
++    let now = now_ms();
++    for i in 1..=8 {
++        fixture.seed_view_record(
++            &format!("{i:012x}"),
++            "a",
++            Some("t"),
++            "failed",
++            Some(now - 1_000 - i),
++        );
++        fixture.seed_view_record(
++            &format!("{:012x}", i + 16),
++            "b",
++            Some("t"),
++            "failed",
++            Some(now - i),
++        );
++    }
++    for (id, owner, state, finished) in [
++        ("fffffffffff1", "a", "running", None),
++        ("fffffffffff2", "a", "unknown", Some(1)),
++        ("fffffffffff3", "a", "failed", None),
++        ("fffffffffff4", "a", "failed", Some(now - 60_000)),
++        ("fffffffffff5", "b", "running", None),
++        ("fffffffffff6", "b", "unknown", None),
++    ] {
++        fixture.seed_view_record(id, owner, Some("t"), state, finished);
++    }
++    // A successful connect keeps seeded running records active without a process.
++    let matching = UnixListener::bind(fixture.state.join("fffffffffff1/ctl.sock")).unwrap();
++    let other = UnixListener::bind(fixture.state.join("fffffffffff5/ctl.sock")).unwrap();
++    for view in [&["list"][..], &["watch", "--once"][..]] {
++        let args = [view, &["--owner", "a", "--task", "t"]].concat();
++        let value = fixture.call(&args);
++        assert_eq!(
++            view_ids(&value),
++            [
++                "000000000001",
++                "000000000002",
++                "000000000003",
++                "000000000004",
++                "000000000005",
++                "fffffffffff1",
++                "fffffffffff2",
++                "fffffffffff3"
++            ]
++        );
++        let all = fixture.call(&[args.as_slice(), &["--all"]].concat());
++        assert_eq!(all["jobs"].as_array().unwrap().len(), 12);
++        assert!(all["jobs"]
++            .as_array()
++            .unwrap()
++            .iter()
++            .all(|j| j["owner"] == "a"));
++        assert!(all["jobs"]
++            .as_array()
++            .unwrap()
++            .iter()
++            .any(|j| j["state"] == "running"));
++    }
++    drop((matching, other));
++    // Never ask fixture teardown to control synthetic running jobs.
++    fs::remove_dir_all(fixture.state.join("fffffffffff1")).unwrap();
++    fs::remove_dir_all(fixture.state.join("fffffffffff5")).unwrap();
++}
++
++#[test]
++fn filtered_views_validate_labels_before_output_and_preserve_scan_warnings() {
++    let fixture = Fixture::new();
++    fixture.call(&["list"]);
++    let boundary = "é".repeat(256); // 512 bytes, rather than 512 characters.
++    fixture.seed_view_record(
++        "000000000001",
++        &boundary,
++        Some(&boundary),
++        "failed",
++        Some(now_ms()),
++    );
++    let corrupt = "000000000002";
++    fixture.seed_files(corrupt, &[("record.json", b"not json".to_vec())]);
++    for view in [&["list"][..], &["watch", "--once"][..]] {
++        for flag in ["--owner", "--task"] {
++            for invalid in [
++                "x".repeat(513),
++                "é".repeat(257),
++                "bad\nlabel".into(),
++                "bad\u{7f}".into(),
++                "bad\u{85}".into(),
++            ] {
++                let args = [view, &[flag, &invalid]].concat();
++                let output = fixture.command(&args).output().unwrap();
++                assert_eq!(output.status.code(), Some(1), "{args:?}");
++                let value = parse(&output);
++                assert!(value["error"].as_str().unwrap().contains("labels must be"));
++                assert!(value.get("jobs").is_none());
++                assert_eq!(String::from_utf8_lossy(&output.stdout).lines().count(), 1);
++                let human = fixture.human_view(&args);
++                assert_eq!(human.status.code(), Some(1));
++                assert!(human.stdout.is_empty());
++                assert!(String::from_utf8_lossy(&human.stderr).contains("labels must be"));
++            }
++            let value = fixture.call(&[view, &[flag, &boundary]].concat());
++            assert_eq!(view_ids(&value), ["000000000001"]);
++        }
++        let args = [view, &["--owner", "nobody", "--task", "missing"]].concat();
++        let value = fixture.call(&args);
++        assert!(view_ids(&value).is_empty());
++        assert!(value["warnings"]
++            .as_array()
++            .unwrap()
++            .iter()
++            .any(|w| w.as_str().unwrap().contains(corrupt)));
++        let human = fixture.human_view(&args);
++        assert!(human.status.success());
++        assert!(String::from_utf8_lossy(&human.stderr).contains(corrupt));
++    }
++}
++
++#[test]
++fn filtered_views_only_read_state_and_preserve_unfiltered_output() {
++    use std::{io::Read, os::unix::net::UnixListener};
++    let fixture = Fixture::new();
++    fixture.call(&["list"]);
++    fixture.seed_view_record("000000000001", "a", Some("t"), "failed", Some(now_ms()));
++    for view in [&["list"][..], &["watch", "--once"][..]] {
++        let filtered = [view, &["--owner", "a", "--task", "t"]].concat();
++        assert_eq!(fixture.call(view), fixture.call(&filtered));
++        let plain = fixture.human_view(view);
++        let scoped = fixture.human_view(&filtered);
++        assert!(plain.status.success() && scoped.status.success());
++        assert_eq!(plain.stdout, scoped.stdout);
++        assert_eq!(plain.stderr, scoped.stderr);
++    }
++    // Both matching and unrelated history would be eligible for collection.
++    fixture.seed_view_record("000000000002", "a", Some("t"), "failed", Some(1));
++    fixture.seed_view_record("000000000003", "b", Some("other"), "failed", Some(1));
++    fixture.seed_view_record("000000000004", "a", Some("t"), "running", None);
++    let listener = UnixListener::bind(fixture.state.join("000000000004/ctl.sock")).unwrap();
++    listener.set_nonblocking(true).unwrap();
++    let paths: Vec<_> = (1..=4)
++        .map(|i| fixture.state.join(format!("{i:012x}/record.json")))
++        .collect();
++    let before: Vec<_> = paths.iter().map(|p| fs::read(p).unwrap()).collect();
++    for view in [
++        &["list"][..],
++        &["watch", "--once", "--interval", "200ms"][..],
++    ] {
++        for filters in [
++            &["--owner", "a"][..],
++            &["--task", "t"][..],
++            &["--owner", "absent", "--task", "t"][..],
++        ] {
++            let args = [view, filters, &["--all", "--resources"]].concat();
++            fixture.call(&args);
++            assert!(fixture.human_view(&args).status.success());
++        }
++    }
++    assert_eq!(
++        before,
++        paths
++            .iter()
++            .map(|p| fs::read(p).unwrap())
++            .collect::<Vec<_>>()
++    );
++    // Availability probes may connect, but no Stop or Extend request is sent.
++    let mut probes = 0;
++    loop {
++        match listener.accept() {
++            Ok((mut stream, _)) => {
++                stream.set_nonblocking(true).unwrap();
++                let mut request = Vec::new();
++                stream.read_to_end(&mut request).unwrap();
++                assert!(request.is_empty());
++                probes += 1;
++            }
++            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => break,
++            Err(error) => panic!("{error}"),
++        }
++    }
++    assert!(probes > 0);
++    drop(listener);
++    fs::remove_dir_all(fixture.state.join("000000000004")).unwrap();
++}
++
+ #[test]
+ fn resource_metrics_include_busy_children_and_do_not_renew_or_survive_completion() {
+     let fixture = Fixture::new();

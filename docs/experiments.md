@@ -1,11 +1,20 @@
 # Experiments
 
-Selective, sanitized summaries of the checks and trials run on 8 November 2026.
+The public [automatic-routing gate and explicit-skill diagnostic](../evals/automatic-routing/2026-11-09/report.md)
+ran on 9 November 2026. The ordinary gate matched 1/3 expected routes; all
+three explicit diagnostics matched their routes. The 36-run comparison stopped
+under its published rule. Inputs, selected receipts, patches and every planned
+run status are public; raw executions are not fully independently auditable.
+No quality, speed or cost benefit was established.
+
+## Earlier private pilots
+
+The following entries summarize checks and trials run on 8 November 2026.
 Raw evidence (receipts, transcripts, task sources) stays private because it
 involves private projects. These summaries are therefore **not independently
 auditable**; they are the owner's account, with limits stated.
 
-All of this happened **before** the skill was installed for personal use. Later
+All of these 8 November checks happened **before** the skill was installed for personal use. Later
 real use and policy migration are a separate story (see [history](history.md))
 and are not controlled experiments.
 

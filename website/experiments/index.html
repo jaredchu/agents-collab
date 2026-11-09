@@ -7,7 +7,7 @@
   <link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png" sizes="180x180">
   <title>Experiments — Agents Collab</title>
-  <meta name="description" content="Structural validation and two five-task pilots of Agents Collab, with mixed results, missed thresholds and every limit stated.">
+  <meta name="description" content="A public automatic-routing gate, explicit-skill diagnostics and two earlier pilots of Agents Collab, with inputs, measurements and limits.">
   <link rel="stylesheet" href="../assets/site.css">
   <script src="../assets/site.js" defer></script>
 </head>
@@ -30,10 +30,31 @@
 
   <main id="main">
     <article class="page">
-      <p class="kicker">Notebook entry · 8 November 2026</p>
-      <h1>Two small, honest trials</h1>
-      <p class="lede">A structural validation, then two pilots of five paired real tasks each. Neither pilot met its coordination target. Here is what was measured, and what it cannot tell you.</p>
+      <p class="kicker">Notebook entry · 9 November 2026</p>
+      <h1>A public gate, after two small trials</h1>
+      <p class="lede">Ordinary prompts missed the required collaboration routes in a public-project gate. Explicit skill invocation followed the configured routes in three diagnostics. The planned comparison stopped; no usefulness or cost benefit follows.</p>
 
+      <h2 id="automatic-routing"><span class="num">9 November 2026 · Public source</span>Activation and routing are separate claims</h2>
+      <p>We published the <a href="https://github.com/jaredchu/agents-collab/blob/e0cbaa38adf8a7b582312c148869510ab3af006d/evals/automatic-routing/2026-11-09/protocol.md">protocol and inputs before outcomes</a>, then ran three authored engineering tickets against disposable copies of public ProcLease commit <code>37975b5</code>. Its project instructions had no model-collaboration policy. The active project, global instructions, installed skill and personal profile were unchanged.</p>
+      <div class="table-wrap" role="region" aria-labelledby="routing-caption" tabindex="0">
+        <table>
+          <caption id="routing-caption">Expected routes and recorded behaviour, one execution per mode</caption>
+          <thead><tr><th scope="col">Task</th><th scope="col">Expected</th><th scope="col">Ordinary prompt</th><th scope="col">Explicit skill diagnostic</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Routine lease tests</th><td>Solo</td><td>Solo · pass</td><td>Solo · matched</td></tr>
+            <tr><th scope="row">List/watch filters</th><td>Writer + review</td><td>Solo · fail</td><td>Opus + Astra · matched</td></tr>
+            <tr><th scope="row">Seeded symlink fix</th><td>Independent review</td><td>Solo · fail</td><td>Astra review · matched</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="stamp">Ordinary gate: 1/3 routes · 36-run comparison not started</p>
+      <p>The separate diagnostic added only <code>Use $agents-collab for this task.</code> No model names or role assignments were added. All three sessions loaded the skill. The writing case selected <code>claude-opus-5-5</code> with an accepted High request, then <code>gpt-6-astra</code> / High; the consequential case selected the same reviewer. Native metadata recorded distinct, non-forked ephemeral child sessions. These are interface observations, not runtime effort attestation or filesystem isolation.</p>
+      <p>External formatting, Clippy and full-suite checks passed for all six outputs. Mutation, filter, compatibility and reverted-fix probes also passed where applicable. Those auxiliary checks were not a blinded full quality score. The symlink defect was deliberately seeded for the ticket; the public ProcLease base already refuses it.</p>
+      <p><strong>Use supported by this sample:</strong> invoke the skill explicitly and let the profile choose collaborators. Ordinary prompts did not activate the required routes here. Three task units, one execution per mode, concurrent local sessions and no disabled-skill comparison cannot establish quality, speed or cost gains. Billed cost is unknown.</p>
+      <p><a href="https://github.com/jaredchu/agents-collab/blob/main/evals/automatic-routing/2026-11-09/report.md">Read the full report, times, checks and limits</a> · <a href="https://github.com/jaredchu/agents-collab/blob/main/evals/automatic-routing/2026-11-09/runs.jsonl">All 42 run records</a> · <a href="https://github.com/jaredchu/agents-collab/blob/main/evals/automatic-routing/2026-11-09/evidence.json">Selected sanitized receipts</a></p>
+      <p>The public package contains the frozen tickets, seeds, profile, measurement harness and final patches. Raw conversations and account details are not published, so the original runs are not independently auditable end to end. The 36 unstarted comparison rows remain visible with null measurements.</p>
+
+      <h2>Earlier private pilots · 8 November 2026</h2>
       <div class="note" role="note">
         <span class="label">Read this first</span>
         <ul>

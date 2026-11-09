@@ -1,0 +1,238 @@
+[
+  {
+    "run_id": "gate-R1-B",
+    "skill_reads": [],
+    "native_dispatches": [],
+    "review_results": [],
+    "claude_receipts": [],
+    "final_summary": [
+      {
+        "event": 376,
+        "text": "Added five deterministic tests in `src/model.rs` covering all requested cases and unchanged deadlines after rejection. Only the existing test module changed.\n\nAll checks pass: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, and `cargo test` (67 tests)."
+      }
+    ],
+    "scope": {
+      "history_changed": false,
+      "out_of_scope_paths": []
+    }
+  },
+  {
+    "run_id": "gate-S1-B",
+    "skill_reads": [],
+    "native_dispatches": [],
+    "review_results": [],
+    "claude_receipts": [],
+    "final_summary": [
+      {
+        "event": 616,
+        "text": "Implemented `--owner` and `--task` filters for `list` and `watch`, with exact matching before the recent-job limit, label validation, preserved scan warnings, and read-only filtered views.\n\nUpdated README/help and added four seeded integration tests. Changes are limited to source, tests, and README.\n\nAll required checks passed: formatting, Clippy with warnings denied, and all 66 tests."
+      }
+    ],
+    "scope": {
+      "history_changed": false,
+      "out_of_scope_paths": []
+    }
+  },
+  {
+    "run_id": "gate-C1-B",
+    "skill_reads": [],
+    "native_dispatches": [],
+    "review_results": [],
+    "claude_receipts": [],
+    "final_summary": [
+      {
+        "event": 472,
+        "text": "Fixed `logs` by adding `O_NOFOLLOW`. Symlinked `output.log` files now exit 1 without exposing target contents in human or JSON mode.\n\nOnly `src/main.rs` and `tests/lifecycle.rs` changed. The regression failed before the fix and passes afterward. Compatibility checks confirmed unchanged tail bounds, truncation notes, escaping, and JSON envelopes.\n\nPassed formatting, Clippy with warnings denied, and all 63 tests."
+      }
+    ],
+    "scope": {
+      "history_changed": false,
+      "out_of_scope_paths": []
+    }
+  },
+  {
+    "run_id": "diag-R1-B",
+    "skill_reads": [
+      {
+        "event": 57,
+        "command": "/bin/zsh -lc 'cat <skill-dir>/SKILL.md <skill-dir>/references/configuration.md'",
+        "exit_code": 0,
+        "content_observed": true
+      }
+    ],
+    "native_dispatches": [],
+    "review_results": [],
+    "claude_receipts": [],
+    "final_summary": [
+      {
+        "event": 494,
+        "text": "Added six deterministic tests in [src/model.rs](<work-root>/cases/diag-R1-B/repo/src/model.rs:209), covering all requested cases and unchanged deadlines after rejection.\n\nOnly the test module changed. All checks passed:\n\n- `cargo fmt --check`\n- `cargo clippy --all-targets -- -D warnings`\n- `cargo test` \u2014 68 passed"
+      }
+    ],
+    "scope": {
+      "history_changed": false,
+      "out_of_scope_paths": []
+    }
+  },
+  {
+    "run_id": "diag-S1-B",
+    "skill_reads": [
+      {
+        "event": 48,
+        "command": "/bin/zsh -lc 'pwd && git status --short && cat README.md docs/project-context.md && cat <skill-dir>/SKILL.md <skill-dir>/references/configuration.md && cat <work-root>/cases/diag-S1-B/profile.json'",
+        "exit_code": 0,
+        "content_observed": true
+      },
+      {
+        "event": 816,
+        "command": "/bin/zsh -lc 'cat <skill-dir>/SKILL.md'",
+        "exit_code": 0,
+        "content_observed": true
+      }
+    ],
+    "native_dispatches": [
+      {
+        "role": "reviewer",
+        "transport": "codex-native",
+        "model_observed": "gpt-6-astra",
+        "effort_interface_observed": "high",
+        "fresh_session": "yes: non-forked ephemeral child interface metadata",
+        "event": 762,
+        "metadata": {
+          "id": "reviewer-1",
+          "model": "gpt-6-astra",
+          "reasoningEffort": "high",
+          "parentThreadId": "lead",
+          "forkedFromId": null,
+          "ephemeral": true
+        }
+      }
+    ],
+    "review_results": [
+      {
+        "event": 801,
+        "kind": "reviewer_result",
+        "thread": "reviewer-1",
+        "text": "I\u2019ll review the frozen patch against the ticket\u2019s acceptance criteria and report material issues with precise locations. I won\u2019t modify files or run tests."
+      },
+      {
+        "event": 851,
+        "kind": "reviewer_result",
+        "thread": "reviewer-1",
+        "text": "I\u2019m applying the agents-collab skill\u2019s independent review procedure, using the supplied frozen snapshot as the review target."
+      },
+      {
+        "event": 1003,
+        "kind": "reviewer_result",
+        "thread": "reviewer-1",
+        "text": "The filter is applied before the recent-history limit, and list/watch share the exact label predicate used by bulk stop. I\u2019m checking warning preservation and test cleanup; I haven\u2019t found a material correctness issue so far."
+      },
+      {
+        "event": 1260,
+        "kind": "reviewer_result",
+        "thread": "reviewer-1",
+        "text": "No material findings for patch SHA-256 `4304894752b9f45bd6d920a089a47006b0db1329a6927f50d7515d16ee666ced` against base `df06c4ff5e43c8ab95b854ab8e4180ae930f9242`.\n\nStatic review confirms:\n\n- List/watch validate labels before listing and filter before the recent-finished window.\n- Matching is exact, case-sensitive, AND-combined, and shared with bulk stop.\n- Scan warnings remain independent of selection; existing retention behavior remains intact.\n- No new lease renewal, signaling, or record-writing path is introduced.\n- Integration tests cover selection, output modes, validation boundaries, warnings, observation side effects, and child cleanup. README/help describe declared labels appropriately.\n\nVerified the patch hash and all 16 frozen snapshot file hashes; no mismatches. Reviewed only frozen sources and supporting project instructions. No edits, delegation, builds, or tests performed. Runtime behavior, test timing, formatting, and Clippy results remain for the lead\u2019s required checks."
+      }
+    ],
+    "claude_receipts": [
+      {
+        "role": "writer",
+        "transport": "claude-cli",
+        "effort_requested": "high",
+        "effort_observation": "explicit CLI high control accepted; runtime effort unobserved",
+        "controls_receipts": [
+          {
+            "event": 696,
+            "exit_code": 0,
+            "model_requested": "claude-opus-5-5",
+            "effort_requested": "high",
+            "fresh_control": "--no-session-persistence"
+          }
+        ],
+        "fresh_session": "new CLI process; no persisted session",
+        "provider_model_usage": {
+          "claude-opus-5-5": {
+            "inputTokens": 48,
+            "outputTokens": 61216,
+            "cacheReadInputTokens": 1624307,
+            "cacheCreationInputTokens": 118385,
+            "webSearchRequests": 0
+          }
+        },
+        "duration_ms": 563128,
+        "is_error": false,
+        "receipt_path": "<work-root>/cases/diag-S1-B/scratch/proclease/list-watch-filters/collaboration/writer-result.json"
+      }
+    ],
+    "final_summary": [
+      {
+        "event": 1385,
+        "text": "Implemented `--owner` and `--task` filters for `list` and `watch`, with exact matching before the recent-finished window. Added label validation, README/help documentation and integration coverage.\n\nPassed formatting, Clippy with warnings denied, and all 64 tests. Independent GPT-6 Astra review through [agents-collab](<skill-dir>/SKILL.md) found no material issues.\n\nChanges are limited to source, tests and README."
+      }
+    ],
+    "scope": {
+      "history_changed": false,
+      "out_of_scope_paths": []
+    }
+  },
+  {
+    "run_id": "diag-C1-B",
+    "skill_reads": [
+      {
+        "event": 60,
+        "command": "/bin/zsh -lc 'cat <skill-dir>/SKILL.md && cat <skill-dir>/references/configuration.md && cat <skill-dir>/references/review-protocol.md && cat <skill-dir>/assets/review-packet.md'",
+        "exit_code": 0,
+        "content_observed": true
+      }
+    ],
+    "native_dispatches": [
+      {
+        "role": "reviewer",
+        "transport": "codex-native",
+        "model_observed": "gpt-6-astra",
+        "effort_interface_observed": "high",
+        "fresh_session": "yes: non-forked ephemeral child interface metadata",
+        "event": 352,
+        "metadata": {
+          "id": "reviewer-1",
+          "model": "gpt-6-astra",
+          "reasoningEffort": "high",
+          "parentThreadId": "lead",
+          "forkedFromId": null,
+          "ephemeral": true
+        }
+      }
+    ],
+    "review_results": [
+      {
+        "event": 379,
+        "kind": "reviewer_result",
+        "thread": "reviewer-1",
+        "text": "I\u2019ll read the frozen review packet and check the referenced code for security and regression risks.\n"
+      },
+      {
+        "event": 529,
+        "kind": "reviewer_result",
+        "thread": "reviewer-1",
+        "text": "The change adds `O_NOFOLLOW` to the log open, so symlink rejection happens before any content is read. The error path still exits 1 and preserves the JSON envelope. I\u2019ll verify the frozen file hashes and run the focused regression.\n"
+      },
+      {
+        "event": 940,
+        "kind": "reviewer_result",
+        "thread": "reviewer-1",
+        "text": "Verdict: approve within the ticket\u2019s narrow scope. No material findings.\n\nArtifact reviewed: patch SHA-256 `1a787eb9ec2b8ad0957fa3859d57f0b502d7bdf04aceceb90e86464b8fc748f4`.\n\n- `src/main.rs:727` adds `O_NOFOLLOW` directly to the existing open. This rejects an `output.log` symlink before reading target contents, without introducing a check/open race. Existing error handling returns exit 1 in human and JSON modes.\n- `tests/lifecycle.rs:969` covers both modes, checks stdout and stderr for marker disclosure, and verifies the JSON error envelope. The target resides inside the fixture\u2019s temporary directory. The fixture waits for its template supervisor to exit before seeding history.\n- Tail limits, read bounds, terminal escaping, truncation reporting, and lifecycle behavior remain unchanged.\n\nVerification performed:\n\n- Confirmed the patch hash and all packet-listed snapshot/live file hashes.\n- Confirmed all five supplied environment values were preserved.\n- Passed `logs_refuse_symlinked_output_in_human_and_json_modes`.\n- Passed `capture_is_bounded_and_terminal_controls_are_escaped`.\n\nLimits: focused execution used the supplied macOS toolchain. I did not independently execute the regression without the fix, Linux tests, formatting, Clippy, or the full suite; those remain with the lead\u2019s verification. No source files were modified."
+      }
+    ],
+    "claude_receipts": [],
+    "final_summary": [
+      {
+        "event": 1061,
+        "text": "Fixed narrowly in `src/main.rs` and `tests/lifecycle.rs`.\n\n- `logs` now rejects symlinked `output.log` files with exit 1 and no target contents in human or JSON mode.\n- Regression test failed before the fix and passes afterward.\n- Ordinary log behavior checks passed.\n- Formatting, Clippy, and all 63 tests passed.\n- Independent GPT-6-astra review through agents-collab found no material issues.\n\nNo commits or publishing performed."
+      }
+    ],
+    "scope": {
+      "history_changed": false,
+      "out_of_scope_paths": []
+    }
+  }
+]

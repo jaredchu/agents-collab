@@ -1,0 +1,63 @@
+diff --git a/src/main.rs b/src/main.rs
+index f54a33a..3e862d0 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -724,7 +724,7 @@ fn dispatch(cli: &Cli) -> Result<i32> {
+             let record = store.record(id)?;
+             let file = OpenOptions::new()
+                 .read(true)
+-                .custom_flags(libc::O_CLOEXEC)
++                .custom_flags(libc::O_CLOEXEC | libc::O_NOFOLLOW)
+                 .open(store.job(id)?.join("output.log"))?;
+             let mut bytes = Vec::new();
+             file.take(16 * 1_048_576 + 1).read_to_end(&mut bytes)?;
+diff --git a/tests/lifecycle.rs b/tests/lifecycle.rs
+index 5695eac..d2d7ea2 100644
+--- a/tests/lifecycle.rs
++++ b/tests/lifecycle.rs
+@@ -965,6 +965,45 @@ fn capture_is_bounded_and_terminal_controls_are_escaped() {
+         .any(|line| line.as_str().unwrap().contains("\\u{1b}")));
+ }
+ 
++#[test]
++fn logs_refuse_symlinked_output_in_human_and_json_modes() {
++    let fixture = Fixture::new();
++    let (record, launch) = fixture.finished_template();
++    let id = "0123456789ab";
++    fixture.seed_history(id, &record, &launch, now_ms());
++
++    let marker = "unrelated-file-marker-must-not-appear-in-logs";
++    let target = fixture.dir.path().join("marker.txt");
++    fs::write(&target, marker).unwrap();
++    let log = fixture.state.join(id).join("output.log");
++    fs::remove_file(&log).unwrap();
++    std::os::unix::fs::symlink(&target, &log).unwrap();
++
++    for json in [false, true] {
++        let mut command = Command::new(env!("CARGO_BIN_EXE_proclease"));
++        command.arg("--state-dir").arg(&fixture.state);
++        if json {
++            command.arg("--json");
++        }
++        let output = command.args(["logs", id]).output().unwrap();
++        assert!(
++            !String::from_utf8_lossy(&output.stdout).contains(marker)
++                && !String::from_utf8_lossy(&output.stderr).contains(marker),
++            "logs disclosed the symlink target (json={json})"
++        );
++        assert_eq!(output.status.code(), Some(1), "json={json}");
++        if json {
++            let error = parse(&output);
++            assert_eq!(error["schema_version"], 1);
++            assert!(error["error"].as_str().is_some_and(|s| !s.is_empty()));
++            assert!(error.get("lines").is_none());
++        } else {
++            assert!(output.stdout.is_empty());
++            assert!(!output.stderr.is_empty());
++        }
++    }
++}
++
+ #[test]
+ fn explicit_retry_is_idempotent_without_renewal_or_resurrection() {
+     let fixture = Fixture::new();
