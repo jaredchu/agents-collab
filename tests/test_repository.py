@@ -302,7 +302,12 @@ class Website(unittest.TestCase):
                         r"[0-9]{4}-[0-9]{2}-[0-9]{2}/report\.md"
                         r"|tree/main/evals/quality/[0-9]{4}-[0-9]{2}-[0-9]{2}/artifacts)", ref
                     )
-                    self.assertTrue(ref in allowed or study_ref or quality_ref, ref)
+                    cli_ref = re.fullmatch(
+                        re.escape(REPO_URL) + r"/(?:blob/(?:main|[0-9a-f]{40})/evals/cli-usefulness/"
+                        r"[0-9]{4}-[0-9]{2}-[0-9]{2}/(?:protocol\.md|report\.md|results\.json)"
+                        r"|tree/main/evals/cli-usefulness/[0-9]{4}-[0-9]{2}-[0-9]{2}/artifacts)", ref
+                    )
+                    self.assertTrue(ref in allowed or study_ref or quality_ref or cli_ref, ref)
                 self.assertNotRegex(text, r'href="[^"]*(?:OWNER|your-org|example-org)')
                 self.assertNotIn('href="#"', text)
                 self.assertIn("MIT License", text)

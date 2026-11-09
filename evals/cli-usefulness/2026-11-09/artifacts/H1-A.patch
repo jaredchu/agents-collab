@@ -1,0 +1,235 @@
+diff --git a/skills/agents-collab/references/configuration.md b/skills/agents-collab/references/configuration.md
+index a95fc83..94efb69 100644
+--- a/skills/agents-collab/references/configuration.md
++++ b/skills/agents-collab/references/configuration.md
+@@ -74,6 +74,16 @@ before dispatch. Run the validator on the selected profile before any dispatch:
+ python3 path/to/agents-collab/scripts/validate_profile.py PROFILE.json
+ ```
+ 
++For machine-readable diagnostics, use `validate_profile.py --json PROFILE.json`.
++It emits one JSON object on stdout and no stderr, with exactly `schema_version`
++(integer `1`), `valid`, `issues` and `scope` (`"structure-only"`). Each issue has
++string `path` and `message` fields describing the rule without echoing rejected
++values, including an unsupported numeric profile version.
++`valid` is `true` for exit 0, `false` for content failures (exit 1), and `null`
++for unreadable or nonregular input (exit 2, an issue at `(file)`). Command-line
++usage errors retain argparse's exit 2 and human diagnostics. The default human
++output is unchanged.
++
+ Exit status 0 means the structure matches this contract. Status 1 means invalid
+ profile content: malformed JSON, invalid UTF-8, a file over the size limit or
+ an invalid structure, listed by field where possible. Status 2 means an OS
+diff --git a/skills/agents-collab/scripts/validate_profile.py b/skills/agents-collab/scripts/validate_profile.py
+index 3f5cae6..33c4257 100644
+--- a/skills/agents-collab/scripts/validate_profile.py
++++ b/skills/agents-collab/scripts/validate_profile.py
+@@ -473,21 +473,48 @@ def validate_profile(data: Any) -> List[Issue]:
+     return issues
+ 
+ 
++def _print_json_diagnostics(valid: Optional[bool], issues: List[Issue]) -> None:
++    """Serialize diagnostics without echoing rejected profile values."""
++    json_issues = []
++    for issue in issues:
++        message = issue.message
++        # The legacy API/human diagnostic includes the rejected numeric version.
++        # Keep that interface unchanged while omitting the value from JSON.
++        if issue.path == "version" and message.startswith("unsupported schema version "):
++            message = (f"unsupported schema version; only {SUPPORTED_VERSION} is supported, "
++                       "other fields were not interpreted")
++        json_issues.append({"path": issue.path, "message": message})
++    print(json.dumps({
++        "schema_version": 1,
++        "valid": valid,
++        "issues": json_issues,
++        "scope": "structure-only",
++    }))
++
++
+ def main(argv: Optional[List[str]] = None) -> int:
+     parser = argparse.ArgumentParser(
+         prog="validate_profile.py",
+         description="Check an agents-collab v1 profile's structure. Reads JSON only; "
+                     "does not check model availability, credentials, permissions or storage.",
+     )
++    parser.add_argument("--json", action="store_true", help="emit JSON diagnostics on stdout")
+     parser.add_argument("profile", help="path to the profile JSON file")
+     args = parser.parse_args(argv)
+ 
+     try:
+         issues = check_file(args.profile)
+     except ProfileReadError as exc:
+-        print(f"error: {exc}", file=sys.stderr)
++        if args.json:
++            _print_json_diagnostics(None, [Issue("(file)", str(exc))])
++        else:
++            print(f"error: {exc}", file=sys.stderr)
+         return 2
+ 
++    if args.json:
++        _print_json_diagnostics(not issues, issues)
++        return 1 if issues else 0
++
+     if issues:
+         print(f"invalid profile: {len(issues)} issue(s)", file=sys.stderr)
+         for issue in issues:
+diff --git a/tests/test_json_diagnostics.py b/tests/test_json_diagnostics.py
+new file mode 100644
+index 0000000..c997d19
+--- /dev/null
++++ b/tests/test_json_diagnostics.py
+@@ -0,0 +1,154 @@
++"""CLI coverage for opt-in safe JSON diagnostics; standard library only."""
++
++import json
++import os
++import subprocess
++import sys
++import tempfile
++import unittest
++from pathlib import Path
++
++from test_validate_profile import SCRIPT, base_profile, vp
++
++
++class JsonDiagnostics(unittest.TestCase):
++    def setUp(self):
++        self._tmp = tempfile.TemporaryDirectory(prefix="agents-collab-json-")
++        self.tmp = Path(self._tmp.name)
++
++    def tearDown(self):
++        self._tmp.cleanup()
++
++    def run_cli(self, *args, timeout=10):
++        return subprocess.run(
++            [sys.executable, "-I", "-B", str(SCRIPT), "--json", *map(str, args)],
++            cwd=str(self.tmp), capture_output=True, text=True, timeout=timeout,
++            env=dict(os.environ, TMPDIR=str(self.tmp)),
++        )
++
++    def write(self, content):
++        path = self.tmp / "profile.json"
++        path.write_bytes(content)
++        return path
++
++    def assert_result(self, result, code, valid):
++        self.assertEqual(result.returncode, code, result.stderr)
++        self.assertEqual(result.stderr, "")
++        # json.loads rejects trailing output or a second JSON object.
++        payload = json.loads(result.stdout)
++        self.assertEqual(set(payload), {"schema_version", "valid", "issues", "scope"})
++        self.assertIs(type(payload["schema_version"]), int)
++        self.assertEqual(payload["schema_version"], 1)
++        self.assertIs(payload["valid"], valid)
++        self.assertEqual(payload["scope"], "structure-only")
++        self.assertIsInstance(payload["issues"], list)
++        for issue in payload["issues"]:
++            self.assertEqual(set(issue), {"path", "message"})
++            self.assertIsInstance(issue["path"], str)
++            self.assertIsInstance(issue["message"], str)
++        if valid is True:
++            self.assertEqual(payload["issues"], [])
++        else:
++            self.assertTrue(payload["issues"])
++        return payload
++
++    def test_valid_profile_and_input_preserved(self):
++        content = json.dumps(base_profile()).encode("utf-8")
++        path = self.write(content)
++        self.assert_result(self.run_cli(path), 0, True)
++        self.assertEqual(path.read_bytes(), content)
++        self.assertEqual(list(self.tmp.iterdir()), [path])
++
++    def test_invalid_structure_uses_safe_field_diagnostics(self):
++        secret = "sk-test-0123456789abcdefghijklmnopqrstuvwxyz"
++        data = base_profile()
++        data["agents"]["writer"]["model"] = "bad model " + secret
++        data[secret] = secret
++        result = self.run_cli(self.write(json.dumps(data).encode("utf-8")))
++        payload = self.assert_result(result, 1, False)
++        self.assertNotIn(secret, result.stdout)
++        self.assertEqual(payload["issues"], [
++            {"path": issue.path, "message": issue.message}
++            for issue in vp.validate_profile(data)
++        ])
++        self.assertIn("<redacted key>", result.stdout)
++
++    def test_content_failures_return_false_without_echoing_content(self):
++        secret = "private-profile-value"
++        content_cases = {
++            "malformed": ('{"name": "' + secret + '",}').encode("utf-8"),
++            "utf8": b'{"name": "\xff"}',
++            "oversized": b" " * (vp.MAX_BYTES + 1),
++        }
++        for name, content in content_cases.items():
++            with self.subTest(case=name):
++                result = self.run_cli(self.write(content))
++                payload = self.assert_result(result, 1, False)
++                self.assertEqual(payload["issues"][0]["path"], "(file)")
++                self.assertNotIn(secret, result.stdout)
++
++    def test_duplicate_keys_return_false(self):
++        text = json.dumps(base_profile())[:-1] + ', "access": "existing-subscriptions"}'
++        payload = self.assert_result(self.run_cli(self.write(text.encode("utf-8"))), 1, False)
++        self.assertIn({"path": "access", "message": "duplicate key in the same object"},
++                      payload["issues"])
++
++    def test_unsupported_numeric_version_is_not_echoed_in_json(self):
++        for version in (8675309123456789, -8675309123456789):
++            with self.subTest(version=version):
++                content = json.dumps({"version": version}).encode("utf-8")
++                result = self.run_cli(self.write(content))
++                payload = self.assert_result(result, 1, False)
++                self.assertNotIn(str(version), result.stdout)
++                self.assertEqual(payload["issues"], [{
++                    "path": "version",
++                    "message": "unsupported schema version; only 1 is supported, "
++                               "other fields were not interpreted",
++                }])
++
++    def test_unsupported_version_keeps_human_and_api_diagnostics(self):
++        version = 8675309123456789
++        content = json.dumps({"version": version})
++        message = (f"unsupported schema version {version}; only 1 is supported, "
++                   "other fields were not interpreted")
++        self.assertEqual(vp.check_text(content), [vp.Issue("version", message)])
++        path = self.write(content.encode("utf-8"))
++        result = subprocess.run(
++            [sys.executable, "-I", "-B", str(SCRIPT), str(path)],
++            cwd=str(self.tmp), capture_output=True, text=True, timeout=10,
++            env=dict(os.environ, TMPDIR=str(self.tmp)),
++        )
++        self.assertEqual(result.returncode, 1)
++        self.assertEqual(result.stdout, "")
++        self.assertEqual(result.stderr, f"invalid profile: 1 issue(s)\n  version: {message}\n")
++
++    def test_unreadable_and_directory_return_null_without_input_path(self):
++        for path in (self.tmp / "private-missing-profile.json", self.tmp):
++            with self.subTest(case=path.name):
++                result = self.run_cli(path)
++                payload = self.assert_result(result, 2, None)
++                self.assertEqual(len(payload["issues"]), 1)
++                self.assertEqual(payload["issues"][0]["path"], "(file)")
++                self.assertNotIn(str(path), result.stdout)
++                self.assertNotIn(path.name, result.stdout)
++
++    @unittest.skipUnless(hasattr(os, "mkfifo"), "POSIX FIFOs not available")
++    def test_fifo_returns_null_without_blocking(self):
++        fifo = self.tmp / "profile.fifo"
++        os.mkfifo(str(fifo))
++        payload = self.assert_result(self.run_cli(fifo), 2, None)
++        self.assertEqual(payload["issues"], [
++            {"path": "(file)", "message": "profile path is not a regular file"},
++        ])
++
++    def test_usage_errors_keep_argparse_behavior(self):
++        for args in ((), ("--unknown-option",), ("one.json", "two.json")):
++            with self.subTest(args=args):
++                result = self.run_cli(*args)
++                self.assertEqual(result.returncode, 2)
++                self.assertEqual(result.stdout, "")
++                self.assertIn("usage:", result.stderr)
++
++
++if __name__ == "__main__":
++    unittest.main()

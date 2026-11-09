@@ -7,7 +7,7 @@
   <link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png" sizes="180x180">
   <title>Experiments — Agents Collab</title>
-  <meta name="description" content="A completed quality-first pilot, public routing gate and earlier Agents Collab trials, with criteria, recovered grading and limitations.">
+  <meta name="description" content="Manual versus Rust CLI, independent review, routing and earlier Agents Collab trials, with frozen criteria and limitations.">
   <link rel="stylesheet" href="../assets/site.css">
   <script src="../assets/site.js" defer></script>
 </head>
@@ -31,8 +31,28 @@
   <main id="main">
     <article class="page">
       <p class="kicker">Notebook entry · 9 November 2026</p>
-      <h1>A completed quality pilot, with limits</h1>
-      <p class="lede">Independent review corrected a reproduced regression missed by self-check. The skill did not establish an added quality advantage over manual coordination. All required grading is complete; the interrupted attempts and methodological limits remain visible.</p>
+      <h1>Testing collaboration and its tooling</h1>
+      <p class="lede">The latest three-case trial compared the same skill with and without its Rust CLI. Both paths produced passing code and recovered a missing reviewer receipt. No added CLI usefulness was demonstrated. Earlier quality and routing studies remain below, with their limits.</p>
+
+      <h2 id="cli-usefulness"><span class="num">9 November 2026 · Six workflows complete</span>Same skill, with and without the Rust CLI</h2>
+      <p>We published the protocol before calls, then ran three authored tasks in disposable copies of public Agents Collab commit <code>94e5723</code>. A used the skill and manual records; B added the source-only CLI. Both used requested Sol 6.1 / High writing and fresh Astra / High reviews. The host still called the models; runtime effort was not independently attested.</p>
+      <div class="table-wrap" role="region" aria-labelledby="cli-caption" tabindex="0">
+        <table>
+          <caption id="cli-caption">Required final grouped checks — one workflow per arm and case</caption>
+          <thead><tr><th scope="col">Case</th><th scope="col">Manual skill</th><th scope="col">Same skill + CLI</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">JSON diagnostics</th><td>61/61 · reviewed repair</td><td>61/61 · reviewed repair</td></tr>
+            <tr><th scope="row">Identical dirty repair draft</th><td>48/48 · preserved Git state</td><td>48/48 · preserved Git state</td></tr>
+            <tr><th scope="row">Version option + missing receipt</th><td>52/52 · same invocation recovered</td><td>52/52 · same invocation recovered</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="stamp">No added CLI usefulness demonstrated</p>
+      <p>Both initial JSON implementations echoed a rejected numeric version; independent review found it in each arm and focused review checked the fixes. The dirty integer regression was deliberately seeded. Both repairs preserved staged documentation, the untracked test and the original index entries; final working inventories match.</p>
+      <p>In the receipt exercise, both paths kept the original reviewer and deadline without cancellation, reroll or duplicate dispatch. This was a controlled missing host receipt, not a provider outage. Correct manual handling and CLI handling count equally.</p>
+      <p><strong>A bookkeeping correction remains visible.</strong> One shared coordinator mapping mistake supplied an unsupported process exit code in two CLI rows. The host exposed completion but no process exit code. Original receipts were retained and annotated as unknown; final code passes do not erase this provenance qualification.</p>
+      <p>The 18 delegated model turns were matched, nine per arm; setup and publication review are separate. Three cases, one familiar project/operator, fixed order, manual-baseline assertions and first-use coordination limit inference. Elapsed spans include operator work and unrelated preparation, so they are not a speed comparison. Tokens and cost remain unknown. No general quality, equivalence, savings or automatic-routing claim follows.</p>
+      <p><a href="https://github.com/jaredchu/agents-collab/blob/main/evals/cli-usefulness/2026-11-09/report.md">Full report and execution qualifications</a> · <a href="https://github.com/jaredchu/agents-collab/blob/8b18301dbf3750d8521f0ff305dc202713546fe0/evals/cli-usefulness/2026-11-09/protocol.md">Preregistered protocol</a> · <a href="https://github.com/jaredchu/agents-collab/blob/main/evals/cli-usefulness/2026-11-09/results.json">All six result records</a> · <a href="https://github.com/jaredchu/agents-collab/tree/main/evals/cli-usefulness/2026-11-09/artifacts">Experimental patches</a></p>
 
       <h2 id="quality-pilot"><span class="num">9 November 2026 · Recovered grading complete</span>Same draft, three finishing paths</h2>
       <p>Six authored public-project tasks each used one genuine initial draft, frozen once and copied identically to A: fresh same-model self-check; B: manual independent review; and C: explicit <code>$agents-collab</code> with matched models. Tasks, rubric and success criteria were frozen before drafting. All six drafts and 18 finishing runs were retained.</p>

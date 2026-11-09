@@ -1,0 +1,174 @@
+diff --git a/skills/agents-collab/references/configuration.md b/skills/agents-collab/references/configuration.md
+index a95fc83..004248d 100644
+--- a/skills/agents-collab/references/configuration.md
++++ b/skills/agents-collab/references/configuration.md
+@@ -74,7 +74,17 @@ before dispatch. Run the validator on the selected profile before any dispatch:
+ python3 path/to/agents-collab/scripts/validate_profile.py PROFILE.json
+ ```
+ 
+-Exit status 0 means the structure matches this contract. Status 1 means invalid
++To print only the supported profile version (`1`) without reading a profile:
++
++```sh
++python3 path/to/agents-collab/scripts/validate_profile.py --print-supported-version
++```
++
++This exits 0. Combining the option with a profile path is a usage error (exit 2)
++and reads no profile. A profile path is required when the option is absent.
++
++For profile validation, exit status 0 means the structure matches this contract.
++Status 1 means invalid
+ profile content: malformed JSON, invalid UTF-8, a file over the size limit or
+ an invalid structure, listed by field where possible. Status 2 means an OS
+ error, unreadable or nonregular input (such as a directory or FIFO) or a
+diff --git a/skills/agents-collab/scripts/validate_profile.py b/skills/agents-collab/scripts/validate_profile.py
+index 3f5cae6..9ad832c 100644
+--- a/skills/agents-collab/scripts/validate_profile.py
++++ b/skills/agents-collab/scripts/validate_profile.py
+@@ -11,10 +11,10 @@ path and confirms the resolved records directory is outside the project.
+ Diagnostics name the field path and the rule. Field values are not echoed;
+ key names appear only when short and simple, otherwise they are redacted.
+ 
+-Exit status: 0 valid structure; 1 invalid profile content, including malformed
+-JSON, invalid UTF-8, a file over the size limit or an invalid structure; 2 an
+-OS error, unreadable or nonregular input (directory, FIFO, device) or a
+-command-line usage error.
++Exit status: 0 valid structure or supported-version output; 1 invalid profile
++content, including malformed JSON, invalid UTF-8, a file over the size limit or
++an invalid structure; 2 an OS error, unreadable or nonregular input (directory,
++FIFO, device) or a command-line usage error.
+ Requires Python 3.9+ and no third-party packages.
+ """
+ 
+@@ -479,9 +479,19 @@ def main(argv: Optional[List[str]] = None) -> int:
+         description="Check an agents-collab v1 profile's structure. Reads JSON only; "
+                     "does not check model availability, credentials, permissions or storage.",
+     )
+-    parser.add_argument("profile", help="path to the profile JSON file")
++    parser.add_argument("profile", nargs="?", help="path to the profile JSON file")
++    parser.add_argument("--print-supported-version", action="store_true",
++                        help="print the supported profile version without reading a profile")
+     args = parser.parse_args(argv)
+ 
++    if args.print_supported_version:
++        if args.profile is not None:
++            parser.error("--print-supported-version cannot be used with a profile")
++        print(SUPPORTED_VERSION)
++        return 0
++    if args.profile is None:
++        parser.error("the following arguments are required: profile")
++
+     try:
+         issues = check_file(args.profile)
+     except ProfileReadError as exc:
+diff --git a/tests/test_supported_version.py b/tests/test_supported_version.py
+new file mode 100644
+index 0000000..a734d15
+--- /dev/null
++++ b/tests/test_supported_version.py
+@@ -0,0 +1,105 @@
++"""CLI coverage for querying the supported profile version without profile I/O."""
++
++import contextlib
++import importlib.util
++import io
++import subprocess
++import sys
++import tempfile
++import unittest
++from pathlib import Path
++from unittest import mock
++
++
++PACKAGE = Path(__file__).resolve().parent.parent / "skills" / "agents-collab"
++SCRIPT = PACKAGE / "scripts" / "validate_profile.py"
++EXAMPLE = PACKAGE / "examples" / "profile.example.json"
++
++_previous_flag = sys.dont_write_bytecode
++sys.dont_write_bytecode = True
++try:
++    _spec = importlib.util.spec_from_file_location("supported_version_validator", SCRIPT)
++    vp = importlib.util.module_from_spec(_spec)
++    _spec.loader.exec_module(vp)
++finally:
++    sys.dont_write_bytecode = _previous_flag
++
++
++class SupportedVersion(unittest.TestCase):
++    def run_cli(self, *args):
++        return subprocess.run(
++            [sys.executable, "-I", "-B", str(SCRIPT), *args],
++            capture_output=True, timeout=10,
++        )
++
++    def test_option_alone_prints_exact_version(self):
++        result = self.run_cli("--print-supported-version")
++        self.assertEqual(result.returncode, 0)
++        self.assertEqual(result.stdout, b"1\n")
++        self.assertEqual(result.stderr, b"")
++
++    def test_option_uses_constant_and_never_reads_profile(self):
++        stdout, stderr = io.StringIO(), io.StringIO()
++        with mock.patch.object(vp, "SUPPORTED_VERSION", 42), \
++                mock.patch.object(vp, "read_profile_text") as reader, \
++                contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
++            self.assertEqual(vp.main(["--print-supported-version"]), 0)
++        reader.assert_not_called()
++        self.assertEqual(stdout.getvalue(), "42\n")
++        self.assertEqual(stderr.getvalue(), "")
++
++    def test_conflict_with_missing_path_is_usage_error_in_either_order(self):
++        with tempfile.TemporaryDirectory(prefix="agents-collab-version-") as tmp:
++            missing = str(Path(tmp) / "missing.json")
++            for args in (("--print-supported-version", missing),
++                         (missing, "--print-supported-version")):
++                with self.subTest(args=args):
++                    result = self.run_cli(*args)
++                    self.assertEqual(result.returncode, 2)
++                    self.assertEqual(result.stdout, b"")
++                    self.assertIn(b"usage:", result.stderr)
++                    self.assertIn(b"cannot be used with a profile", result.stderr)
++
++    def test_conflict_never_reads_any_positional_profile(self):
++        for path in (str(EXAMPLE), "missing.json", ""):
++            with self.subTest(path=path), \
++                    mock.patch.object(vp, "read_profile_text") as reader, \
++                    contextlib.redirect_stdout(io.StringIO()) as stdout, \
++                    contextlib.redirect_stderr(io.StringIO()) as stderr:
++                with self.assertRaises(SystemExit) as raised:
++                    vp.main(["--print-supported-version", path])
++                self.assertEqual(raised.exception.code, 2)
++                self.assertEqual(stdout.getvalue(), "")
++                self.assertIn("usage:", stderr.getvalue())
++                reader.assert_not_called()
++
++    def test_no_arguments_remains_usage_error(self):
++        result = self.run_cli()
++        self.assertEqual(result.returncode, 2)
++        self.assertEqual(result.stdout, b"")
++        self.assertIn(b"usage:", result.stderr)
++
++    def test_help_succeeds_and_lists_option(self):
++        result = self.run_cli("--help")
++        self.assertEqual(result.returncode, 0)
++        self.assertIn(b"--print-supported-version", result.stdout)
++        self.assertEqual(result.stderr, b"")
++
++    def test_ordinary_valid_profile_still_validates(self):
++        result = self.run_cli(str(EXAMPLE))
++        self.assertEqual(result.returncode, 0)
++        self.assertIn(b"valid v1 profile structure", result.stdout)
++        self.assertEqual(result.stderr, b"")
++
++    def test_ordinary_invalid_profile_still_fails(self):
++        with tempfile.TemporaryDirectory(prefix="agents-collab-version-") as tmp:
++            path = Path(tmp) / "invalid.json"
++            path.write_text("{}", encoding="utf-8")
++            result = self.run_cli(str(path))
++        self.assertEqual(result.returncode, 1)
++        self.assertEqual(result.stdout, b"")
++        self.assertIn(b"version: missing required key", result.stderr)
++
++
++if __name__ == "__main__":
++    unittest.main()

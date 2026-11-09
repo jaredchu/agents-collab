@@ -1,0 +1,153 @@
+diff --git a/skills/agents-collab/references/configuration.md b/skills/agents-collab/references/configuration.md
+index a95fc83..6b07538 100644
+--- a/skills/agents-collab/references/configuration.md
++++ b/skills/agents-collab/references/configuration.md
+@@ -74,6 +74,15 @@ before dispatch. Run the validator on the selected profile before any dispatch:
+ python3 path/to/agents-collab/scripts/validate_profile.py PROFILE.json
+ ```
+ 
++To print the supported profile version without reading a profile:
++
++```sh
++python3 path/to/agents-collab/scripts/validate_profile.py --print-supported-version
++```
++
++This prints `1` and exits 0. Combining the option with a profile path is a usage
++error (exit 2); omitting both is also a usage error.
++
+ Exit status 0 means the structure matches this contract. Status 1 means invalid
+ profile content: malformed JSON, invalid UTF-8, a file over the size limit or
+ an invalid structure, listed by field where possible. Status 2 means an OS
+diff --git a/skills/agents-collab/scripts/validate_profile.py b/skills/agents-collab/scripts/validate_profile.py
+index 3f5cae6..e41015f 100644
+--- a/skills/agents-collab/scripts/validate_profile.py
++++ b/skills/agents-collab/scripts/validate_profile.py
+@@ -479,8 +479,19 @@ def main(argv: Optional[List[str]] = None) -> int:
+         description="Check an agents-collab v1 profile's structure. Reads JSON only; "
+                     "does not check model availability, credentials, permissions or storage.",
+     )
+-    parser.add_argument("profile", help="path to the profile JSON file")
++    parser.add_argument("profile", nargs="?", help="path to the profile JSON file")
++    parser.add_argument(
++        "--print-supported-version", action="store_true",
++        help="print the supported profile version without reading a profile",
++    )
+     args = parser.parse_args(argv)
++    if args.print_supported_version:
++        if args.profile is not None:
++            parser.error("--print-supported-version cannot be combined with a profile")
++        print(SUPPORTED_VERSION)
++        return 0
++    if args.profile is None:
++        parser.error("the following arguments are required: profile")
+ 
+     try:
+         issues = check_file(args.profile)
+diff --git a/tests/test_supported_version.py b/tests/test_supported_version.py
+new file mode 100644
+index 0000000..2733ffa
+--- /dev/null
++++ b/tests/test_supported_version.py
+@@ -0,0 +1,102 @@
++"""CLI contract for querying the validator's supported profile version."""
++
++import contextlib
++import importlib.util
++import io
++import subprocess
++import sys
++import tempfile
++import unittest
++from pathlib import Path
++from unittest import mock
++
++
++PACKAGE = Path(__file__).resolve().parent.parent / "skills" / "agents-collab"
++SCRIPT = PACKAGE / "scripts" / "validate_profile.py"
++EXAMPLE = PACKAGE / "examples" / "profile.example.json"
++
++_previous_flag = sys.dont_write_bytecode
++sys.dont_write_bytecode = True
++try:
++    _spec = importlib.util.spec_from_file_location("supported_version_validator", SCRIPT)
++    vp = importlib.util.module_from_spec(_spec)
++    _spec.loader.exec_module(vp)
++finally:
++    sys.dont_write_bytecode = _previous_flag
++
++
++class SupportedVersion(unittest.TestCase):
++    def setUp(self):
++        self._tmp = tempfile.TemporaryDirectory(prefix="agents-collab-version-")
++        self.addCleanup(self._tmp.cleanup)
++        self.tmp = Path(self._tmp.name)
++
++    def run_cli(self, *args):
++        return subprocess.run(
++            [sys.executable, "-I", "-B", str(SCRIPT), *args],
++            cwd=str(self.tmp), capture_output=True, text=True, timeout=10,
++        )
++
++    def test_option_alone_prints_exact_version(self):
++        result = self.run_cli("--print-supported-version")
++        self.assertEqual(result.returncode, 0, result.stderr)
++        self.assertEqual(result.stdout, "1\n")
++        self.assertEqual(result.stderr, "")
++        self.assertEqual(list(self.tmp.iterdir()), [])
++
++    def test_version_comes_from_constant_without_reading_a_profile(self):
++        stdout, stderr = io.StringIO(), io.StringIO()
++        with mock.patch.object(vp, "SUPPORTED_VERSION", 73), \
++                mock.patch.object(vp, "read_profile_text") as read, \
++                contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
++            code = vp.main(["--print-supported-version"])
++        self.assertEqual(code, 0)
++        self.assertEqual(stdout.getvalue(), "73\n")
++        self.assertEqual(stderr.getvalue(), "")
++        read.assert_not_called()
++
++    def test_conflict_with_missing_path_is_usage_error_in_either_order(self):
++        missing = str(self.tmp / "missing.json")
++        for args in (("--print-supported-version", missing),
++                     (missing, "--print-supported-version")):
++            with self.subTest(args=args):
++                result = self.run_cli(*args)
++                self.assertEqual(result.returncode, 2)
++                self.assertEqual(result.stdout, "")
++                self.assertIn("usage:", result.stderr)
++                self.assertIn("cannot be combined", result.stderr)
++                stdout, stderr = io.StringIO(), io.StringIO()
++                with mock.patch.object(vp, "read_profile_text") as read, \
++                        contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
++                    with self.assertRaises(SystemExit) as raised:
++                        vp.main(list(args))
++                self.assertEqual(raised.exception.code, 2)
++                self.assertEqual(stdout.getvalue(), "")
++                read.assert_not_called()
++
++    def test_no_arguments_remains_usage_error(self):
++        result = self.run_cli()
++        self.assertEqual(result.returncode, 2)
++        self.assertEqual(result.stdout, "")
++        self.assertIn("usage:", result.stderr)
++        self.assertIn("profile", result.stderr)
++
++    def test_help_remains_successful(self):
++        result = self.run_cli("--help")
++        self.assertEqual(result.returncode, 0, result.stderr)
++        self.assertIn("--print-supported-version", result.stdout)
++        self.assertEqual(result.stderr, "")
++
++    def test_ordinary_profile_validation_remains_successful(self):
++        profile = self.tmp / "profile.json"
++        original = EXAMPLE.read_bytes()
++        profile.write_bytes(original)
++        result = self.run_cli(str(profile))
++        self.assertEqual(result.returncode, 0, result.stderr)
++        self.assertIn("valid v1 profile structure", result.stdout)
++        self.assertEqual(result.stderr, "")
++        self.assertEqual(profile.read_bytes(), original)
++
++
++if __name__ == "__main__":
++    unittest.main()

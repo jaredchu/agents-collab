@@ -1,0 +1,38 @@
+diff --git a/skills/agents-collab/references/configuration.md b/skills/agents-collab/references/configuration.md
+index a95fc83..c6286d4 100644
+--- a/skills/agents-collab/references/configuration.md
++++ b/skills/agents-collab/references/configuration.md
+@@ -206,3 +206,8 @@ by technical enforcement. Persist the effective timing policy and supervisor wit
+ the invocation state described in the review protocol. The example profiles use
+ advisory targets; a task/project hard deadline still requires supervision. A user
+ can select required timing in the profile without changing the skill.
++
++## Integer contract
++
++Numeric bounds require positive integers; the follow-up allowance permits zero.
++Booleans are not integers in the v1 profile contract.
+diff --git a/tests/test_integer_boundaries.py b/tests/test_integer_boundaries.py
+new file mode 100644
+index 0000000..8581d44
+--- /dev/null
++++ b/tests/test_integer_boundaries.py
+@@ -0,0 +1,19 @@
++"""Ordinary integer boundaries for the existing v1 contract."""
++import unittest
++from test_validate_profile import base_profile, vp
++
++
++class IntegerBoundaries(unittest.TestCase):
++    def test_followup_zero_is_valid(self):
++        data = base_profile()
++        data["review"]["max_followup_rounds"] = 0
++        self.assertEqual(vp.validate_profile(data), [])
++
++    def test_bounds_zero_is_invalid_and_one_is_valid(self):
++        for key in ("writer_minutes", "reviewer_minutes", "review_output_words"):
++            for value, valid in ((0, False), (1, True)):
++                with self.subTest(key=key, value=value):
++                    data = base_profile()
++                    data["bounds"][key] = value
++                    paths = [issue.path for issue in vp.validate_profile(data)]
++                    self.assertEqual("bounds." + key not in paths, valid)

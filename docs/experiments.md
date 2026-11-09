@@ -185,11 +185,17 @@ General productivity, quality or cost improvements; other lead assistants;
 reliable automatic routing; runtime effort attestation; filesystem isolation; or
 demand for the tool.
 
-## 4. Manual skill versus Rust CLI: preregistered comparison
+## 4. Same skill, with and without the Rust CLI
 
-The [three-case protocol](../evals/cli-usefulness/2026-11-09/protocol.md),
-[tasks](../evals/cli-usefulness/2026-11-09/tasks.md), frozen identities and
-[independent protocol review](../evals/cli-usefulness/2026-11-09/protocol-review.md)
-precede experimental calls. Both arms retain the same skill and model roles;
-only the record-and-packet CLI is added in B. Correctness is primary and injected
-faults do not count as spontaneous improvements. No arm results are available.
+The [completed three-case report](../evals/cli-usefulness/2026-11-09/report.md)
+retains the [preregistered protocol](../evals/cli-usefulness/2026-11-09/protocol.md),
+six final patches, grouped check results and execution qualifications. Both arms
+used the same skill and Sol/Astra requests. All six code outputs passed the
+required checks; same-invocation receipt recovery succeeded in both arms.
+
+No added CLI benefit was demonstrated. One shared coordinator error supplied an
+unsupported native process exit code in two CLI rows; originals and corrections
+are retained. Manual baseline assertions, first-use setup, operator carryover
+and incomplete work accounting limit inference. Timings are not a speed claim;
+tokens, task-attributable quota and cost remain unknown. The local CLI stays
+experimental and separate from the distributable skill.

@@ -212,14 +212,19 @@ semantics and real access interruptions remain distinct from those measurements.
 
 ## CLI usefulness comparison (9 November 2026)
 
-The [preregistered protocol](../evals/cli-usefulness/2026-11-09/protocol.md)
-compares the same skill used manually and with the pinned local CLI, across
-three public-source handoffs: a clean feature, an identical dirty repair draft
-and recovery of a deliberately missing host invocation receipt. Correctness and
-quality are primary; timing and available usage are descriptive. Independent
-protocol review found no material issue. No experimental arm has started and
-no effectiveness conclusion is available. Final results wait for all required
-stages; actual access limits leave the comparison unfinished.
+The [completed report](../evals/cli-usefulness/2026-11-09/report.md) follows
+preregistration at `8b18301`: three public-source tasks, six workflows, the same
+skill and Sol/Astra requests, with or without the pinned local CLI. All final
+code passed the required grouped checks (61/48/52 per arm), and both controlled
+receipt gaps recovered the original invocation and timing. The CLI demonstrated
+no added usefulness under the frozen rule. One shared coordinator provenance
+mistake affected two CLI rows; originals and corrections remain visible.
+
+The report is canonical for outcomes, baseline/execution deviations, first-use
+coordination costs and unavailable usage. Those limits prevent a general quality,
+speed, cost or equivalence claim. The skill, saved configuration and CLI under
+test were unchanged; experimental validator patches were not merged into the
+product. Source reproduction is public; raw execution evidence stays private.
 
 ## Progress
 
@@ -250,4 +255,4 @@ stages; actual access limits leave the comparison unfinished.
 - [x] Implement the source-only Rust local record-and-packet core.
 - [x] Exercise synthetic workflow, source identity, fault and concurrency cases.
 - [x] Complete independent implementation review and required focused corrections.
-- [ ] Complete the preregistered three-case manual-versus-CLI comparison; results pending.
+- [x] Complete and report the three-case manual-versus-CLI comparison, retaining qualifications.

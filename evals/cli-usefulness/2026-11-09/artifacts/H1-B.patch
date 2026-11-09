@@ -1,0 +1,206 @@
+diff --git a/skills/agents-collab/references/configuration.md b/skills/agents-collab/references/configuration.md
+index a95fc83..70753d3 100644
+--- a/skills/agents-collab/references/configuration.md
++++ b/skills/agents-collab/references/configuration.md
+@@ -74,6 +74,17 @@ before dispatch. Run the validator on the selected profile before any dispatch:
+ python3 path/to/agents-collab/scripts/validate_profile.py PROFILE.json
+ ```
+ 
++For machine-readable diagnostics, add `--json` before `PROFILE.json`. This emits
++exactly one JSON object on stdout, with no stderr: `schema_version` is integer
++`1`, `valid` is `true` (exit 0), `false` for invalid content (exit 1), or `null`
++when input cannot be read or is nonregular (exit 2), and `scope` is
++`"structure-only"`. `issues` is an array of objects containing only string
++`path` and `message` fields; it is empty on success. Read failures use `(file)`
++and content-free messages. Diagnostics retain the usual field-value redaction;
++unsupported-version messages omit the rejected number.
++Argument-usage errors keep argparse's text output and exit 2. Without `--json`,
++the existing human output is unchanged.
++
+ Exit status 0 means the structure matches this contract. Status 1 means invalid
+ profile content: malformed JSON, invalid UTF-8, a file over the size limit or
+ an invalid structure, listed by field where possible. Status 2 means an OS
+diff --git a/skills/agents-collab/scripts/validate_profile.py b/skills/agents-collab/scripts/validate_profile.py
+index 3f5cae6..f970abb 100644
+--- a/skills/agents-collab/scripts/validate_profile.py
++++ b/skills/agents-collab/scripts/validate_profile.py
+@@ -473,20 +473,45 @@ def validate_profile(data: Any) -> List[Issue]:
+     return issues
+ 
+ 
++def _json_issue(issue: Issue) -> Dict[str, str]:
++    """Omit rejected values retained by legacy human/API diagnostics."""
++    message = issue.message
++    if issue.path == "version" and message.startswith("unsupported schema version "):
++        message = (f"unsupported schema version; only {SUPPORTED_VERSION} is supported, "
++                   "other fields were not interpreted")
++    return {"path": issue.path, "message": message}
++
++
+ def main(argv: Optional[List[str]] = None) -> int:
+     parser = argparse.ArgumentParser(
+         prog="validate_profile.py",
+         description="Check an agents-collab v1 profile's structure. Reads JSON only; "
+                     "does not check model availability, credentials, permissions or storage.",
+     )
++    parser.add_argument("--json", dest="json_output", action="store_true",
++                        help="emit one JSON diagnostic object instead of human output")
+     parser.add_argument("profile", help="path to the profile JSON file")
+     args = parser.parse_args(argv)
+ 
+     try:
+         issues = check_file(args.profile)
+     except ProfileReadError as exc:
+-        print(f"error: {exc}", file=sys.stderr)
+-        return 2
++        if not args.json_output:
++            print(f"error: {exc}", file=sys.stderr)
++            return 2
++        issues = [Issue("(file)", str(exc))]
++        status = 2
++    else:
++        status = 1 if issues else 0
++
++    if args.json_output:
++        print(json.dumps({
++            "schema_version": 1,
++            "valid": None if status == 2 else not issues,
++            "issues": [_json_issue(issue) for issue in issues],
++            "scope": "structure-only",
++        }))
++        return status
+ 
+     if issues:
+         print(f"invalid profile: {len(issues)} issue(s)", file=sys.stderr)
+diff --git a/tests/test_json_diagnostics.py b/tests/test_json_diagnostics.py
+new file mode 100644
+index 0000000..c47f1a8
+--- /dev/null
++++ b/tests/test_json_diagnostics.py
+@@ -0,0 +1,126 @@
++"""JSON CLI diagnostics using synthetic inputs in the system temporary area."""
++
++import json
++import os
++import subprocess
++import sys
++import tempfile
++import unittest
++from pathlib import Path
++
++from test_validate_profile import SCRIPT, base_profile, vp
++
++
++class JsonDiagnostics(unittest.TestCase):
++    def setUp(self):
++        self._tmp = tempfile.TemporaryDirectory(prefix="agents-collab-json-")
++        self.tmp = Path(self._tmp.name)
++
++    def tearDown(self):
++        self._tmp.cleanup()
++
++    def run_cli(self, *args):
++        return subprocess.run(
++            [sys.executable, "-I", "-B", str(SCRIPT), "--json", *args],
++            cwd=str(self.tmp), capture_output=True, text=True, timeout=10,
++            env=dict(os.environ, TMPDIR=str(self.tmp)),
++        )
++
++    def write(self, content):
++        path = self.tmp / "profile.json"
++        path.write_bytes(content)
++        return path
++
++    def assert_result(self, result, status, valid):
++        self.assertEqual(result.returncode, status, result.stderr)
++        self.assertEqual(result.stderr, "")
++        # json.loads rejects multiple objects or any trailing non-JSON output.
++        data = json.loads(result.stdout)
++        self.assertEqual(set(data), {"schema_version", "valid", "issues", "scope"})
++        self.assertIs(type(data["schema_version"]), int)
++        self.assertEqual(data["schema_version"], 1)
++        self.assertIs(data["valid"], valid)
++        self.assertEqual(data["scope"], "structure-only")
++        self.assertIsInstance(data["issues"], list)
++        self.assertEqual(bool(data["issues"]), status != 0)
++        for issue in data["issues"]:
++            self.assertEqual(set(issue), {"path", "message"})
++            self.assertIsInstance(issue["path"], str)
++            self.assertIsInstance(issue["message"], str)
++        return data
++
++    def test_valid_profile(self):
++        content = json.dumps(base_profile()).encode("utf-8")
++        path = self.write(content)
++        self.assert_result(self.run_cli(str(path)), 0, True)
++        self.assertEqual(path.read_bytes(), content)
++        self.assertEqual(list(self.tmp.iterdir()), [path])
++
++    def test_invalid_structure_retains_redaction(self):
++        secret = "private-test-value-0123456789abcdefghijklmnopqrstuvwxyz"
++        profile = base_profile()
++        profile["agents"]["writer"]["model"] = "invalid model " + secret
++        profile["review"]["token"] = secret
++        profile[secret] = secret
++        path = self.write(json.dumps(profile).encode("utf-8"))
++        result = self.run_cli(str(path))
++        data = self.assert_result(result, 1, False)
++        self.assertEqual({issue["path"] for issue in data["issues"]},
++                         {"agents.writer.model", "review.token", "<redacted key>"})
++        self.assertNotIn(secret, result.stdout)
++
++    def test_content_failures(self):
++        secret = "private-content-0123456789abcdefghijklmnopqrstuvwxyz"
++        cases = (
++            (b'{"name": "' + secret.encode() + b'",}', "invalid JSON"),
++            (b'{"name": "\xff"}', "not valid UTF-8"),
++            (('{"version": 1, "' + secret + '": 0, "' + secret + '": 1}')
++             .encode("utf-8"), "duplicate key"),
++            (secret.encode() + b" " * vp.MAX_BYTES, "exceeds"),
++        )
++        for content, message in cases:
++            with self.subTest(message=message):
++                result = self.run_cli(str(self.write(content)))
++                data = self.assert_result(result, 1, False)
++                self.assertTrue(any(message in issue["message"] for issue in data["issues"]))
++                self.assertNotIn(secret, result.stdout)
++
++    def test_unsupported_numeric_version_does_not_echo_value(self):
++        for version in (918273645546372819, -918273645546372819):
++            with self.subTest(version=version):
++                path = self.write(json.dumps({"version": version}).encode("utf-8"))
++                result = self.run_cli(str(path))
++                data = self.assert_result(result, 1, False)
++                self.assertEqual([issue["path"] for issue in data["issues"]], ["version"])
++                self.assertIn("only 1 is supported", data["issues"][0]["message"])
++                self.assertNotIn(str(version), result.stdout + result.stderr)
++
++    def test_missing_and_nonregular_inputs(self):
++        for path in (self.tmp / "private-missing-profile.json", self.tmp):
++            with self.subTest(kind="directory" if path == self.tmp else "missing"):
++                result = self.run_cli(str(path))
++                data = self.assert_result(result, 2, None)
++                self.assertEqual([issue["path"] for issue in data["issues"]], ["(file)"])
++                self.assertNotIn(str(path), result.stdout)
++                self.assertNotIn(path.name, result.stdout)
++
++    @unittest.skipUnless(hasattr(os, "mkfifo"), "POSIX FIFOs not available")
++    def test_fifo_is_rejected_without_blocking(self):
++        path = self.tmp / "profile.fifo"
++        os.mkfifo(str(path))
++        data = self.assert_result(self.run_cli(str(path)), 2, None)
++        self.assertEqual(data["issues"], [{
++            "path": "(file)", "message": "profile path is not a regular file",
++        }])
++
++    def test_usage_errors_remain_argparse_errors(self):
++        for args in ((), ("--unknown-option",)):
++            with self.subTest(args=args):
++                result = self.run_cli(*args)
++                self.assertEqual(result.returncode, 2)
++                self.assertEqual(result.stdout, "")
++                self.assertIn("usage:", result.stderr)
++
++
++if __name__ == "__main__":
++    unittest.main()
