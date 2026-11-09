@@ -184,3 +184,12 @@ future routing, automatic selection for every task, or runtime effort.
 General productivity, quality or cost improvements; other lead assistants;
 reliable automatic routing; runtime effort attestation; filesystem isolation; or
 demand for the tool.
+
+## 4. Manual skill versus Rust CLI: preregistered comparison
+
+The [three-case protocol](../evals/cli-usefulness/2026-11-09/protocol.md),
+[tasks](../evals/cli-usefulness/2026-11-09/tasks.md), frozen identities and
+[independent protocol review](../evals/cli-usefulness/2026-11-09/protocol-review.md)
+precede experimental calls. Both arms retain the same skill and model roles;
+only the record-and-packet CLI is added in B. Correctness is primary and injected
+faults do not count as spontaneous improvements. No arm results are available.

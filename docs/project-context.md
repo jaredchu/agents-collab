@@ -210,6 +210,17 @@ Live comparisons, dispatch, MCP and a daemon remain unperformed and separately
 authorized work. No artificial experiment usage budget is imposed. Profile timing
 semantics and real access interruptions remain distinct from those measurements.
 
+## CLI usefulness comparison (9 November 2026)
+
+The [preregistered protocol](../evals/cli-usefulness/2026-11-09/protocol.md)
+compares the same skill used manually and with the pinned local CLI, across
+three public-source handoffs: a clean feature, an identical dirty repair draft
+and recovery of a deliberately missing host invocation receipt. Correctness and
+quality are primary; timing and available usage are descriptive. Independent
+protocol review found no material issue. No experimental arm has started and
+no effectiveness conclusion is available. Final results wait for all required
+stages; actual access limits leave the comparison unfinished.
+
 ## Progress
 
 - [x] Preserve the eight-file validated package as the initial source.
@@ -239,4 +250,4 @@ semantics and real access interruptions remain distinct from those measurements.
 - [x] Implement the source-only Rust local record-and-packet core.
 - [x] Exercise synthetic workflow, source identity, fault and concurrency cases.
 - [x] Complete independent implementation review and required focused corrections.
-- [ ] Assess usefulness only under separate authorization; no live comparison has run.
+- [ ] Complete the preregistered three-case manual-versus-CLI comparison; results pending.

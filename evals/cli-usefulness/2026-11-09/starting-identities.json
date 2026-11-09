@@ -1,0 +1,68 @@
+{
+  "cases": {
+    "H1": {
+      "file_count": 320,
+      "head": "94e57237e48eaee5c1583c95bbd9b408a4b803bc",
+      "index_sha256": "95d4b95ba4af48bd1893e0c39715461d0afe583192600cd3feaafadd587d8ecb",
+      "paired_start_equal": true,
+      "source_commit": "94e57237e48eaee5c1583c95bbd9b408a4b803bc",
+      "staged_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status_entries": [],
+      "status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unstaged_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "working_inventory_sha256": "425fcbdbc9c580ec7833f645fd73b062c410465ae42eccc4eb245b5002e816b4"
+    },
+    "H2": {
+      "file_count": 321,
+      "head": "94e57237e48eaee5c1583c95bbd9b408a4b803bc",
+      "index_sha256": "b921b046db3ec9e2de8f0384d13170d24f7a6f9c25efbc1ac6b2b2b506927efb",
+      "paired_start_equal": true,
+      "seeded_files": [
+        {
+          "bytes": 13112,
+          "mode": "100644",
+          "path": "skills/agents-collab/references/configuration.md",
+          "sha256": "6a08248a2e2e5dcd1f0df2725935f80ea29ade9b92983684be982399310fcc5d"
+        },
+        {
+          "bytes": 20433,
+          "mode": "100644",
+          "path": "skills/agents-collab/scripts/validate_profile.py",
+          "sha256": "1920c9442941dfac6a801fc6fa514cadca9e6477e123161be27f2520e75b2ecb"
+        },
+        {
+          "bytes": 857,
+          "mode": "100644",
+          "path": "tests/test_integer_boundaries.py",
+          "sha256": "66ca69d5e34dfbf811471bf3f82107502dce78770fff54a8673a8f572dc2261f"
+        }
+      ],
+      "source_commit": "94e57237e48eaee5c1583c95bbd9b408a4b803bc",
+      "staged_patch_sha256": "5486fa61fac5e6eb145d35e6d14a8dacc9d9e0c9cc09f636ac675562820fe51a",
+      "status_entries": [
+        "M  skills/agents-collab/references/configuration.md",
+        " M skills/agents-collab/scripts/validate_profile.py",
+        "?? tests/test_integer_boundaries.py"
+      ],
+      "status_sha256": "50917555c88a9eee0af333ae57df30d517564cc320471eb0875785dbcac0dce2",
+      "unstaged_patch_sha256": "08d0c510ae22d8b69b537d00d6994442c82c5ad736891c5301ff87f040507e6c",
+      "working_inventory_sha256": "a061389d93df4fd465293b4f27dbcfd90c44ac314daf7affa3367697e24b84db"
+    },
+    "H3": {
+      "file_count": 320,
+      "head": "94e57237e48eaee5c1583c95bbd9b408a4b803bc",
+      "index_sha256": "95d4b95ba4af48bd1893e0c39715461d0afe583192600cd3feaafadd587d8ecb",
+      "paired_start_equal": true,
+      "source_commit": "94e57237e48eaee5c1583c95bbd9b408a4b803bc",
+      "staged_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status_entries": [],
+      "status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unstaged_patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "working_inventory_sha256": "425fcbdbc9c580ec7833f645fd73b062c410465ae42eccc4eb245b5002e816b4"
+    }
+  },
+  "index_encoding": "SHA-256 of git ls-files --stage -z; staged path/blob/mode entries, not raw index cache bytes",
+  "inventory_encoding": "SHA-256 of UTF-8 sorted compact JSON inventory: path, Git mode, byte length, SHA-256; paths sorted by Git UTF-8 bytes; excludes .git",
+  "source_commit": "94e57237e48eaee5c1583c95bbd9b408a4b803bc",
+  "source_git_tree": "ab7e1b428cd67e2c0314e86880a05bc4f1986d5c"
+}

@@ -1,0 +1,12 @@
+{
+  "source_commit": "94e57237e48eaee5c1583c95bbd9b408a4b803bc",
+  "files": {
+    "protocol.md": "a19ee5b5d5a57482df35688331a9bc348faaa56971770c478fa394f2164615a6",
+    "tasks.md": "9deb756be7a341b367567cfd2dbb09336b749b82aac46bbe5b481bcd312e385e",
+    "oracle.md": "f600ac5c0accd68bd55c7e775e93d41590f2a92b2c3652766ba7f025905d360d",
+    "build_fixtures.py": "5f47a8ae920450079960ce15096e55c55bbfaa8db9c96b477ba4a911d12e3cde",
+    "check_case.py": "e5e757286f15e8bd1569b49625901a75b26dff09f858edc617f8fc204cf0c2df",
+    "starting-identities.json": "a1638810a09033666af57408dad5b9bf6d94e7c4e328008fd07e56b032b844fa",
+    "protocol-review.md": "e32c0f7fc261741c33940fac4e3d262e8a762dff4d46898c64e426be11b357d5"
+  }
+}
