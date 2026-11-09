@@ -52,6 +52,7 @@ were separated from project knowledge.
 | [Research](research.md) | Sanitized research notes |
 | [Experiments](experiments.md) | Validation and pilot summaries |
 | [History](history.md) | How the project emerged |
+| [Rust CLI prototype plan](plans/rust-cli-prototype.md) | Proposed implementation scope, alternatives and acceptance criteria |
 | [Contributing](../CONTRIBUTING.md) | Contribution and evidence guidelines |
 | [License](../LICENSE) | MIT License (identical copy in the skill package) |
 
@@ -174,6 +175,20 @@ safety defect, preserves original failures and maintains actual grader ratings.
 This does not establish general gains, reliable implicit activation or optimized
 communication. Follow the [interruption policy](../CONTRIBUTING.md#interrupted-experiments)
 for future blocked work: final results wait for all required stages.
+
+## Proposed Rust CLI prototype (9 November 2026)
+
+The [draft plan](plans/rust-cli-prototype.md) proposes a local record-and-packet
+CLI, with per-task private SQLite state and immutable artifact files. Its first
+deliverable records host-driven work and imports findings; model dispatch, MCP
+and a persistent daemon are deferred. Rust/SQLite versus a smaller helper,
+supported storage and snapshot guarantees remain design decisions.
+
+The proposed comparison measures normal collaboration, duplicated context,
+correctness and recovery without artificial experiment usage budgets. Existing
+profile timing semantics and real access limits remain distinct from those
+measurements. Implementation and live comparisons have not started; this plan
+does not authorize them or change the distributed skill or installed profile.
 
 ## Progress
 

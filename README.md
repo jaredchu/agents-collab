@@ -109,6 +109,7 @@ Read these before relying on it:
 | [`docs/research.md`](docs/research.md) | Sanitized research notes |
 | [`docs/experiments.md`](docs/experiments.md) | Validation, earlier pilots and the public routing gate |
 | [`docs/history.md`](docs/history.md) | How the project emerged |
+| [`Rust CLI prototype plan`](docs/plans/rust-cli-prototype.md) | Proposed record-and-packet core, boundaries and validation; not implemented |
 | [`docs/project-context.md`](docs/project-context.md) | Current facts, limits and progress |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution and evidence guidelines |
 | `tests/` | Dependency-free unit and repository checks |
