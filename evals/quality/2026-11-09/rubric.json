@@ -1,0 +1,153 @@
+{
+  "schema": "agents-collab-quality-pilot-rubric/draft-1",
+  "status": "frozen before participant work",
+  "units": {
+    "task_unit": "task (n = 6); no repetitions",
+    "graded_states": "24 per study: 6 initial drafts (I) and 18 finals (A, B, C). Every planned state is graded, including timed-out, partial or unchanged ones.",
+    "claims": "Descriptive per-task outcomes only. No significance test, effect size or general quality, speed or cost claim."
+  },
+  "evidence_order": [
+    "1. Build and common acceptance: fmt, clippy -D warnings, full cargo test, scope/dependency audit (lead, deterministic).",
+    "2. Hidden checks: private grader at the committed SHA-256, one fresh fixture root per state (deterministic, primary).",
+    "3. Blind grader review: anonymous diffs, source tree and steps 1-2 outputs (secondary; findings need corroboration).",
+    "4. Finding reconciliation: map every reviewer or self-check finding to evidence (non-blind, separate step)."
+  ],
+  "fatal": {
+    "definition": "The state does not compile, or no usable binary can be produced from it.",
+    "counting": "One fatal flag per state, ranked with blockers. Hidden checks are then not_run and are NOT counted as separate defects."
+  },
+  "severity": {
+    "blocker": "A stated safety invariant is violated: protected, active, unverified or retention-protected history deleted; a dry run or invalid input deletes; a read-only path writes, renews or signals; symlink refusal bypassed; environment values exposed; a mismatched keyed retry reused; or the requested feature is absent or unusable.",
+    "major": "A stated acceptance criterion fails in an ordinary scenario: wrong selection, window, order, count or path; an unchanged-behavior regression; an invalid value accepted with wrong behavior; full cargo test fails; required tests missing for a whole criterion.",
+    "minor": "An edge-case, message, envelope, help or README deviation; fmt or clippy failure; weak but present tests; nonzero required but a different nonzero class returned."
+  },
+  "defect_record": {
+    "required_fields": [
+      "state_id",
+      "unique_issue_id",
+      "severity",
+      "criterion",
+      "failure_scenario",
+      "reproduction",
+      "evidence",
+      "source"
+    ],
+    "source_values": [
+      "hidden_check",
+      "common_acceptance",
+      "blind_grader_corroborated"
+    ],
+    "reproduction": "A command sequence with fixture or a cited code path plus the input that reaches it. A model opinion without one is recorded as unconfirmed and never counted."
+  },
+  "causal_dedup": [
+    "Hidden-check severities are frozen in the grader declaration. Each failing causal group counts as one defect at the highest severity among its non-dependent failing checks.",
+    "A failing check whose declared depends_on check also failed is a dependent symptom and does not count.",
+    "Groups sharing one root cause are merged into one defect when the blind grader cites the single code location responsible; the merged defect takes the highest severity.",
+    "If the feature is absent or unusable, every positive check failure collapses into one blocker. Safety and compatibility checks still count separately when they fail.",
+    "One unique_issue_id is kept for the same causal issue across I, A, B and C on a task, so corrections and regressions can be tracked."
+  ],
+  "issue_transitions": {
+    "validated_correction": "A unique issue present and confirmed in I and absent in the final state, confirmed by the same check or reproduction.",
+    "introduced_regression": "A unique issue absent in I and confirmed in the final state.",
+    "persisting": "Confirmed in both I and the final state.",
+    "count_rule": "Report counts per task and branch by severity; never net corrections against regressions inside a single number."
+  },
+  "blind_grader": {
+    "model": "claude-fable-5-1, high reasoning, fresh call per state or per anonymised batch",
+    "sees": [
+      "task prompt",
+      "anonymous state label",
+      "diff against the base snapshot",
+      "read access to the state's source tree",
+      "common acceptance outputs",
+      "hidden check JSON"
+    ],
+    "never_sees": [
+      "branch or condition label",
+      "reviewer or self-check output",
+      "transcripts or history",
+      "timing or token usage",
+      "which state is the initial draft"
+    ],
+    "identical_trees": "States with identical tree hashes are graded once under one label and the result is copied to each; the mapping is held by the lead.",
+    "tasks": [
+      "confirm or merge hidden-check defects by root cause",
+      "report further defects with reproduction or conclusive code analysis tied to the criterion, including an executable failure scenario",
+      "score maintainability",
+      "judge review_items in tasks.json"
+    ],
+    "maintainability_0_4": {
+      "0": "Unmaintainable: logic conflicts with existing structure, misleading names or comments, dead or duplicated code paths that will diverge.",
+      "1": "Poor: works locally but is placed or duplicated inconsistently with existing helpers; tests brittle (timing, live processes) or missing.",
+      "2": "Adequate: follows the existing structure with some duplication, unclear edges or thin tests or docs.",
+      "3": "Good: idiomatic and localized, reuses existing helpers, deterministic tests cover the criteria, docs accurate.",
+      "4": "Excellent: minimal and clear, well-factored, precise deterministic tests, exact docs, nothing superfluous."
+    }
+  },
+  "finding_reconciliation": {
+    "applies_to": "Every finding produced by the A self-check, the B review and the C review.",
+    "classes": {
+      "true_positive": "Matches a defect confirmed in I by a hidden check, common acceptance or a reproduction.",
+      "false_positive": "The specific alleged failure is contradicted by a reproduction that exercises it or by conclusive code analysis against the written criterion. A different passing check or lack of reproduction does not disprove a finding.",
+      "unconfirmed": "Neither confirmed nor contradicted with the available evidence. Never counted as true or false."
+    },
+    "also_report": [
+      "true positives the revision fixed, left unfixed or fixed with a regression",
+      "blind grader defects in I that no review or self-check reported (unique catches)",
+      "findings outside the stated requirements (scope suggestions), listed separately"
+    ]
+  },
+  "comparison": {
+    "task_score": "Lexicographic tuple (fatal + blocker count, major count, minor count) over unique counted defects in the final state. Lower is better.",
+    "task_win": "X wins task t against Y when score(X_t) < score(Y_t). Equal tuples are a tie.",
+    "maintainability": "Reported per state and used only to order tied tasks in the descriptive table. A maintainability-only difference is never a win and never a defect benefit.",
+    "pairs": {
+      "B_vs_A": "independent-model review against same-writer self-check",
+      "C_vs_A": "agents-collab-led review against same-writer self-check",
+      "C_vs_B": "skill-specific effect: agents-collab-led against manual independent review with the same models"
+    },
+    "quality_advantage_established_only_if_all": [
+      "the first-named branch wins at least 2 of 6 tasks",
+      "its task wins outnumber its task losses",
+      "at least one win includes a validated correction of a major or blocker issue that the other branch's final state still has",
+      "it introduces no new blocker in any final state (no blocker introduced_regression)",
+      "its summed major count over the six finals does not exceed the other branch's",
+      "every planned state of both branches is complete and gradable"
+    ],
+    "otherwise": {
+      "too_few_initial_defects": "If fewer than 2 initial drafts contain a confirmed major or blocker defect, report 'no quality advantage established (inconclusive: too few initial defects)'.",
+      "criteria_not_met": "Report 'no quality advantage established'. Never report equivalence or harm-free parity.",
+      "incomplete": "If a required model, control or access is unavailable, or a planned state cannot be fully graded, report 'incomplete/inconclusive' for every comparison involving it. Never drop the state, substitute a model or record zero usage."
+    }
+  },
+  "secondary_measures": {
+    "per_branch": [
+      "wall-clock from branch start",
+      "per-call wall-clock",
+      "provider-reported tokens or usage (known, partial or unknown)",
+      "number of calls",
+      "timeouts and ceiling hits",
+      "operator interventions"
+    ],
+    "rule": "Unknown usage is unknown, never zero. Secondary measures never offset a quality result."
+  },
+  "scope_safety": {
+    "record_per_state": [
+      "paths outside allowed_paths",
+      "Cargo.toml or Cargo.lock changes",
+      "repository history changes",
+      "writes outside case, records, build or fixture locations where observable",
+      "processes left running after the state's tests"
+    ],
+    "severity": "An out-of-scope source change is minor unless it alters behavior outside the ticket (major) or touches skill, website, release or packaging files (blocker for scope)."
+  },
+  "reporting": [
+    "per-task table: I, A, B, C scores, maintainability and transitions",
+    "exact hidden check outcomes per state",
+    "finding reconciliation counts by branch",
+    "blind-grader unique catches",
+    "scope safety",
+    "secondary measures with completeness",
+    "grader or harness defects found after freeze, with the original outputs kept"
+  ]
+}

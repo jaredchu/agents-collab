@@ -1,0 +1,34 @@
+{
+  "frozen_at_utc": "2026-11-09T02:42:29.011342+00:00",
+  "initial_drafts_generated_before_freeze": 0,
+  "finishing_runs_before_freeze": 0,
+  "files": {
+    "run.py": "473d4cd8bd7c46f05da6ba479cea29ad23e0995d48036d644a537e125ad9a982",
+    "profile.example.json": "e99c3c7df69f839cf6aff1e942c8aced7d48e7c9ff8a3b9be1ac3cd8c3b289f4",
+    "rubric.json": "1674326522b6c8cf6a9d10637e5d117113b4bda86d8bcb90c4ed23528802b4db",
+    "check_harness.py": "12644e33475eef729eef88485a751b2397afb402ead8cc0e220d44d5685a20b1",
+    "schedule.json": "e3ff8651db3ef98621d631f93a7776c93439cafbac10854b60589570fb8a6142",
+    "blind-grading-prompt.md": "d94be1323af02a93f793c18f6ccd08d9174754eafafb5a1b7cd26691b21baedd",
+    "tasks.json": "f8d2f5e17d772aad57846f742b8da23cde06e5172818bb5eb02a0546fe340cf9",
+    "preflight.json": "7149dfb67fef4a2b4df157845991f81997239e4bcb78451cc5f4ea63068a9ddf",
+    "process_guard.py": "371fa106a14f8bc8beae11000a5eadbf1ccae9083e7388140d429f4cc0b069af",
+    "grade.py": "4a63e0f424e4476354b39b67ce7a4573d0cbd267df3ae29ad38838b118b79770",
+    "protocol.md": "3f3624922413078a23d971154b4b9fdbbc0f00450f137a8318fadcb3378282ac"
+  },
+  "hidden_grader_sha256": "23b5c812107b52ddb4d28f311fa9d4e22281cf4b0f492e778dfd04012f5f3fe4",
+  "hidden_supervision_sha256": "371fa106a14f8bc8beae11000a5eadbf1ccae9083e7388140d429f4cc0b069af",
+  "blind_mapping_sha256": "733cb77d1227bf8a8f0f45cd4ac38189b27b4c2a7a8332aa4d017197d7b50818",
+  "shared_transport_sha256": "a412b8012889ef35e8f16ef1f3a397ad27bd767a417be601ee61622aa119a563",
+  "skill_files": {
+    "SKILL.md": "d4c13bff7b0de45407540e5995e9e28748a193650d439d679f3d62f047e135c9",
+    "LICENSE": "bf0b3a6c39b32ff957d53ac611948ec2eaa2792d42387b9f275f58b2b093338c",
+    "references/review-protocol.md": "88110c6e0756324ee379df2a3dbacc8d702a05a14a13e83d9db45c4cd9de2c52",
+    "references/configuration.md": "65c586a345ab86691a329f1ecf4c70b84cca9b9e8e50b960489509a3aeaae1b3",
+    "agents/openai.yaml": "b211e6c95b4c246a8e2f6da3d0915c7b8e8193d612ba9904073a3864bb09e98d",
+    "examples/profile.example.json": "bbf35ea9e7fbfa34411f545ea5c25ec0f916e5e2d3006eb44c2d7182c70cbfbf",
+    "scripts/setup_profile.py": "e2276baea8ac85eb1708933cdccac7d8c6b4920e44648fd49889f549b3df420b",
+    "scripts/validate_profile.py": "dac2de8edc3b3efb2342aedf0023921bdf1d77398fc0d98f96705aafe3608010",
+    "assets/task-state.json": "fde19e5c377570022dd2ed9fb5b24bcd6705df73fdf56713a343d1ebe553b59d",
+    "assets/review-packet.md": "fa49116b7e6fb39854810f32d8af9b1ce9d0d3f0ac0d445cfd0f094782785293"
+  }
+}
