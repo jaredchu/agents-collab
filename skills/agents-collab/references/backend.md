@@ -192,8 +192,9 @@ seconds, deadline values copied from `show`):
 The file is private host bookkeeping. It is not an engine receipt and does not
 show whether a worker is alive. A private copy of the skill's
 `assets/task-state.json` invocation entry may hold the same fields instead. Write
-the draft JSON to a file `$DRAFT` outside `retries/`, then create the attempt file. Creation fails if the label
-already exists and syncs the file before you launch:
+the draft JSON to a file `$DRAFT` inside the private `$HOST/` but outside
+`$HOST/retries/`, then create the attempt file. Creation rejects invalid JSON,
+fails if the label already exists and syncs the file before you launch:
 
 ```sh
 mkdir -p "$HOST/retries"
@@ -223,6 +224,10 @@ not launch, create `<label>.not-launched.json` with that evidence. Then a later
 attempt, under the next label, may begin at step 2. If you cannot tell whether it
 launched, start nothing. Report the uncertainty and block the task
 (`command --entity task --action block`); never risk a duplicate worker.
+A `<label>.launched.json` whose invocation `show` does not list means step 4's
+`observe` did not commit. Reconcile the actual host or process, then attach that
+invocation with its actually observed state and the step 4 flags and reason;
+launch nothing. Unknown liveness still blocks any further launch.
 `observe --state launching` only re-records missing intent for a still-prepared
 assignment.
 
@@ -299,11 +304,21 @@ stdout and stderr. Before continuing:
 1. Run `show` and `check`; compare the revision, artifacts, packets and
    assignments with the last committed step.
 2. Establish whether any worker was launched and which packet it received.
-3. Continue only the missing step, for example `observe --state launching` after
-   a committed `assignment prepare`, or `context` with corrected flags after a
-   committed freeze but rejected seal.
+3. Continue only the missing step. After a committed `assignment prepare`,
+   re-record the intent:
 
-Never rerun a whole helper blindly or under new task/assignment IDs. Rejected
-operations are not retried automatically; revision conflicts need inspection.
-Use `show`, `check` and `packet` for resumption. Backend selection does not enable
-automatic skill discovery or establish quality, token or productivity gains.
+   ```sh
+   $B observe --record "$RECORD" --assignment write-1 --state launching \
+     --boundary-observations "Host dispatch has not occurred"
+   ```
+
+   After a committed freeze but rejected seal, rerun `context` with corrected
+   flags. The helper has no seal-only step, so this freezes again; the earlier
+   committed freeze stays in the record as evidence. Inspect `show` and the new
+   workflow JSON afterwards.
+
+Never repeat `start` or `assignment` blindly, and never rerun any helper under
+new task/assignment IDs. Rejected operations are not retried automatically;
+revision conflicts need inspection. Use `show`, `check` and `packet` for
+resumption. Backend selection does not enable automatic skill discovery or
+establish quality, token or productivity gains.

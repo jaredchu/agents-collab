@@ -96,11 +96,12 @@ the diff; do not claim filesystem isolation from a fresh session or worktree.
 
 Record every initial result on that frozen identity before sharing findings or
 starting fixes. The writer assesses findings and fixes the assigned change; the
-lead integrates and checks targeted evidence. A material coordinator-authored fix needs an explicit writer handoff and any
-applicable review. Allow one initial round plus `max_followup_rounds`; a pair of
-initial reviewers is one round, and renamed tasks or replacement reviewers never
-reset it. At the cap, report unresolved material issues. No cap, vote or model
-consensus waives an owner requirement or approves publication.
+lead integrates and checks targeted evidence. A material coordinator-authored
+fix needs an explicit writer handoff and any applicable review. Allow one
+initial round plus `max_followup_rounds`; a pair of initial reviewers is one
+round, and renamed tasks or replacement reviewers never reset it. At the cap,
+report unresolved material issues. No cap, vote or model consensus waives an
+owner requirement or approves publication.
 
 Keep execution records private: for actual collaboration use the profile's task
 directory after confirming it does not overlap the project root

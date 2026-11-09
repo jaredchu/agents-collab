@@ -167,6 +167,55 @@ class BackendTests(unittest.TestCase):
         self.assertFalse(log.exists())
         self.assertEqual(sorted(self.root.iterdir()), before)
 
+    def test_shipped_retry_attempt_creation_is_exclusive_private_and_validated(self):
+        text = (SCRIPTS.parent / "references/backend.md").read_text()
+        intent = next(json.loads(b) for b in re.findall(r"```json\n(.*?)```", text, re.S)
+                      if "agents-collab-retry-intent" in b)
+        self.assertEqual((intent["state"], intent["new_invocation"]), ("launching", None))
+        self.assertTrue(intent["attempt"].startswith(intent["assignment"] + ".attempt-"))
+        for key in ("packet", "agent", "original_target", "previous_invocation", "previous_absence_evidence"):
+            self.assertTrue(isinstance(intent[key], str) and intent[key].strip(), key)
+        for key in ("original_deadline", "created_at"):
+            self.assertIsInstance(intent[key], int, key)
+        launched = json.loads(re.search(r'`(\{"attempt":[^`]*\})`', text).group(1))
+        self.assertEqual((launched["attempt"], launched["state"]), (intent["attempt"], "running"))
+        self.assertTrue(launched["new_invocation"])
+        [create] = [b for b in re.findall(r"```sh\n(.*?)```", text, re.S) if "O_EXCL" in b]
+        target = intent["attempt"] + ".json"
+        self.assertIn(target, create)
+
+        def run(host, draft, command=create):
+            env = {**os.environ, "HOST": str(host), "DRAFT": str(draft)}
+            return subprocess.run(["sh", "-c", command], env=env, capture_output=True, text=True).returncode
+
+        host = self.root / "host"
+        host.mkdir()
+        draft = host / "draft.json"
+        draft.write_text(json.dumps(intent))
+        self.assertEqual(run(host, draft), 0)
+        attempt = host / "retries" / target
+        original = attempt.read_bytes()
+        self.assertEqual(json.loads(original), intent)
+        self.assertEqual(attempt.stat().st_mode & 0o777, 0o600)
+
+        draft.write_text(json.dumps({**intent, "previous_invocation": "overwrite"}))
+        self.assertNotEqual(run(host, draft), 0)
+        self.assertEqual(attempt.read_bytes(), original)
+
+        draft.write_text(json.dumps(launched))
+        marker = host / "retries" / (intent["attempt"] + ".launched.json")
+        self.assertEqual(run(host, draft, create.replace(target, marker.name)), 0)
+        self.assertEqual(json.loads(marker.read_bytes()), launched)
+        self.assertEqual(marker.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(attempt.read_bytes(), original)
+
+        fresh = self.root / "fresh-host"
+        fresh.mkdir()
+        malformed = fresh / "draft.json"
+        malformed.write_text('{"kind": "agents-collab-retry-intent",')
+        self.assertNotEqual(run(fresh, malformed), 0)
+        self.assertEqual(list((fresh / "retries").iterdir()), [])
+
 
 @unittest.skipUnless(os.environ.get("AGENTS_COLLAB_TEST_BINARY"), "set explicit real CLI path for offline macOS/APFS integration")
 class RealBackendTests(unittest.TestCase):
