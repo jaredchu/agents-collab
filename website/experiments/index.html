@@ -7,7 +7,7 @@
   <link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png" sizes="180x180">
   <title>Experiments — Agents Collab</title>
-  <meta name="description" content="A public automatic-routing gate, explicit-skill diagnostics and two earlier pilots of Agents Collab, with inputs, measurements and limits.">
+  <meta name="description" content="A quality-first three-way pilot, a public routing gate and earlier Agents Collab trials, including incomplete outcomes and reproduced defects.">
   <link rel="stylesheet" href="../assets/site.css">
   <script src="../assets/site.js" defer></script>
 </head>
@@ -31,8 +31,28 @@
   <main id="main">
     <article class="page">
       <p class="kicker">Notebook entry · 9 November 2026</p>
-      <h1>A public gate, after two small trials</h1>
-      <p class="lede">Ordinary prompts missed the required collaboration routes in a public-project gate. Explicit skill invocation followed the configured routes in three diagnostics. The planned comparison stopped; no usefulness or cost benefit follows.</p>
+      <h1>Quality first, with the incomplete result visible</h1>
+      <p class="lede">A six-task pilot recorded useful independent catches, but its required blind grader hit a subscription limit. Every comparison is incomplete/inconclusive. The artifacts, failures and earlier negative results remain public.</p>
+
+      <h2 id="quality-pilot"><span class="num">9 November 2026 · Quality before speed</span>Same draft, three finishing paths</h2>
+      <p>We froze six new authored tickets, a quality rubric and success criteria before generating any draft. Each task used one genuine Opus draft, frozen once and copied identically into A: fresh same-model self-check; B: manual Astra review and Opus repair; and C: explicit <code>$agents-collab</code> selecting the same models from a benchmark profile. All six drafts and 18 finishing runs completed. Hidden checks ran only after outputs were frozen.</p>
+      <p class="stamp">Registered result: incomplete/inconclusive for all three comparisons</p>
+      <p>The required anonymous Fable grading stage hit its existing subscription’s five-hour limit. None of six calls returned an assessment. Maintainability and complete task scores are unknown. We used no replacement model, reset or new grading attempt. Later operator corroboration is openly non-blind and cannot replace this missing stage.</p>
+      <div class="table-wrap" role="region" aria-labelledby="quality-caption" tabindex="0">
+        <table>
+          <caption id="quality-caption">Corroborated material cases only — not complete quality scores</caption>
+          <thead><tr><th scope="col">Defect in initial draft</th><th scope="col">A: self-check</th><th scope="col">B: manual review</th><th scope="col">C: Agents Collab</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Protected prune preview disagrees with real removal</th><td>Present</td><td>Corrected</td><td>Corrected</td></tr>
+            <tr><th scope="row">Quarantine history deleted during retention protection</th><td>Present</td><td>Corrected</td><td>Present</td></tr>
+            <tr><th scope="row">Existing script invocation name changes without the new option</th><td>Present</td><td>Corrected</td><td>Corrected</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>These are useful independent catches missed by self-check. They also show a safety defect the skill path left behind. No skill-specific quality advantage is established. The quarantine behavior already existed in the public base; it violated the new ticket’s explicit protection requirement.</p>
+      <p>All artifacts built. Two actual full-suite executions failed an existing 700 ms expiry test under concurrent grading; both failures remain in the record. One frozen prune-preview oracle contradicted the written task, so its affected check is invalid for every Q4 state, with original outputs preserved. Passing the other hidden checks did not detect the script or quarantine cases.</p>
+      <p><a href="https://github.com/jaredchu/agents-collab/blob/main/evals/quality/2026-11-09/report.md">Full protocol, results and limits</a> · <a href="https://github.com/jaredchu/agents-collab/tree/main/evals/quality/2026-11-09/artifacts">All 24 artifact states</a> · <a href="https://github.com/jaredchu/agents-collab/blob/main/evals/quality/2026-11-09/blind-assessments.json">Every failed blind-grader call</a> · <a href="https://github.com/jaredchu/agents-collab/blob/main/evals/quality/2026-11-09/finding-reconciliation.json">Finding dispositions</a></p>
+      <p>Six authored tasks, one public Rust project, one host and no repetitions cannot support general quality, speed or cost claims. Actual tool permissions differed despite matched requests. The study uses explicit skill invocation and does not change the earlier failed automatic-routing result.</p>
 
       <h2 id="automatic-routing"><span class="num">9 November 2026 · Public source</span>Activation and routing are separate claims</h2>
       <p>We published the <a href="https://github.com/jaredchu/agents-collab/blob/e0cbaa38adf8a7b582312c148869510ab3af006d/evals/automatic-routing/2026-11-09/protocol.md">protocol and inputs before outcomes</a>, then ran three authored engineering tickets against disposable copies of public ProcLease commit <code>37975b5</code>. Its project instructions had no model-collaboration policy. The active project, global instructions, installed skill and personal profile were unchanged.</p>

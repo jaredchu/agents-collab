@@ -1,0 +1,110 @@
+[
+  {
+    "id": "Q1-B",
+    "model": "gpt-6-astra",
+    "effort_interface": "high",
+    "forked_from_id": null,
+    "has_parent": true,
+    "ephemeral": true,
+    "runtime_effort_attested": false
+  },
+  {
+    "id": "Q1-C",
+    "model": "gpt-6-astra",
+    "effort_interface": "high",
+    "forked_from_id": null,
+    "has_parent": true,
+    "ephemeral": true,
+    "runtime_effort_attested": false
+  },
+  {
+    "id": "Q2-B",
+    "model": "gpt-6-astra",
+    "effort_interface": "high",
+    "forked_from_id": null,
+    "has_parent": true,
+    "ephemeral": true,
+    "runtime_effort_attested": false
+  },
+  {
+    "id": "Q2-C",
+    "model": "gpt-6-astra",
+    "effort_interface": "high",
+    "forked_from_id": null,
+    "has_parent": true,
+    "ephemeral": true,
+    "runtime_effort_attested": false
+  },
+  {
+    "id": "Q3-B",
+    "model": "gpt-6-astra",
+    "effort_interface": "high",
+    "forked_from_id": null,
+    "has_parent": true,
+    "ephemeral": true,
+    "runtime_effort_attested": false
+  },
+  {
+    "id": "Q3-C",
+    "model": "gpt-6-astra",
+    "effort_interface": "high",
+    "forked_from_id": null,
+    "has_parent": true,
+    "ephemeral": true,
+    "runtime_effort_attested": false
+  },
+  {
+    "id": "Q4-B",
+    "model": "gpt-6-astra",
+    "effort_interface": "high",
+    "forked_from_id": null,
+    "has_parent": true,
+    "ephemeral": true,
+    "runtime_effort_attested": false
+  },
+  {
+    "id": "Q4-C",
+    "model": "gpt-6-astra",
+    "effort_interface": "high",
+    "forked_from_id": null,
+    "has_parent": true,
+    "ephemeral": true,
+    "runtime_effort_attested": false
+  },
+  {
+    "id": "Q5-B",
+    "model": "gpt-6-astra",
+    "effort_interface": "high",
+    "forked_from_id": null,
+    "has_parent": true,
+    "ephemeral": true,
+    "runtime_effort_attested": false
+  },
+  {
+    "id": "Q5-C",
+    "model": "gpt-6-astra",
+    "effort_interface": "high",
+    "forked_from_id": null,
+    "has_parent": true,
+    "ephemeral": true,
+    "runtime_effort_attested": false
+  },
+  {
+    "id": "Q6-B",
+    "model": "gpt-6-astra",
+    "effort_interface": "high",
+    "forked_from_id": null,
+    "has_parent": true,
+    "ephemeral": true,
+    "runtime_effort_attested": false
+  },
+  {
+    "id": "Q6-C",
+    "model": "gpt-6-astra",
+    "effort_interface": "high",
+    "forked_from_id": null,
+    "has_parent": true,
+    "ephemeral": true,
+    "runtime_effort_attested": false
+  }
+]

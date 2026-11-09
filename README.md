@@ -43,6 +43,13 @@ required collaboration routes on ordinary prompts. Explicit skill invocation
 matched all three expected routes in that small diagnostic, including staying
 solo for routine work; no model names were supplied in the prompts.
 
+A separate [quality-first three-way pilot](evals/quality/2026-11-09/report.md)
+completed six initial drafts and 18 finishing runs. Independent reviews fixed
+reproduced defects missed by self-check, but the required blind grader hit its
+subscription limit. All comparisons are incomplete/inconclusive; no
+skill-specific quality advantage is established. The full artifact and failure
+record is public.
+
 Prefer no Node.js? Use the [manual ZIP or checkout instructions](docs/guide.md#manual-installation).
 The workflow currently targets a Codex lead; installing the files for another
 agent does not establish support for that lead.

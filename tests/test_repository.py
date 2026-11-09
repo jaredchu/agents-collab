@@ -297,7 +297,12 @@ class Website(unittest.TestCase):
                         re.escape(REPO_URL) + r"/blob/(?:main|[0-9a-f]{40})/evals/automatic-routing/"
                         r"[0-9]{4}-[0-9]{2}-[0-9]{2}/(?:protocol\.md|report\.md|runs\.jsonl|evidence\.json)", ref
                     )
-                    self.assertTrue(ref in allowed or study_ref, ref)
+                    quality_ref = re.fullmatch(
+                        re.escape(REPO_URL) + r"/(?:blob/(?:main|[0-9a-f]{40})/evals/quality/"
+                        r"[0-9]{4}-[0-9]{2}-[0-9]{2}/(?:report\.md|blind-assessments\.json|finding-reconciliation\.json)"
+                        r"|tree/main/evals/quality/[0-9]{4}-[0-9]{2}-[0-9]{2}/artifacts)", ref
+                    )
+                    self.assertTrue(ref in allowed or study_ref or quality_ref, ref)
                 self.assertNotRegex(text, r'href="[^"]*(?:OWNER|your-org|example-org)')
                 self.assertNotIn('href="#"', text)
                 self.assertIn("MIT License", text)

@@ -1,0 +1,266 @@
+{
+  "binary_sha256": "82c3e8a1300f98c5f1965d6184a91b891ebdc0681a719907cb68cd30fa910634",
+  "checks": [
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        3
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "active then unverified groups lead both sorts, by creation then ID",
+      "evidence": "--sort finished: ok; --all --sort finished: ok; --sort created: ok; --all --sort created: ok",
+      "group": "live-first",
+      "id": "q3.live_first",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        4
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "finished segment is newest-finish first (ties checked separately)",
+      "evidence": "--all finished segment ['000000000312', '000000000316', '000000000311', '000000000313', '000000000317', '000000000314', '000000000315']; default finished segment ['000000000312', '000000000316', '000000000311', '000000000313', '000000000317']",
+      "group": "finished-order",
+      "id": "q3.order.finished",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        4
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "finished segment is creation ascending (ties checked separately)",
+      "evidence": "--all created segment ['000000000311', '000000000312', '000000000313', '000000000314', '000000000315', '000000000316', '000000000317']; default created segment ['000000000311', '000000000312', '000000000313', '000000000316', '000000000317']",
+      "group": "created-order",
+      "id": "q3.order.created",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        3,
+        4
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "equal sort times are broken by job ID ascending",
+      "evidence": "finished tie 311<313 in ['000000000312', '000000000316', '000000000311', '000000000313', '000000000317', '000000000314', '000000000315']; created tie 316<317 in ['000000000311', '000000000312', '000000000313', '000000000314', '000000000315', '000000000316', '000000000317']",
+      "group": "tie-break",
+      "id": "q3.tiebreak",
+      "severity": "minor",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        2
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "--sort never changes which jobs the default window shows",
+      "evidence": "--sort finished set: ok; --sort created set: ok",
+      "group": "window",
+      "id": "q3.window",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        1
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "without --sort, default and --all sets and rank/creation order unchanged",
+      "evidence": "() keys: ok; () set: ok; () rank/creation order ok; ('--all',) keys: ok; ('--all',) set: ok; ('--all',) rank/creation order ok",
+      "group": "compat",
+      "id": "q3.compat",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        5
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "human --all --sort finished prints rows in the JSON order",
+      "evidence": "positions ['000000000302', '000000000301', '000000000304', '000000000303', '000000000312', '000000000316', '000000000311', '000000000313', '000000000317', '000000000314', '000000000315']",
+      "group": "human",
+      "id": "q3.human",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        5
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "JSON envelope and per-job fields unchanged with --sort",
+      "evidence": "envelope: ok; job field sets: ok",
+      "group": "envelope",
+      "id": "q3.envelope",
+      "severity": "minor",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        2
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "invalid --sort values fail without a job list",
+      "evidence": "all rejected",
+      "group": "validation",
+      "id": "q3.reject",
+      "severity": "minor",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        5
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "watch rejects --sort and its JSON is unchanged",
+      "evidence": "watch --sort [--json watch --once --sort finished] exit 2; watch set: ok; watch order",
+      "group": "compat",
+      "id": "q3.watch",
+      "severity": "minor",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        6
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "sorted reads leave job files byte-identical",
+      "evidence": "changed files: []; endpoint present",
+      "group": "read-only",
+      "id": "q3.readonly",
+      "severity": "blocker",
+      "status": "pass"
+    }
+  ],
+  "cleanup": {
+    "command_groups": {
+      "all_absent": true,
+      "count": 27
+    },
+    "detached_fixture_inventory": {
+      "detached_process_absence": "not guaranteed when metadata has been deleted",
+      "jobs": [],
+      "observable_cleanup_complete": true,
+      "unresolved_ids": []
+    }
+  },
+  "counts": {
+    "fail": 0,
+    "not_run": 0,
+    "pass": 11
+  },
+  "duration_s": 0.51,
+  "fatal": false,
+  "fatal_evidence": null,
+  "grader_version": "2026-11-09.1",
+  "groups": {
+    "compat": {
+      "checks": [
+        "q3.compat",
+        "q3.watch"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "created-order": {
+      "checks": [
+        "q3.order.created"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "envelope": {
+      "checks": [
+        "q3.envelope"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "finished-order": {
+      "checks": [
+        "q3.order.finished"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "human": {
+      "checks": [
+        "q3.human"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "live-first": {
+      "checks": [
+        "q3.live_first"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "read-only": {
+      "checks": [
+        "q3.readonly"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "tie-break": {
+      "checks": [
+        "q3.tiebreak"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "validation": {
+      "checks": [
+        "q3.reject"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "window": {
+      "checks": [
+        "q3.window"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    }
+  },
+  "harness_error": null,
+  "task": "Q3"
+}

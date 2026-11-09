@@ -1,0 +1,120 @@
+   Compiling libc v0.2.191
+   Compiling typenum v1.20.1
+   Compiling utf8parse v0.2.2
+   Compiling cfg-if v1.0.5
+   Compiling is_terminal_polyfill v1.70.2
+   Compiling colorchoice v1.0.5
+   Compiling anstyle-query v1.1.5
+   Compiling anstyle v1.0.14
+   Compiling serde_core v1.0.229
+   Compiling strsim v0.11.1
+   Compiling clap_lex v1.1.1
+   Compiling anstyle-parse v1.0.0
+   Compiling memchr v2.8.3
+   Compiling zmij v1.0.23
+   Compiling core-foundation-sys v0.8.7
+   Compiling bitflags v2.13.2
+   Compiling anstream v1.0.0
+   Compiling itoa v1.0.18
+   Compiling anyhow v1.0.104
+   Compiling fastrand v2.5.0
+   Compiling unicode-width v0.2.2
+   Compiling clap_builder v4.6.7
+   Compiling once_cell v1.21.4
+   Compiling humantime v2.4.0
+   Compiling generic-array v0.14.7
+   Compiling errno v0.3.14
+   Compiling getrandom v0.4.3
+   Compiling cpufeatures v0.2.17
+   Compiling sysinfo v0.33.1
+   Compiling fs2 v0.4.3
+   Compiling uuid v1.29.0
+   Compiling signal-hook-registry v1.4.8
+   Compiling rustix v1.1.6
+   Compiling signal-hook v0.3.18
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling digest v0.10.7
+   Compiling sha2 v0.10.9
+   Compiling tempfile v3.27.0
+   Compiling clap v4.6.7
+   Compiling serde v1.0.229
+   Compiling serde_json v1.0.154
+   Compiling proclease v0.1.6 (<study-work>/grading/Q2-artifact-b20fd33cfb/repo)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.91s
+     Running unittests src/main.rs (<study-work>/grading/Q2-artifact-b20fd33cfb/target/debug/deps/proclease-cc881de4e510da2d)
+
+running 15 tests
+test model::tests::durations_are_bounded_and_explicit ... ok
+test readiness::tests::literal_matches_survive_every_chunk_boundary ... ok
+test display::tests::unicode_and_untrusted_text_stay_inside_narrow_and_wide_views ... ok
+test readiness::tests::readiness_flags_are_validated_before_launch ... ok
+test readiness::tests::text_is_literal_not_a_pattern ... ok
+test tests::log_selection_uses_the_same_line_splitting_at_either_end ... ok
+test tests::fingerprint_sections_do_not_alias_and_legacy_records_are_verified ... ok
+test readiness::tests::spent_budget_never_reports_ready_even_when_probes_succeed ... ok
+test readiness::tests::non_regular_capture_fails_observation_without_blocking ... ok
+test lifecycle::tests::job_finished_before_dispatch_is_success_without_control ... ok
+test lifecycle::tests::invalid_retention_guard_fails_before_control_and_is_not_followed ... ok
+test lifecycle::tests::observation_failure_preserves_the_selected_record ... ok
+test lifecycle::tests::metadata_bounds_are_capped_and_record_identity_is_checked ... ok
+test lifecycle::tests::selected_starting_job_is_stopped_once_running ... ok
+test lifecycle::tests::retention_guard_preserves_selection_until_last_holder_releases ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.55s
+
+     Running tests/lifecycle.rs (<study-work>/grading/Q2-artifact-b20fd33cfb/target/debug/deps/lifecycle-b21e13fe2db22db9)
+
+running 49 tests
+test default_views_show_recent_completion_then_history_but_keep_unverified_jobs ... ok
+test concurrent_retries_create_one_job ... ok
+test capture_is_bounded_and_terminal_controls_are_escaped ... ok
+test bulk_human_output_summarizes_and_escapes_failures ... ok
+test expiry_does_not_wait_for_application_readiness ... ok
+test empty_launch_reservation_does_not_block_keyed_runs ... ok
+test bulk_stop_waits_for_stopping_jobs_and_concurrent_bulk_stops_agree ... ok
+test bulk_stop_reports_unverified_and_unreadable_records_but_stops_the_rest ... ok
+test bulk_stop_filters_dry_run_and_cleans_stubborn_groups ... ok
+test failed_launch_and_invalid_inputs_are_explicit ... ok
+test grace_window_controls_return_lifecycle_results ... ok
+test explicit_retry_is_idempotent_without_renewal_or_resurrection ... ok
+test invalid_readiness_flags_launch_nothing ... ok
+test altered_launch_grace_or_metadata_cannot_abort_other_stops ... ok
+test explicit_extension_and_observation_have_distinct_semantics ... ok
+test guardian_failure_is_cleaned_by_keeper ... ok
+test failed_history_deletion_is_quarantined_and_does_not_block_keyed_launches ... ok
+test guardian_setup_failure_is_a_failed_launch ... ok
+test keeper_failure_is_fail_closed ... ok
+test human_tables_respect_width_and_color_without_affecting_json ... ok
+test leader_exit_does_not_leave_a_listening_descendant ... ok
+test expiry_kills_term_resistant_children_after_launcher_returns ... ok
+test keyed_readiness_retry_is_observational_and_wait_releases_launch_lock ... ok
+test bulk_stop_is_parallel_bounded_and_ignores_later_launches ... ok
+test logs_head_selects_bounds_conflicts_escapes_and_refuses_symlinks ... ok
+test private_state_and_environment_inheritance ... ok
+test job_completion_collects_old_history_without_another_cli_call ... ok
+test overdue_startup_expires_without_starting_the_command ... ok
+test metadata_write_failure_does_not_abandon_service_group ... ok
+test resource_metrics_include_busy_children_and_do_not_renew_or_survive_completion ... ok
+test readiness_rechecks_a_port_that_closed_before_the_log_matched ... ok
+test readiness_waits_for_delayed_port_and_boundary_log_text ... ok
+test recent_finished_views_are_capped_without_hiding_active_or_unverified_jobs ... ok
+test readiness_stops_promptly_for_exit_expiry_and_terminal_retries ... ok
+test record_naming_another_job_cannot_redirect_bulk_stop ... ok
+test readiness_timeout_requires_both_criteria_and_keeps_job_supervised ... ok
+test bulk_stop_retains_selected_records_under_completion_retention_pressure ... ok
+test retention_retries_partial_deletion_without_following_symlinks ... ok
+test slow_partial_control_request_cannot_starve_expiry ... ok
+test retention_dry_run_preserves_data_and_expired_keys_can_be_reused ... ok
+test shutdown_output_truncation_is_reported_in_terminal_state ... ok
+test stale_state_never_grants_authority_to_kill_an_unrelated_pid ... ok
+test stop_requires_exactly_one_target_and_single_id_json_is_unchanged ... ok
+test unspawned_keeper_is_a_failed_collectable_launch_but_uncertain_startup_is_kept ... ok
+test retry_context_separates_arguments_from_environment_and_verifies_legacy_records ... ok
+test retention_count_is_serialized_and_preserves_active_unverified_and_live_owners ... ok
+test retention_protection_is_crash_released_and_never_blocks_launches ... ok
+test teardown_waits_for_keeper_finalization_before_removing_state ... ok
+test trickling_control_endpoint_is_bounded_while_healthy_jobs_stop ... ok
+
+test result: ok. 49 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.62s
+

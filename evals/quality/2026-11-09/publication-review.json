@@ -1,0 +1,56 @@
+{
+  "reviewer": "gpt-6-astra",
+  "effort_requested": "high",
+  "round": "initial",
+  "scope": "unblinded publication accuracy, not participant grading",
+  "identity": {
+    "report.md": "687be7807c1a839f359ba8a5ed3f9ce8c0b0aefb3759b0a5703111bdabb7083e",
+    "analysis.json": "7c0a9011b8c86bec00cfe9503eeab6c12fd77b3cd0de0ad0c960c332bd455679",
+    "defects.json": "629f53caf726fb8757e9fe9953491f9619106f6f9df4b21817832090e5bae4ef",
+    "finding-reconciliation.json": "eff6ce9fd83316d5074d169afdcad4a3f07e68f565114614cd742be372fd787c",
+    "state-ledger.json": "dc3855874d0c6fd6355d243bf9bcd09e612ebbc52e346781669f89490da94d15",
+    "grading-index.json": "ed90684a4aa4191809e1f30a6335dde60d93ddf35409666e70eca5892dc3b4aa",
+    "blind-assessments.json": "378329e4df3dd5efcf8d1df319def442071c6ed4a0768cc2838f6f45d81289c7",
+    "supplementary-probes.json": "33ddd661a6fbe08b84230f0ccc8c66e55818f8ed11781642f9722f9e78d836be"
+  },
+  "findings": [
+    {
+      "id": "R1",
+      "severity": "P2",
+      "finding": "scope audit counter named coordinator_interventions incorrectly; it records root operator interventions",
+      "disposition": "Renamed root_operator_interventions; coordinator handling separately enumerated."
+    },
+    {
+      "id": "R2",
+      "severity": "P3",
+      "finding": "Defect common failure cause field overstates timing/concurrency attribution",
+      "disposition": "Retained failures; cause fields distinguish observed expiry/connection failure from unproved race/load hypothesis."
+    }
+  ],
+  "limits": "Read-only bounded source/evidence review. No blind assessment or maintainability grading; no tests run.",
+  "focused_followup": {
+    "reviewer": "gpt-6-astra",
+    "effort_requested": "high",
+    "verdict": "No remaining findings",
+    "identity": {
+      "evals/quality/2026-11-09/report.md": "687be7807c1a839f359ba8a5ed3f9ce8c0b0aefb3759b0a5703111bdabb7083e",
+      "evals/quality/2026-11-09/analysis.json": "7c0a9011b8c86bec00cfe9503eeab6c12fd77b3cd0de0ad0c960c332bd455679",
+      "evals/quality/2026-11-09/defects.json": "500abd6d8c2b4fb7b8851d3f9feb2edabb3ef1018f676226ec8300f9d09887b7",
+      "evals/quality/2026-11-09/scope-audit.json": "2fbdde26429b75eed51013ba18bd008236936fd0ab25060542ac1128633cc67c",
+      "evals/quality/2026-11-09/finding-reconciliation.json": "eff6ce9fd83316d5074d169afdcad4a3f07e68f565114614cd742be372fd787c",
+      "evals/quality/2026-11-09/state-ledger.json": "dc3855874d0c6fd6355d243bf9bcd09e612ebbc52e346781669f89490da94d15",
+      "evals/quality/2026-11-09/grading-index.json": "ed90684a4aa4191809e1f30a6335dde60d93ddf35409666e70eca5892dc3b4aa",
+      "evals/quality/2026-11-09/blind-assessments.json": "378329e4df3dd5efcf8d1df319def442071c6ed4a0768cc2838f6f45d81289c7",
+      "evals/quality/2026-11-09/supplementary-probes.json": "33ddd661a6fbe08b84230f0ccc8c66e55818f8ed11781642f9722f9e78d836be",
+      "evals/quality/2026-11-09/selected-receipts.json": "addae31933110245bbfa513579f625884cfa1da2b29325db45d233ac790c5800",
+      "README.md": "a82a4340c54af1fd30bad3e41fec87f14551c0062e4d42451da1d721bd959ba4",
+      "docs/experiments.md": "e0ef3dc36b88dd5e5ddd36f9d31313ba0622a7cb56fba232ff4c0e195aa7eb7c",
+      "docs/project-context.md": "a96f676cd9bd05dba7c99827b290438312c5a03f5bb82ac1e730dccc66ad4e56",
+      "website/experiments/index.html": "7dc730787dea81404077390b398dd7ae3e1b3f1ac2fc747eb3899ee261f38651",
+      "website/index.html": "470fe63519e45373d2bea48eef3848aaa958d74c41c1dfd730f517571608fcc6",
+      "tests/test_repository.py": "5903982c267797ba4a301926c92ec7b2bb624c49ce01b616bff2b4e3166ec6af"
+    },
+    "scope": "Two record fixes and derived README, docs, context, website summaries and link whitelist; unblinded publication review only",
+    "limits": "No participant grades, maintainability judgments or tests supplied."
+  }
+}

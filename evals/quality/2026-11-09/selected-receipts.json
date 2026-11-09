@@ -1,0 +1,781 @@
+[
+  {
+    "id": "Q1-A",
+    "native_dispatches": [],
+    "cli_results": [
+      {
+        "receipt_path": "scratch/writer-stream.jsonl",
+        "duration_ms": 103456,
+        "is_error": false,
+        "model_usage": {
+          "claude-opus-5-5": {
+            "inputTokens": 22,
+            "outputTokens": 9539,
+            "cacheReadInputTokens": 271224,
+            "cacheCreationInputTokens": 39716,
+            "webSearchRequests": 0
+          }
+        },
+        "result": "I reviewed the draft and found nothing that needs fixing, so the source is unchanged. But I couldn't finish two required steps: writing the report was blocked, and so was the verification run. Fmt, clippy and tests have **not** been run in this session.\n\n**Blockers**\n- **Report:** writing `scratch/writer-report.md` was denied (\"don't ask\" permission mode), so the file doesn't exist. Its content is below for you to place.\n- **Verification:** the exact required command (`\u2026/python3.14 \u2026/Q1-A/checks.py`) was also denied. I didn't retry it or use any other way to run Cargo. It still needs to be run once permission is granted.\n\n**Changed files:** none. `src/`, `tests/` and `README.md` are as at `2138326`, and I made no commits.\n\n**What I checked against the ticket's acceptance list:**\n1. **Accepted names:** `State` derives `clap::ValueEnum` with snake_case names (`src/model.rs:44-59`). Matching is case-sensitive with no aliases. Each `--state` takes one name and commas aren't split (`src/main.rs:119-126`), so `failed,exited` is rejected. Repeating a name has no extra effect.\n2. **Displayed state:** the filter runs on records after the existing supervisor check (`src/store.rs:441-457,475`; `src/main.rs:348-350`). A persisted running job with an unreachable supervisor is matched as unknown, and the display reads the same state field.\n3. **Recent window:** the filter runs before the five-newest / 30-second window (`src/main.rs:348-351`), so the window counts only matching jobs.\n4. **Output:** the same view, JSON envelope and warnings code is used (`src/main.rs:721-735`).\n5. **Unchanged behaviour:** without `--state` nothing is removed, and `watch` passes an empty filter (`src/main.rs:820`).\n6. **Read-only:** the filter only drops entries from the in-memory list. The existing history cleanup still runs first.\n7. **Docs:** help lists the accepted values automatically, and the README has an example (`README.md:79`) and a paragraph on matching (`README.md:335-346`).\n8. **Tests:** the two new tests use only seeded records. They cover rejected inputs (JSON and human output), each criterion above, help text, and a file snapshot showing nothing was rewritten. If a test fails partway, cleanup only waits on stopping records and refuses unknown ones (`src/lifecycle.rs:636-643`), so it never signals a PID taken from disk.\n\n---\n**Report content for `scratch/writer-report.md`:**\n\n> # Q1-A writer report: `list --state` draft review\n> Writer: claude-opus-5-5, high effort, sole writer, no agents. Reviewed `2138326` against `c465454`; the tree was clean.\n>\n> ## Findings (recorded before any repair)\n> **No material findings.** Criteria 1\u20138 checked as listed above, with this file/line evidence: `src/model.rs:44-59`, `src/main.rs:119-126,346-351,721-735,820`, `src/store.rs:441-457,475`, `src/display.rs:87-99`, `src/lifecycle.rs:636-643`, `README.md:79,335-346`, and the tests `list_state_filter_accepts_exactly_the_json_state_names` and `list_state_filter_matches_displayed_state_before_the_recent_window_and_only_reads`.\n>\n> Informational, low, no change:\n> - (a) `README.md:347`: the filesystem-requirement sentence now ends the `--state` paragraph. It was already in an unrelated paragraph before the draft.\n> - (b) The `observed_stopped` test record reuses a finished job's guardian PID. If the OS reused that PID for a live process group, the record would stay stopping and the test would fail. Very unlikely.\n> - (c) The recent-window assertions assume the test finishes within about 30 seconds of seeding. It only makes short read-only CLI calls.\n>\n> ## Disposition\n> No repairs justified; draft preserved.\n>\n> ## Final verification\n> **Not run.** The required helper command was denied by the permission mode, so there are no pass/fail counts or exit code. Writing this report file was denied too. Both are unresolved blockers.",
+        "permission_denial_count": 2
+      }
+    ],
+    "reviewer_messages": [],
+    "handoff": "# Q1-A handoff\n\nStatus: complete. Frozen draft reviewed by the requested fresh CLI writer, preserved without edits, and final verification passed.\n\n## Scope and routing\n\n- Task: repeatable exact `list --state STATE` filter with displayed-state matching, filtering before the recent-finished window, preserved output/warnings/read-only behavior, README/help and seeded lifecycle tests.\n- Allowed source: `src/`, `tests/`, `README.md` only. No dependencies, commits, pushes, publication, other checkouts or project safeguards changed.\n- Frozen and final baseline: `2138326915fcf3d6c724018d11ba473f38b6e931`; initial and final working tree clean.\n- One fresh `claude-opus-5-5` / high CLI writer reviewed its own model's draft. Model confirmed by CLI initialization and usage. No other reviewer, subagents, agents-collab or model/transport substitution. Lead did not edit source or conduct a second critique.\n- Safe mode, restricted mode, existing subscription login, no session persistence, strict empty MCP, explicit model/effort, no permission bypass. Tools limited to Read/Edit/Write/Glob/Grep and Bash for the prescribed helper and read-only git status/diff/rev-parse. Scoped write permissions were supplied.\n- Assignment: `scratch/writer-prompt.txt`; invocation: `scratch/writer-dispatch.json`; original evidence: `scratch/writer-stream.jsonl`, `scratch/writer-stderr.log`, `scratch/writer-exit.json`; review: `scratch/writer-report.md`.\n\n## Findings, evidence and dispositions\n\nThe writer found no material defect in criteria 1\u20138. No repair was justified, so the draft was preserved. Evidence from the returned review:\n\n- Exact names and argument rejection: `src/model.rs:44-59`, `src/main.rs:119-126`; integration test `list_state_filter_accepts_exactly_the_json_state_names` covers invalid names/case/comma/aliases/missing value, nonzero exits and empty stdout.\n- Observed-state OR filtering before visibility: `src/store.rs:441-457,475`, `src/main.rs:346-351`; integration test `list_state_filter_matches_displayed_state_before_the_recent_window_and_only_reads` covers running\u2192unknown, stopping\u2192stopped, duplicates, mixed states and matching recent-finished selection.\n- Preserved formats/warnings and watch: `src/main.rs:721-735,820`, `src/display.rs:87-99`; tests compare filtered entries, envelopes, resources, human output, scan warnings and unchanged watch behavior.\n- Read-only filter and unchanged collection: in-memory retain; seeded old-history collection and inode/mtime/content snapshot checks in the second test.\n- Documentation/help: `README.md:79,335-346`; help accepted-values assertions in the first test.\n\nWriter's low-severity informational observations, with no change justified:\n\n1. README filesystem advice follows the new filter paragraph (`README.md:347`); it already followed unrelated list-visibility prose. No behavioral failure; retain.\n2. A seeded stopped-observation fixture reuses a finished guardian PID. If the OS reused it for a live group during the test, the displayed state could remain stopping and the assertion fail. Existing seeding pattern; writer judged highly unlikely and retained it. No runtime code defect identified.\n3. Recent-window assertions depend on finishing read-only calls within about 30 seconds of seeding; an exceptional host stall could expire the window and fail assertions. Consistent with existing recent-window tests; writer retained them.\n\n## Tool block and resolution\n\nThe writer's `dontAsk` permission mode denied its report Write and exact helper Bash call despite supplied scoped permissions. Both denials are retained in the stream. No permissions were bypassed, source edits attempted, replacement writer launched, or review loop repeated. The writer returned its review text; the coordinator saved that text in scratch and ran the already-authorized exact helper as final verification. This resolved artifact and verification steps without source work. No required implementation route was substituted.\n\n## Final checks\n\nExecuted once after review:\n\n`<python3> <study-work>/runs/Q1-A/checks.py`\n\nThe helper supplies the exact disposable build/fixture environment with CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT outside the repository. Helper, guard and test environment files were neither inspected nor modified.\n\n- Helper exit: 0 (30.127 seconds).\n- `cargo fmt --check`: exit 0, no timeout, owned process group absent.\n- `cargo clippy --all-targets -- -D warnings`: exit 0, no timeout, owned process group absent.\n- `cargo test`: exit 0, no timeout, owned process group absent. Helper summary does not emit per-test counts.\n- Cleanup: jobs=[], unresolved_ids=[], observable_cleanup_complete=true. Helper explicitly limits detached-process absence guarantees when metadata has been deleted.\n- Final read-only git status/diff: clean; no changes to source, dependencies, docs outside scope or other tracked files.\n- Evidence: `scratch/final-checks.log`, `scratch/final-checks.json`.\n\nNo unresolved task blocker. No repair pass used. No commits or publication performed.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 672071,
+          "inputTokens": 663328,
+          "cachedInputTokens": 630272,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 8743,
+          "reasoningOutputTokens": 1723
+        }
+      ]
+    },
+    "skill_read_candidates": 0
+  },
+  {
+    "id": "Q1-B",
+    "native_dispatches": [
+      {
+        "model": "gpt-6-astra",
+        "reasoning": "high",
+        "fresh_history": "unknown"
+      }
+    ],
+    "cli_results": [],
+    "reviewer_messages": [
+      "I\u2019ll review the frozen draft against its parent and check the filter behavior and test coverage without changing files or running checks.\n",
+      "The filter runs after supervisor observation and before the recent-job window, so it uses the displayed state and preserves matching recent history. The added tests cover invalid values, repeated filters, warnings, output formats, unchanged watch behavior, and retained-record integrity.\n",
+      "No material findings; no justified change. Keep the frozen draft and run the prescribed verification helper.\n\nReviewed clean HEAD `2138326915fcf3d6c724018d11ba473f38b6e931` against its parent and surrounding lifecycle/store code.\n\n- `src/main.rs:119` and `src/model.rs:46` define the repeatable filter using exactly the nine lowercase enum names.\n- `src/main.rs:346` filters observed records before the existing recent-job selection. OR semantics, duplicate idempotence, ordering, warnings, and opportunistic collection are preserved.\n- `src/main.rs:721` retains existing human/JSON/resources rendering; `src/main.rs:820` leaves watch unfiltered.\n- `tests/lifecycle.rs:3052` and `tests/lifecycle.rs:3129` cover validation/help, displayed-state matching, recent-window placement, retained history, warnings, output modes, unchanged watch, and record integrity. Fixtures honor `PROCLEASE_TEST_ROOT` and use existing child cleanup.\n- `README.md:335` documents accepted values, repeated filters, displayed-state semantics, and history selection.\n\nNo files changed. No builds, tests, or helper runs performed; runtime validation remains for the lead."
+    ],
+    "handoff": "# Q1-B handoff\n\nOutcome: independent review found no material defect or justified change. Preserved the existing frozen draft unchanged; no repair pass or CLI writer invocation was justified. Final required checks passed. No unresolved blocker.\n\n## Artifact and scope\n\n- Disposable repository: `repo/` in this case directory.\n- Reviewed and final HEAD: `2138326915fcf3d6c724018d11ba473f38b6e931` (Frozen common initial draft).\n- Working tree clean before and after; no source edits by lead or reviewer.\n- Existing draft touches only README.md, src/main.rs, src/model.rs and tests/lifecycle.rs. No dependency, safeguard, shared-skill, website, release or packaging changes added.\n- No commits, pushes, publishing, global settings changes or alternate model routes.\n\n## Independent review and disposition\n\nOne fresh no-history native reviewer, gpt-6-astra / high (`/root/frozen_review`), reviewed the frozen commit against its parent and surrounding lifecycle/store code. No follow-up review or repeated critique loop. Reviewer performed no mutations or checks.\n\nMaterial findings: none. No concrete failure scenario supported a repair; severity and repair disposition are therefore not applicable. Recommendation to preserve draft accepted. The conditional claude-opus-5-5 / high CLI writer route was not invoked.\n\nEvidence from review:\n- src/main.rs:119 and src/model.rs:46: repeatable enum option, nine exact lowercase JSON names, no aliases/case folding.\n- src/main.rs:346: filtering after store observation and before existing recent-finished selection; warnings and opportunistic history collection preserved.\n- src/main.rs:721 and :820: existing human/JSON/resources rendering retained; watch remains unfiltered.\n- tests/lifecycle.rs:3052 and :3129: seeded-record coverage of validation, duplicate/OR semantics, displayed unknown state, matching recent window, --all, warnings, output modes, unchanged watch and record integrity; existing fixture root/cleanup respected.\n- README.md:335: accepted values, repeat usage, displayed-state semantics and recent history documented.\n\nFull reviewer response: [scratch/review.md](scratch/review.md).\nFrozen artifact and dispatch evidence: [scratch/dispatch.json](scratch/dispatch.json), [scratch/frozen-draft.patch](scratch/frozen-draft.patch).\n\n## Final verification\n\nExecuted exactly once through the prescribed helper:\n\n`<python3> <study-work>/runs/Q1-B/checks.py`\n\nThe helper supplied the exact disposable environment from test-env.json, including external CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT. checks.py, process_guard.py and test-env.json were not edited.\n\n- `cargo fmt --check`: exit 0, no timeout.\n- `cargo clippy --all-targets -- -D warnings`: exit 0, no timeout.\n- `cargo test`: exit 0, no timeout.\n- Each helper-owned process group reported absent after completion.\n- Cleanup: no jobs, no unresolved IDs, observable cleanup complete. The helper explicitly limits this evidence: detached-process absence is not guaranteed when metadata has been deleted.\n- Final read-only git status/diff: clean; HEAD unchanged.\n\nRaw result: [scratch/final-checks.log](scratch/final-checks.log).\n\nCompleted UTC: 2026-11-09T03:11:39.931926+00:00\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 542127,
+          "inputTokens": 537217,
+          "cachedInputTokens": 503552,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 4910,
+          "reasoningOutputTokens": 793
+        },
+        {
+          "totalTokens": 181518,
+          "inputTokens": 180370,
+          "cachedInputTokens": 130048,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 1148,
+          "reasoningOutputTokens": 242
+        }
+      ]
+    },
+    "skill_read_candidates": 0
+  },
+  {
+    "id": "Q1-C",
+    "native_dispatches": [
+      {
+        "model": "gpt-6-astra",
+        "reasoning": "high",
+        "fresh_history": "unknown"
+      }
+    ],
+    "cli_results": [],
+    "reviewer_messages": [
+      "I\u2019ll inspect the frozen draft and its surrounding code, then report only concrete correctness or safety findings.\n",
+      "The filter is applied after supervisor observation and before the recent-history window, preserving the existing output path. I\u2019m checking the seeded fixtures and read-only behavior for any remaining gaps.\n",
+      "No justified material findings in artifact `2138326915fcf3d6c724018d11ba473f38b6e931` (base `c4654543e90d7c1c89d1b6927fad6ee8d13dde8b`), packet `Q1-C-list-state-initial`.\n\nThe implementation matches the stated requirements on inspection:\n\n- Exact enum parsing provides the nine lowercase values and repeatable OR selection.\n- Filtering follows supervisor observation and precedes the recent-finished window.\n- Existing rendering, ordering, resources, warnings, pruning and unfiltered watch paths are preserved.\n- Added integration tests cover validation, duplicates, combined selection, observed states, windowing, retained history, output compatibility, warnings and unchanged stored records.\n- README and generated-help declarations document the option and displayed-state matching.\n\nReviewed the frozen patch and artifact manifest, affected source, supporting observation/pruning/resource code, fixture lifecycle, README and project context. Confirmed repository HEAD matches the artifact and working tree is clean.\n\nVerification limits: static review only; no tests or source changes performed. Runtime, formatting and Clippy results remain for the authorized verification helper. Retain the draft unless verification exposes a concrete failure."
+    ],
+    "handoff": "# Q1-C handoff\n\nOutcome: retain the existing frozen draft unchanged. No justified repair was identified; no revision writer dispatched. Coordinator and reviewer made no source edits. No commits, pushes, publishing, settings changes or dependency changes.\n\n## Artifact and scope\n\nReviewed/final HEAD: `2138326915fcf3d6c724018d11ba473f38b6e931`.\nBase: `c4654543e90d7c1c89d1b6927fad6ee8d13dde8b`.\nDraft changes are confined to `README.md`, `src/main.rs`, `src/model.rs`, `tests/lifecycle.rs`. Working tree clean before and after verification. All 16 frozen source/supporting file hashes remain unchanged since review. Snapshot, hashes and draft patch are in `scratch/proclease/list-state/collaboration/`.\n\n## Review and dispositions\n\nOne independent initial review completed against the frozen draft: configured `gpt-6-astra`, requested `high`, codex-native, fresh context with no transcript inheritance. Native interface accepted exact model/effort controls; independent runtime model/effort attestation unavailable (profile requires supported control only). Read-only source intent; shared filesystem, no filesystem isolation claimed. Eight-minute target advisory, not technically enforced. No reviewer follow-up and no repeated critique loop.\n\nMaterial findings: **none justified**; severity: none. Thus no concrete failure scenario or defect evidence was identified for disposition. Review inspected exact parser names, repeated OR semantics, supervisor observation, filter-before-window behavior, warning propagation, output and resources, unchanged watch/no-filter paths, read-only behavior and existing collection, help, README and seeded integration coverage. Static review limits recorded in `initial-review.md`; runtime verification separately below. Disposition: retain draft, no invented changes; zero repair passes used of one permitted.\n\nConfigured writer `claude-opus-5-5/high/claude-cli` was not dispatched because no repair was justified. Existing subscription login and CLI controls were preflighted without exposing credentials; no API or spending fallback used. No writer availability/runtime claim is made without an invocation.\n\n## Final verification\n\nExecuted required helper exactly once:\n`<python3> <study-work>/runs/Q1-C/checks.py`\n\nThe helper supplies the exact disposable `CARGO_TARGET_DIR` and `PROCLEASE_TEST_ROOT` environment outside the repository. Protected helper/environment files were not edited or inspected.\n\n- `cargo fmt --check`: passed, exit 0.\n- `cargo clippy --all-targets -- -D warnings`: passed, exit 0.\n- `cargo test`: passed, exit 0.\n- No check timed out; each owned process group reported absent.\n- Helper cleanup: jobs `[]`, unresolved IDs `[]`, observable cleanup complete. Its stated limit is that detached-process absence is not guaranteed when metadata has been deleted.\n- Final read-only Git status and frozen-file hash comparison: clean, unchanged.\n\nCheck receipt: `scratch/proclease/list-state/collaboration/final-checks.json`.\nNo unresolved task blocker. No out-of-scope context bookkeeping edits.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 813497,
+          "inputTokens": 806471,
+          "cachedInputTokens": 761600,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 7026,
+          "reasoningOutputTokens": 1439
+        },
+        {
+          "totalTokens": 177789,
+          "inputTokens": 176709,
+          "cachedInputTokens": 127104,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 1080,
+          "reasoningOutputTokens": 193
+        }
+      ]
+    },
+    "skill_read_candidates": 1
+  },
+  {
+    "id": "Q2-A",
+    "native_dispatches": [],
+    "cli_results": [
+      {
+        "receipt_path": "scratch/writer-stream.jsonl",
+        "duration_ms": 186417,
+        "is_error": false,
+        "model_usage": {
+          "claude-opus-5-5": {
+            "inputTokens": 42,
+            "outputTokens": 14508,
+            "cacheReadInputTokens": 837733,
+            "cacheCreationInputTokens": 54379,
+            "webSearchRequests": 0
+          }
+        },
+        "result": "I made one test-only repair to the draft, and the required check helper passes.\n\n**Review** (`scratch/writer-review.md`): the draft's code and README already met acceptance criteria 1\u20136:\n- **Reading:** `--head` and `--tail` share the same read path: same line splitting, escaping, 16 MiB bound and `O_NOFOLLOW` symlink refusal.\n- **Limits and conflicts:** N must be 1..500. `--head` conflicts with any explicit `--tail`, including `--tail 50`. With neither flag, it still prints the last 50 lines.\n- **Output:** the JSON fields are unchanged, and the stderr note about the capture byte cap is still printed.\n- **Docs:** the README and the help text both describe `--head` and the conflict.\n\n**One finding (Medium, criterion 7 only), repaired:** the new integration test launched a real job (`run -- /usr/bin/true`, which starts a keeper, a guardian and the command) just to get a record to copy. The ticket says to use prepared logs and finished records instead of live workers. On a slow or restricted host that launch, or its waits, could fail or hang the test even when `logs --head` works. Nothing leaked, since cleanup worked.\n\n**Change:** only `tests/lifecycle.rs` (+45/\u221217). A new helper, `Fixture::seed_finished_log`, writes a finished (`exited`) `record.json` and a prepared `output.log` into a private state directory. It starts no processes. All five seeded jobs in the test now use it, and every assertion is the same as before. `src/main.rs` and `README.md` are kept exactly as the draft had them.\n\n**Final checks** (the helper, run once after the repair):\n- `cargo fmt --check`: exit 0\n- `cargo clippy --all-targets -- -D warnings`: exit 0\n- `cargo test`: exit 0. The helper reports only exit codes, so I have no test counts.\n- Cleanup: no leftover jobs, and none of the process groups the helper started are still running.\n\n**Scope:** stayed within the allowed files; no commits. I ran only the check helper and read-only git commands. The full write-up is in `scratch/writer-result.md`.\n\n**Limit:** I checked the `--help` text by reading the source, not by running it, and no test checks it.",
+        "permission_denial_count": 0
+      }
+    ],
+    "reviewer_messages": [],
+    "handoff": "# Q2-A handoff \u2014 logs --head N\n\nCompleted: 2026-11-09. Starting frozen draft HEAD: `caf65ccb97157683caf61986945ee443e75bc07c`; initially clean working tree. No commits, pushes or publishing.\n\n## Assignment and route\n\nA fresh subscription-authenticated Claude CLI invocation used `claude-opus-5-5`, explicit high effort, safe-mode, restricted mode, strict empty MCP, no session persistence, and no permission bypass. Its init confirmed the requested model and an empty MCP list. No other reviewer, subagent, agents-collab workflow, model substitution or API-key fallback was used. The same writer reviewed the frozen draft before edits and performed one repair pass. Lead coordinated and recorded evidence; lead did not edit source. Dispatch: scratch/dispatch.json; standalone assignment: scratch/writer-prompt.txt; execution record: scratch/writer-stream.jsonl. Writer exit: 0.\n\n## Review and disposition\n\nThe writer's pre-edit review is scratch/writer-review.md; final account is scratch/writer-result.md. It found the existing implementation and README met criteria 1\u20136: shared line splitting, escaping and 16 MiB read bound; 1\u2013500 bounds; explicit head/tail conflict including tail 50; default last 50; unchanged JSON envelope, ordered human output and truncation note; O_NOFOLLOW symlink refusal; README/help coverage. These are writer review conclusions, supported by source references in the review and the successful check helper. Lead did not conduct a second source review.\n\n**F1 \u2014 Medium \u2014 repaired.** Evidence: the draft's `logs_head_selects_bounds_conflicts_escapes_and_refuses_symlinks` called `Fixture::finished_template()` (original helper at tests/lifecycle.rs:96\u2013116), which launched `/usr/bin/true` through ProcLease and waited for terminal state and keeper exit to obtain a template. Concrete failure scenario: launch restrictions or slow supervisor startup could fail the 8-second terminal wait or stall the keeper-exit wait despite correct log selection. Direct seeding removes this unnecessary process/timing dependency and better satisfies the ticket's deterministic seeded-record requirement. This was a test reliability issue; no runtime log defect was found.\n\nDisposition: the sole writer changed only tests/lifecycle.rs (+45/-17). `Fixture::seed_finished_log` writes prepared finished records and captured output through existing fixture file helpers. The head-log test now directly seeds its selection, short, truncated, oversized and symlink fixtures; it launches no worker and retains its assertions. Production source and README were retained from the frozen draft. No invented runtime changes or second critique loop.\n\n## Final verification\n\nThe writer ran exactly once, after the repair:\n\n`<python3> <study-work>/runs/Q2-A/checks.py`\n\nThe helper selects the disposable external CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT. Raw reported results are saved in scratch/final-check-output.txt:\n\n| Check | Exit | Timed out | Owned process group |\n|---|---|---|---|\n| cargo fmt --check | 0 | false | absent |\n| cargo clippy --all-targets -- -D warnings | 0 | false | absent |\n| cargo test | 0 | false | absent |\n\nCleanup: jobs=[], unresolved_ids=[], observable_cleanup_complete=true. The helper qualifies detached-process absence as not guaranteed when metadata has been deleted. It reports exit codes, not test counts; no count is claimed. Help text was reviewed in source, without a separate runtime help invocation.\n\nLead's final read-only scope checks: `git status --short` shows only ` M tests/lifecycle.rs`; `git diff --stat` reports one file, +45/-17; `git diff --check` exits 0. No source edits followed the checks. Dependencies, Cargo files, shared skill, website, packaging/release files, project safeguards and protected check/environment files were unchanged. All collaboration artifacts are in case scratch except this requested handoff. No unresolved blocker.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 538185,
+          "inputTokens": 531086,
+          "cachedInputTokens": 493440,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 7099,
+          "reasoningOutputTokens": 1307
+        }
+      ]
+    },
+    "skill_read_candidates": 0
+  },
+  {
+    "id": "Q2-B",
+    "native_dispatches": [
+      {
+        "model": "gpt-6-astra",
+        "reasoning": "high",
+        "fresh_history": "unknown"
+      }
+    ],
+    "cli_results": [],
+    "reviewer_messages": [
+      "I\u2019ll review the frozen draft against the head/tail requirements and existing safeguards, then record any concrete findings without changing source.",
+      "The draft preserves the existing bounded read, escaping, JSON fields, and symlink refusal path. The new tests cover the requested selection and error cases; runtime and formatting verification remain with the designated check helper.",
+      "No behavioral must-fix findings. Draft satisfies the requested behavior by source inspection.\n\nPossible formatting issue at `src/main.rs:944\u2013951` remains unverified; the designated helper should determine whether repair is needed. No checks or source edits performed.\n\n[Review artifact](<study-work>/runs/Q2-B/scratch/review.md)"
+    ],
+    "handoff": "# Q2-B handoff\n\nOutcome: retained the existing draft unchanged. No repair was justified; no writer invocation, source edits, commits, pushes or publishing occurred.\n\n## Artifact and routing\n\n- Repository: `<study-work>/runs/Q2-B/repo`.\n- Frozen and final HEAD: `caf65ccb97157683caf61986945ee443e75bc07c`; working tree clean at dispatch and final verification. Relevant file SHA-256 identities are in `scratch/frozen-identity.json`; final hashes matched.\n- One fresh no-history native `gpt-6-astra`, high-effort reviewer independently inspected the frozen draft read-only. Review: `scratch/review.md`. Lead did not change source. Requested conditional `claude-opus-5-5` high CLI writer was unnecessary because no justified changes remained.\n\n## Findings and dispositions\n\n- Behavioral review: no material defect identified against the seven acceptance criteria. Evidence in `scratch/review.md` covers shared line selection/escaping/read bound, bounds and explicit flag conflict, JSON/human output, truncation note, no-follow log open, README/help, seeded deterministic fixture coverage and cleanup.\n- Low-severity, unverified formatting concern: expanded assertions at `src/main.rs:944\u2013951` might fail the mandatory formatter gate. Concrete scenario: correct runtime behavior but `cargo fmt --check` fails. Disposition: dismissed by direct check evidence; formatting exited 0, so no repair.\n\n## Final verification\n\nExecuted exactly once with the designated environment-setting helper:\n\n`<python3> <study-work>/runs/Q2-B/checks.py`\n\nThe helper supplies disposable external `CARGO_TARGET_DIR` and `PROCLEASE_TEST_ROOT`. Its result is recorded in `scratch/final-checks.json`:\n\n- `cargo fmt --check`: exit 0.\n- `cargo clippy --all-targets -- -D warnings`: exit 0.\n- `cargo test`: exit 0.\n- No command timed out; all owned process groups absent on completion.\n- Observable cleanup complete, no remaining recorded jobs or unresolved IDs. Helper limitation: detached-process absence cannot be guaranteed when metadata has already been deleted.\n\nNo unresolved blocker. No additional review/check loop or repair pass performed. No dependencies or out-of-scope source changes.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 492433,
+          "inputTokens": 488395,
+          "cachedInputTokens": 452096,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 4038,
+          "reasoningOutputTokens": 913
+        },
+        {
+          "totalTokens": 262531,
+          "inputTokens": 260591,
+          "cachedInputTokens": 228608,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 1940,
+          "reasoningOutputTokens": 382
+        }
+      ]
+    },
+    "skill_read_candidates": 0
+  },
+  {
+    "id": "Q2-C",
+    "native_dispatches": [
+      {
+        "model": "gpt-6-astra",
+        "reasoning": "high",
+        "fresh_history": "unknown"
+      }
+    ],
+    "cli_results": [],
+    "reviewer_messages": [
+      "I\u2019ll review the frozen draft against the packet and report only actionable findings supported by the code.\n",
+      "The selection, validation, and symlink handling match the requested behavior in the frozen source. I\u2019m checking the remaining output and fixture details before issuing the verdict.\n",
+      "Verdict: **no material findings** in frozen packet `Q2-C-initial`, identified as HEAD `caf65ccb97157683caf61986945ee443e75bc07c`. Keep the draft unchanged, subject to final verification.\n\nStatic evidence supports the acceptance criteria:\n\n- `src/main.rs:126` uses optional head/tail values, preserving explicit `--tail 50` for conflict detection. Clap declares the conflict, and dispatch independently rejects both supplied options.\n- `src/main.rs:231` selects head and tail from the same escaped text using the same line splitter, retaining log order.\n- `src/main.rs:753` validates counts before reading or printing log contents, defaults to tail 50, shares the bounded read, and uses `O_NOFOLLOW` for `output.log`.\n- `src/main.rs:782` retains the four-field JSON envelope, human line output, and stderr capture-cap note. Errors exit nonzero without printing selected log lines.\n- `tests/lifecycle.rs:1006` covers selection, default tail, bounds, conflicts in both orders, escaping, short logs, JSON fields, human output, capture-cap reporting, oversized logs, and symlink refusal with and without head.\n- Fixtures honour `PROCLEASE_TEST_ROOT`; the prepared-log test uses a finished template and existing supervisor cleanup.\n- README usage and state/output guidance document head, bounds, and the explicit-tail conflict; CLI help documents head and its conflict.\n\nReview was read-only and limited to the frozen source and supplied manifest. I did not run builds or tests, inspect mutable live source, or independently recompute manifest hashes. Formatting, compilation, linting, and runtime results remain unverified by this review.\n\nCoordinator\u2019s final verification command:\n\n```sh\n<python3> <study-work>/runs/Q2-C/checks.py\n```"
+    ],
+    "handoff": "# Q2-C handoff\n\nOutcome: retained the existing frozen draft without source edits. No justified repair was found. No writer was dispatched, no repair pass used, and no commits, pushes or publishing occurred.\n\nArtifact: clean HEAD `caf65ccb97157683caf61986945ee443e75bc07c`. Final SHA-256 comparison of all 52 frozen tracked files matches the reviewed artifact; Git status is clean. Initial draft changes are limited to `src/main.rs`, `tests/lifecycle.rs` and `README.md`.\n\nReview: sole configured initial reviewer, native `gpt-6-astra`, requested high effort, fresh context with no transcript inheritance. Interface accepted requested model and effort; independent runtime effort attestation unavailable. Eight-minute advisory target; no technical deadline supervisor. Static source review completed; no follow-up review. Frozen packet, manifest, result and invocation state are in `scratch/proclease/logs-head/collaboration/`.\n\nMaterial findings and disposition: none. Severity/failure scenario/evidence entries are therefore not applicable. Disposition: keep draft unchanged, as required when no justified change exists. The reviewer found evidence for first/last selection using shared escaping, line splitting and bounded read; 1..500 validation; explicit-tail conflict including 50; default tail 50; unchanged JSON fields and human truncation note; O_NOFOLLOW symlink refusal; README/help; seeded finished-record regression coverage. Source references: `src/main.rs:126`, `src/main.rs:231`, `src/main.rs:753`, `src/main.rs:782`, `tests/lifecycle.rs:1006`.\n\nFinal verification: ran the prescribed helper once:\n\n`<python3> <study-work>/runs/Q2-C/checks.py`\n\nThe helper supplies the exact disposable CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT outside Git. Results: `cargo fmt --check` PASS (0); `cargo clippy --all-targets -- -D warnings` PASS (0); `cargo test` PASS (0). No timeouts; owned process groups absent. Full helper result is `scratch/proclease/logs-head/collaboration/checks.log`.\n\nCleanup: helper reports no remaining jobs or unresolved IDs and observable cleanup complete. Its stated limit remains: detached process absence is not guaranteed when metadata has been deleted. Static review did not run tests; coordinator verification supplies the final runtime evidence. Filesystem isolation was not inferred from a fresh context. No unresolved task blockers.\n\nProject docs outside the allowlist were not changed. No new dependencies or changes to existing safeguards.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 584221,
+          "inputTokens": 578525,
+          "cachedInputTokens": 535040,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 5696,
+          "reasoningOutputTokens": 874
+        },
+        {
+          "totalTokens": 202956,
+          "inputTokens": 201539,
+          "cachedInputTokens": 153984,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 1417,
+          "reasoningOutputTokens": 125
+        }
+      ]
+    },
+    "skill_read_candidates": 1
+  },
+  {
+    "id": "Q3-A",
+    "native_dispatches": [],
+    "cli_results": [
+      {
+        "receipt_path": "scratch/writer-stream.jsonl",
+        "duration_ms": 145496,
+        "is_error": false,
+        "model_usage": {
+          "claude-opus-5-5": {
+            "inputTokens": 36,
+            "outputTokens": 9339,
+            "cacheReadInputTokens": 494693,
+            "cacheCreationInputTokens": 37846,
+            "webSearchRequests": 0
+          }
+        },
+        "result": "I've stopped before the repair pass. The permission mode denied writing to the scratch directory, and the brief requires the review findings to be written before any edit, so I made no edits. The draft at `93c6269` is unchanged and the working tree is clean.\n\n**Neither scratch file exists.** `writer-review.md` was denied and I didn't attempt `writer-result.md`. I didn't try to get around the denial with Bash, since that would break the tool limits. Their content is below for you to save.\n\n**Review findings (written before any edit would have been made):**\n- **What I checked:** the diff from `f0acd29` to `HEAD`, and in the source the `list` options, the sort code, the existing selection logic, the `list` and `watch` command handling, and the error path in `main`. Also `display::print_table` (prints in the order it's given), the job states, the new unit and integration tests, the test fixture's use of `PROCLEASE_TEST_ROOT` and its cleanup (stops every listed job and waits for supervisors), the README, `AGENTS.md` and `docs/project-context.md`.\n- **Requirements 1\u20138 all hold:**\n  - Without `--sort`, the order and the jobs shown are unchanged.\n  - Only `created` and `finished` are accepted. Anything else fails before the command runs, prints its error to stderr and exits nonzero, with no job list on stdout. The tests check this with and without `--json`.\n  - Sorting happens after the jobs are chosen, so the default recent window and `--all` show the same jobs as before.\n  - Active jobs come first, then unverified ones, both by creation time with job ID breaking ties. A job in state `unknown` that has a finish time is still never ordered by finish time.\n  - Human and JSON output share the same list. Fields and the JSON envelope are unchanged, and `--resources` still works.\n  - `watch` rejects `--sort`.\n  - Sorting is done in memory only: no lease renewal, signal or record write.\n- **F1 (confirmed, low severity):** the README's new ordering paragraph (`README.md:335-344`) has no blank line before the existing \"Use a filesystem that preserves atomic file replacement\u2026\" sentences (`README.md:345-347`). When rendered, that storage requirement reads as part of the sort description. Planned fix: add one blank line before line 345, wording unchanged. **Not applied** because of the block.\n- **Not verified:** passing `--sort` twice isn't tested. I assume the argument parser rejects it by default, but the ticket doesn't require this either way. No code or test defects found.\n\n**Final check (the supplied helper, run once on the unchanged draft):** `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` all exited 0, with no timeouts. Cleanup reported no leftover jobs, no unresolved IDs and `observable_cleanup_complete: true`.\n\n**Scope:** I edited nothing in the repo, didn't commit, and didn't touch `handoff.md`. The helper is the only Bash command I ran, apart from read-only `git` status, diff and rev-parse.\n\nTo finish, either allow writes to `runs/Q3-A/scratch/` so I can save both files and apply the one-line README fix, or record F1 as a known low-severity follow-up.",
+        "permission_denial_count": 1
+      }
+    ],
+    "reviewer_messages": [],
+    "handoff": "# Q3-A handoff\n\n## Outcome\n\nThe frozen draft `93c6269cdf7cb4aefe17dada0f35c5f6573a04ac` was retained unchanged. The requested fresh `claude-opus-5-5` / high CLI writer reviewed its model's draft against all eight ticket criteria and found no code or test defect. All three required checks passed. No source repair was applied. The only finding was optional README paragraph spacing, which does not prevent any acceptance criterion from holding.\n\n## Assignment and scope\n\n- One fresh Claude CLI assignment; no reviewer or agent dispatch, no agents-collab, no model substitution, no follow-up review loop.\n- Explicit `--model claude-opus-5-5 --effort high`, safe mode, empty strict MCP configuration, no session persistence, existing login, no permission bypass. API-key/backend override environment variables were removed from the child environment; no spending fallback was configured.\n- Only Read/Edit/Write/Glob/Grep and restricted Bash tools were exposed. Bash activity comprised read-only git inspection and the prescribed check helper.\n- The writer reviewed the frozen diff from `f0acd29`, README, project context, affected source and fixtures before considering edits. It reported requirements 1\u20138 satisfied, including unchanged selection/default behavior, explicit tie ordering, output compatibility, invalid values, read-only lifecycle behavior and fixture cleanup.\n- Neither lead nor writer changed repository files. No commits, pushes, publishing, dependency, safeguard, profile or other-checkout changes occurred.\n\n## Findings and dispositions\n\n### F1: README paragraph separation \u2014 low severity\n\nConcrete scenario: rendered README combines the new list-sort ordering text with the following existing filesystem requirement because no blank line separates them. Evidence: `README.md:335\u2013347`, especially the transition from `watch` having no sort option to \u201cUse a filesystem that preserves atomic file replacement\u201d. Behavior, documented ordering rules and tests remain correct.\n\nWriter disposition: proposed inserting one blank line before the filesystem guidance, wording unchanged. Actual disposition: not applied. The CLI denied the writer's scratch review-report Write tool call in `dontAsk` mode. The assignment required saving findings before editing, so the writer stopped before its repair pass and verified the unchanged draft. The lead recovered the proposed findings from the tool log without editing source. This optional presentation issue remains; it is not an acceptance defect.\n\nNo other material findings. Repeated `--sort` was not separately tested and is not required by the ticket.\n\n## Permission block\n\nThe denied action was writing `scratch/writer-review.md`. Claude reported: \u201cPermission to use Write has been denied because Claude Code is running in don't ask mode.\u201d This was a CLI tool-permission denial, not an automatic approval-review rejection. No bypass, source edit by the lead, replacement writer or repeated review was attempted. `writer-review-recovered.md` preserves the writer's exact proposed report; `writer-last-response.txt` preserves its final report.\n\n## Final verification\n\nExecuted once by the writer:\n\n```text\n<python3> <study-work>/runs/Q3-A/checks.py\n```\n\nThe helper supplied the exact isolated build/fixture environment, with CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT outside the repository. It was executed without inspecting or editing its source or protected environment/guard files.\n\n- `cargo fmt --check`: exit 0, no timeout.\n- `cargo clippy --all-targets -- -D warnings`: exit 0, no timeout.\n- `cargo test`: exit 0, no timeout.\n- All owned check process groups: absent.\n- Cleanup: jobs `[]`, unresolved IDs `[]`, observable cleanup complete `true`.\n- Helper's cleanup limit: detached-process absence is not guaranteed when metadata has been deleted.\n- Writer CLI exit: 0.\n- Writer's final git check: working tree clean, HEAD unchanged at the frozen draft. Lead independently confirmed the same at closeout.\n\nEvidence outside Git: `scratch/writer-stream.jsonl`, `scratch/writer-prompt.txt`, `scratch/writer-settings.json`, `scratch/writer-review-recovered.md`, `scratch/writer-last-response.txt`, `scratch/final-check-summary.json`, `scratch/writer-exit.txt`.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 490312,
+          "inputTokens": 483195,
+          "cachedInputTokens": 432256,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 7117,
+          "reasoningOutputTokens": 1723
+        }
+      ]
+    },
+    "skill_read_candidates": 0
+  },
+  {
+    "id": "Q3-B",
+    "native_dispatches": [
+      {
+        "model": "gpt-6-astra",
+        "reasoning": "high",
+        "fresh_history": "unknown"
+      }
+    ],
+    "cli_results": [],
+    "reviewer_messages": [
+      "I\u2019ll review the frozen draft against the sorting requirements and return concrete findings without changing source.\n",
+      "The ordering code preserves the existing selection step and applies the new order before either output format. I\u2019m checking the remaining diff and fixture behavior for regressions.\n",
+      "No justified source change found. Keep the frozen draft and run the required verifier.\n\nReviewed clean HEAD `93c6269cdf7cb4aefe17dada0f35c5f6573a04ac`, its complete change against the parent, project instructions, README/context, and relevant output, storage, resource, and fixture code.\n\nEvidence:\n\n- `src/main.rs:119` restricts `--sort` through `ValueEnum`; only `created` and `finished` exist. Parsing precedes dispatch (`src/main.rs:888`), so invalid values cannot print a job list.\n- `src/main.rs:360` preserves the existing active/unverified/finished classification. `order_jobs` at line 373 applies the required creation or descending finish order, with ascending ID ties.\n- `src/main.rs:387` preserves the previous stable default ordering and recent-window selection. Explicit sorting happens afterward (`src/main.rs:744`), so it cannot change membership.\n- Both output paths consume the same ordered records (`src/main.rs:757`); serialization and resource handling remain unchanged. The added sort introduces no renewal, signaling, or persisted writes. Watch receives no new option.\n- Deterministic unit fixtures cover active states, unverified states, timestamp ties, reversed input, default membership, and omitted-option behavior (`src/main.rs:1003`). Integration coverage checks seeded history, both orders, human/JSON parity, resources, unchanged record bytes/deadlines, default window, invalid values, and watch rejection (`tests/lifecycle.rs:576`, `tests/lifecycle.rs:682`).\n- Tests use the existing fixture root selection and child cleanup. README usage and ordering are documented (`README.md:79`, `README.md:335`).\n- Changes are confined to `src/main.rs`, `tests/lifecycle.rs`, and `README.md`.\n\nMaterial findings: none. Repair disposition: unnecessary.\n\nThis was a static, read-only review; I did not execute checks or modify files. Final formatting, Clippy, and test status remains for the designated check helper."
+    ],
+    "handoff": "# Q3-B handoff\n\nTask: review the existing `list --sort created|finished` draft, repair only justified findings, and verify within `src/`, `tests/`, and `README.md`.\n\nFrozen artifact: clean worktree at `93c6269cdf7cb4aefe17dada0f35c5f6573a04ac` (Frozen common initial draft). Draft touches README.md, src/main.rs, tests/lifecycle.rs. Lead source intent is read-only; no source edits by lead.\n\nRequired routes: one fresh no-history native gpt-6-astra/high reviewer dispatched as `/root/frozen_draft_review`. Conditional repair route is one fresh claude-opus-5-5/high subscription CLI invocation; available CLI supports safe mode, explicit effort, strict empty MCP and no session persistence. No writer invoked before justified findings.\n\nConstraints: preserve all safeguards; no dependencies, commits, pushes, publication, global settings, other checkouts, or study/grader/hidden-check inspection. All temporary collaboration artifacts belong in the case scratch. No context-document bookkeeping edits outside ticket scope.\n\nReview findings and dispositions: reviewer completed one independent static read-only review of the frozen HEAD and full parent diff, plus relevant storage, resource, output and fixture paths. Material findings: none. Disposition: retain the draft unchanged; no writer invocation and no repair pass justified.\n\nReview evidence: src/main.rs:119 restricts parser values; parsing precedes dispatch at :888. Grouping at :360 and comparator at :373 implement explicit ordering with ascending ID ties. Existing selection/default stable ordering at :387 is preserved; explicit reorder at :744 follows selection. Both output paths consume the same records at :757. Unit coverage begins at :1003; integration coverage at tests/lifecycle.rs:576 and :682. README usage/order appear at :79 and :335. No new lease renewal, signal or record-write path. Existing fixture root selection and cleanup are retained. Reviewer did not execute checks or modify files.\n\nFinal verification: PASS, one helper invocation, exit status 0. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, and `cargo test` all returned 0 without timeout. Each owned process group was reported absent. Cleanup reported no jobs, no unresolved IDs, and observable cleanup complete. Helper limitation: detached-process absence is not guaranteed when metadata has been deleted. Full machine-readable result: `scratch/final-checks.log`.\n\nVerifier: `<python3> <study-work>/runs/Q3-B/checks.py`. The helper set the exact disposable build/fixture environment, including CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT outside the repository. Helper/configuration files were not inspected or edited.\n\nFinal disposition: retain frozen draft unchanged; no source changes, no repair pass, no writer needed. Repository remains at the frozen artifact. No route block or unresolved material finding.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 506950,
+          "inputTokens": 503192,
+          "cachedInputTokens": 466944,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 3758,
+          "reasoningOutputTokens": 643
+        },
+        {
+          "totalTokens": 185951,
+          "inputTokens": 184846,
+          "cachedInputTokens": 133632,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 1105,
+          "reasoningOutputTokens": 118
+        }
+      ]
+    },
+    "skill_read_candidates": 0
+  },
+  {
+    "id": "Q3-C",
+    "native_dispatches": [
+      {
+        "model": "gpt-6-astra",
+        "reasoning": "high",
+        "fresh_history": "unknown"
+      }
+    ],
+    "cli_results": [],
+    "reviewer_messages": [
+      "I\u2019ll review the frozen draft against the supplied requirements and return only concrete findings tied to the source.\n",
+      "The draft applies sorting after the existing visibility selection, so the recent-job window stays intact. I\u2019m checking the output path and fixture cleanup before completing the review.\n",
+      "No material findings for frozen head `93c6269cdf7cb4aefe17dada0f35c5f6573a04ac` against base `f0acd293e2e1c620e536e613e6f45a0445e8d300`. Recommend retaining the draft and running the designated verification helper; no revision is justified by this review.\n\nEvidence:\n\n- `src/main.rs:126` adds an optional, list-only Clap value enum accepting `created` and `finished`. `watch` receives no option.\n- `src/main.rs:360` preserves the existing group classification. Active states rank first; unknown records and non-active records without a finish timestamp rank second.\n- `src/main.rs:373` applies creation ascending within active/unverified groups and for `created`; only timestamped finished records use finish descending for `finished`. Equal sort times resolve by ascending ID.\n- `src/main.rs:386` retains the previous stable default ordering and unchanged recent-window selection. Dispatch applies the explicit ordering **after** selection, preserving membership for both default and `--all` views.\n- The list dispatch passes the same ordered records to JSON and human rendering. Its envelope, job conversion, resource sampling and warnings handling remain unchanged. The added sorting code performs no I/O, lease renewal, signalling or record writes.\n- `src/main.rs:1020\u20131154` supplies deterministic unit coverage for both orders, group boundaries, creation/finish ties, permutation independence, unchanged default ordering, selection membership and parser rejection.\n- `tests/lifecycle.rs:576` covers seeded records, active jobs, both output forms, resource compatibility, unchanged fields and retained record bytes. `tests/lifecycle.rs:682` checks default-window membership, retained history, invalid arguments with empty stdout, and rejection by `watch`.\n- Fixtures reuse the existing `PROCLEASE_TEST_ROOT` handling and `Drop` cleanup (`tests/lifecycle.rs:198`), which stops jobs and waits for their supervisors.\n- `README.md:335` documents accepted values, grouping, directions, tie-breaking, membership preservation, compatible flags and the absence of a watch option.\n\nVerification performed: inspected the complete task diff, project instructions/context, affected implementation/tests and surrounding store/display/fixture paths; confirmed HEAD matches the frozen artifact and working-tree status is clean.\n\nLimits: static review only. I did not execute builds, tests or the verification helper, and make no runtime-pass claim. Final formatting, Clippy and test verification remains with the lead using the supplied helper."
+    ],
+    "handoff": "# Q3-C handoff: list --sort\n\nOutcome: retained the existing draft unchanged. Independent review found no justified repair; no revision writer was dispatched and no source edits were made by the coordinator. Final files match the reviewed frozen hashes, HEAD is `93c6269cdf7cb4aefe17dada0f35c5f6573a04ac`, and working tree is clean.\n\n## Review and dispositions\n\nOne initial independent review completed against frozen head `93c6269cdf7cb4aefe17dada0f35c5f6573a04ac`, base `f0acd293e2e1c620e536e613e6f45a0445e8d300`. Configured GPT-6 Astra/high was requested and accepted through native delegation in a fresh context with no parent transcript. Runtime effort was not independently attested. Advisory review target: 8 minutes; no technical supervisor. No follow-up review and no repair pass used.\n\nMaterial findings: none. Severity: none. No concrete failing scenario was substantiated. Disposition: retain draft, verify unchanged artifact. Review was static; runtime claims rely on the checks below.\n\nEvidence: `src/main.rs:126` restricts the list-only option to the two enum values. `src/main.rs:360` preserves active/unverified/finished classification; `:373` implements explicit grouping/time ordering and ascending ID ties; `:386` keeps default selection/order; list dispatch sorts only after selection. Human and JSON use the same ordered records and retain existing fields/envelope/resource paths. Sorting adds no I/O, renewal, signal or record write. Unit tests at `src/main.rs:1020` and seeded integration tests at `tests/lifecycle.rs:576` and `:682` cover both orders, ties/groups, unchanged selection/default window, invalid values with empty stdout, output/resource compatibility and watch rejection. Fixtures reuse existing external-root handling and supervisor cleanup. README documents the option and rules at `README.md:335`.\n\nDraft scope is only `README.md`, `src/main.rs`, `tests/lifecycle.rs`. Dependencies, shared skill, website, release/packaging and project safeguards were preserved. No commits, pushes, publishing or global changes were performed. Context-docs maintenance outside the task allowlist was not performed.\n\n## Final checks\n\nExecuted the designated helper exactly:\n\n`<python3> <study-work>/runs/Q3-C/checks.py`\n\nThe helper supplies the exact disposable build/fixture environment with `CARGO_TARGET_DIR` and `PROCLEASE_TEST_ROOT` outside the repository. Exit status 0:\n\n- `cargo fmt --check`: passed.\n- `cargo clippy --all-targets -- -D warnings`: passed.\n- `cargo test`: passed.\n\nAll three reported no timeout and absent owned process groups. Cleanup reported no jobs, no unresolved IDs and observable cleanup complete. Helper limitation: absence of detached processes cannot be guaranteed when metadata has been deleted. No additional runtime/platform claims made.\n\nNo unresolved blocker. Private packet, frozen artifact/hashes, review receipt, final check receipt and task state are in `scratch/proclease/list-sort/collaboration/`.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 659952,
+          "inputTokens": 654186,
+          "cachedInputTokens": 607488,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 5766,
+          "reasoningOutputTokens": 440
+        },
+        {
+          "totalTokens": 204482,
+          "inputTokens": 202947,
+          "cachedInputTokens": 135808,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 1535,
+          "reasoningOutputTokens": 129
+        }
+      ]
+    },
+    "skill_read_candidates": 1
+  },
+  {
+    "id": "Q4-A",
+    "native_dispatches": [],
+    "cli_results": [
+      {
+        "receipt_path": "scratch/writer-cli.jsonl",
+        "duration_ms": 142549,
+        "is_error": false,
+        "model_usage": {
+          "claude-opus-5-5": {
+            "inputTokens": 26,
+            "outputTokens": 8431,
+            "cacheReadInputTokens": 411454,
+            "cacheCreationInputTokens": 47943,
+            "webSearchRequests": 0
+          }
+        },
+        "result": "I reviewed the draft and found no problems that justify a change, so the source is untouched. The provided checks all pass on it. One thing is blocked: I couldn't create `scratch/writer-review.md` or `scratch/writer-final.md` because the permission mode refused the Write tool, and the only shell commands I'm allowed are the checks helper and read-only git. I didn't try another way to write them, so both reports are below instead.\n\n**Review findings: nothing material** (draft `c640d92` compared with base `c87ae5d`)\n- **1. Accepted values and default behaviour:** `--keep` only accepts whole numbers from 0 to 100 (`src/main.rs:124-132`). Anything else is rejected before the state directory is opened, so nothing can be deleted, and the error exits nonzero. There's also an internal check that rejects anything over 100 (`src/store.rs:271`). Without `--keep`, the code path is the same as before with the limit of 100 (`src/store.rs:238-256`).\n- **2. How N is applied:** the only logic change is that N replaces 100 in the count (`src/store.rs:364`). The ordering by finish time, the tie-breaking and the 24-hour rule are unchanged (`src/store.rs:360-369`).\n- **3. Protected jobs and the bulk-stop pause:** jobs that are active, unknown, have no finish time, or whose supervisor can't be confirmed gone are filtered out before counting (`src/store.rs:324-351`). They are never removed and don't count toward N. During a bulk stop, removal is still postponed exactly as before (`src/store.rs:361`).\n- **4. Dry run:** `--dry-run` goes through the same candidate loop and only skips the deletion.\n- **5. Not saved:** job completion, `run`, `list` and `watch` still use the default limit (`src/lifecycle.rs:238`; `src/main.rs:339, 509, 625`).\n- **6. Output:** the JSON fields are unchanged and `max_finished` reports the limit used for that run (`src/main.rs:685`). Human output is unchanged.\n- **7. Docs:** `--keep` is documented in the help text, a README usage line (`README.md:85`) and the README retention section (`README.md:328-337`).\n- **8. Tests:** the new tests (`tests/lifecycle.rs:2477-2785`) cover every case in the ticket:\n  - N=0, N below the number of removable jobs, and N=100 matching the default with 103 jobs;\n  - the 24-hour rule and tie-breaking;\n  - all seven protected kinds of job, each both older than 24 hours and newest;\n  - the pause during a bulk stop, using the real lock file;\n  - dry run matching the real run, and unchanged human output;\n  - the limit not being saved for later prune, list, watch or job completion;\n  - invalid values, in both JSON and human mode.\n\n  They use `PROCLEASE_TEST_ROOT`, and the one job a test starts is waited for and cleaned up.\n- **Seeded records with live process IDs:** some test records carry the test runner's own process ID. That's safe because `stop` and status reads never signal a process ID read from disk (`src/lifecycle.rs:610-650`, `src/store.rs:462-483`), so cleanup can't hit the test runner.\n- **Minor wording, not changed:** the README says `--keep` \"applies a smaller count limit\", but N=100 equals the default. The \"N from 0 to 100\" wording next to it makes the meaning clear.\n\n**Final report**\n- **Findings:** none, so there was nothing to fix and no repair pass.\n- **Changed files:** none. `git status` is clean and HEAD is still `c640d92eed6f1502ba37830b518e1322547ce39e`.\n- **Checks:** I ran the provided helper once:\n  - `cargo fmt --check`: exit 0\n  - `cargo clippy --all-targets -- -D warnings`: exit 0\n  - `cargo test`: exit 0\n  - cleanup: no leftover jobs, and the helper reports cleanup complete.\n- **Limitations:**\n  - I only checked on macOS; Linux wasn't run.\n  - The helper says it can't guarantee that detached processes are gone once their records have been deleted.\n  - The two reports are only in this response, not in the scratch folder.\n\nTo save them as files, either allow Write for the scratch folder and I'll create both, or copy the text above into them yourself.",
+        "permission_denial_count": 1
+      }
+    ],
+    "reviewer_messages": [],
+    "handoff": "# Q4-A handoff \u2014 prune --keep N\n\nOutcome: the requested fresh Claude Opus 5.5 / high CLI writer reviewed the frozen draft and found no justified material change. Draft preserved; no repair pass or source edits. Final required checks passed.\n\n## Assignment and scope\n\n- Repository: disposable Q4-A/repo. Frozen and final HEAD: `c640d92eed6f1502ba37830b518e1322547ce39e`; initial and final working tree clean.\n- Writer: existing subscription CLI, explicit `--model claude-opus-5-5 --effort high`; response model confirmed. Fresh invocation, safe mode, restricted tools, strict empty MCP, no session persistence, no fallback model or permission bypass. Runtime 143.7 seconds, exit 0.\n- One review/check assignment; no separate reviewer, agents-collab, follow-up critique, or source fallback. Lead coordinated and retained records only.\n- Frozen draft versus its base changes only README.md, src/main.rs, src/store.rs, tests/lifecycle.rs (362 insertions, 7 deletions). No dependency, packaging, shared skill, website, or project-safeguard changes made in this assignment.\n\n## Findings, evidence, and disposition\n\nNo material finding was justified. The writer reviewed before verifying and chose to retain the draft.\n\n| Requirement / concrete failure scenario checked | Evidence from writer review | Severity and disposition |\n| --- | --- | --- |\n| Invalid or out-of-range N could delete records before failing | src/main.rs:124-132 parser range 0..=100, parsed before opening state; src/store.rs:271 guard; invalid-value tests at tests/lifecycle.rs:2755 | No defect found; retain |\n| Custom count could alter age eligibility, ordering, or tie-breaking | src/store.rs:360-369 retains tuple sort and 24-hour comparison; only invocation count replaces default; tests/lifecycle.rs:2543 and :2631 cover 0, below-count,100, age and ties | No defect found; retain |\n| Protected jobs could be collected or consume N | src/store.rs:324-351 filters active/unknown/missing-time/unverified supervisor before counting; tests/lifecycle.rs:2656 | No defect found; retain |\n| Collection could run while bulk stop protects history | Existing retention permit and deferral path retained, src/store.rs:275-293 and :361-363; tests/lifecycle.rs:2717 holds actual retention lock | No defect found; retain |\n| Dry run could delete or differ from real collection | Shared candidate loop in src/store.rs:366 onward; equivalence and presence assertions in tests/lifecycle.rs:2543 and :2656 | No defect found; retain |\n| Custom N could persist into later commands/completions | Default wrappers at src/store.rs:238-256; unchanged call sites src/main.rs:339, :509, :625 and src/lifecycle.rs:238; non-persistence exercise tests/lifecycle.rs:2607 onward | No defect found; retain |\n| JSON/human output or docs could miss invocation semantics | src/main.rs:677-700; README.md:85 and :328-337; CLI help on option | No defect found; retain |\n| Seed fixtures could signal or leak processes | Never-supervised finished records at tests/lifecycle.rs:2484; protected live IDs inspected against control/observation paths; fixture waits for started supervisor | No defect found; retain |\n| README calls limit \u201csmaller\u201d although N=100 equals default | README.md:328 also explicitly documents range 0..100 | Informational wording nit; no repair justified |\n\n## Final verification\n\nWriter executed exactly the supplied helper once, which sets the disposable CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT outside Git:\n\n```text\n<python3> <study-work>/runs/Q4-A/checks.py\n```\n\n- cargo fmt --check: exit 0, no timeout, owned process group absent.\n- cargo clippy --all-targets -- -D warnings: exit 0, no timeout, owned process group absent.\n- cargo test: exit 0, no timeout, owned process group absent.\n- Cleanup report: jobs [], unresolved_ids [], observable_cleanup_complete true.\n- Cleanup limitation reported by helper: detached process absence is not guaranteed when metadata has been deleted. Validation was on the current macOS host; no Linux claim.\n- Lead confirmed final git status is clean; no extra test/review loop.\n\n## Collaboration records and operational limitation\n\nThe writer's attempt to write scratch/writer-review.md was denied by its CLI permission mode. It respected that denial, continued with the authorized check helper, and returned both reports in its final output. No source repair was needed, so this did not block the implementation outcome. The coordinator retained the writer-authored review request and final output in scratch/writer-review.md and scratch/writer-final.md; this was report capture only, with no source editing or replacement review.\n\nRecords: scratch/writer-prompt.txt, scratch/writer-settings.json, scratch/empty-mcp.json, scratch/run-writer.py, scratch/writer-cli.jsonl, scratch/writer-cli.stderr, scratch/writer-status.json, scratch/writer-review.md, scratch/writer-final.md, scratch/final-checks.json. No further action required for this ticket.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 636681,
+          "inputTokens": 628778,
+          "cachedInputTokens": 561024,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 7903,
+          "reasoningOutputTokens": 1584
+        }
+      ]
+    },
+    "skill_read_candidates": 0
+  },
+  {
+    "id": "Q4-B",
+    "native_dispatches": [
+      {
+        "model": "gpt-6-astra",
+        "reasoning": "high",
+        "fresh_history": "unknown"
+      }
+    ],
+    "cli_results": [
+      {
+        "receipt_path": "scratch/writer-stream.jsonl",
+        "duration_ms": 179705,
+        "is_error": false,
+        "model_usage": {
+          "claude-opus-5-5": {
+            "inputTokens": 28,
+            "outputTokens": 12645,
+            "cacheReadInputTokens": 388041,
+            "cacheCreationInputTokens": 38272,
+            "webSearchRequests": 0
+          }
+        },
+        "result": "I fixed both P2 findings, and the verification helper now passes `cargo fmt --check`, clippy and `cargo test` (all exit 0, child-process cleanup complete). The first run failed the format check because one new assert line was too long; I shortened it and reran. The helper only prints exit codes, so I didn't see individual test names or counts.\n\n**What changed** (uncommitted on HEAD `c640d92`, no commits made):\n- **`src/store.rs`:** `prune` and `prune_locked` are back to their original form, so callers that don't pass `--keep` behave exactly as before. A separate new function, `prune_explicit`, handles `--keep`. If a bulk stop holds retention protection, it returns `deferred: true` straight away: no candidates and nothing deleted, including leftover data from interrupted deletions. The dry run and the real run now report the same thing.\n- **`src/main.rs`:** any `--keep` value, including 100, goes through `prune_explicit`. Without the flag it still calls `store.prune`. JSON fields and human output are unchanged.\n- **`README.md`:** the `--keep` paragraph now says that during a bulk stop it deletes nothing, even interrupted deletions, and its preview then lists no candidates.\n- **`tests/lifecycle.rs`:** the deferral test now seeds leftover data from an interrupted deletion alongside the ordinary finished jobs. With protection held:\n  - **`--keep 0`, `3` and `100`:** the dry run and real run both report no candidates and delete nothing.\n  - **No flag:** the dry run still lists candidates and the real run still retries and deletes the leftover data, so existing behavior is preserved.\n  - **After protection is released:** the `--keep 0` preview matches exactly what the real run removes.\n\n**Findings:**\n- **Dry runs not matching real runs under deferral:** fixed.\n- **Leftover deletion data removed while deferred:** fixed.\n\nThe report is at `scratch/writer-report.md`. Nothing blocked the pass.",
+        "permission_denial_count": 0
+      }
+    ],
+    "reviewer_messages": [
+      "I\u2019ll review the frozen implementation and its tests against the ticket, keeping the repository unchanged.",
+      "The count limit and protected-job filtering look consistent with the ticket. I found a possible mismatch during retention protection: dry runs still list candidates even though an actual prune defers them. I\u2019m checking that path against the existing compatibility tests.",
+      "Two material findings in frozen HEAD `c640d92`:\n\n1. **P2 \u2014 Deferred `--keep` dry runs report candidates an actual invocation cannot remove.**  \n   In `src/store.rs:361`, the deferred early return applies only when `!dry_run`. With the retention guard held and three eligible records, `prune --keep 0 --dry-run` therefore reports all three candidates, while `prune --keep 0` against the same state returns empty candidates/removals. This violates the ticket\u2019s dry-run equivalence requirement. The new test at `tests/lifecycle.rs:2735\u20132742` exercises this exact scenario but checks only the preview\u2019s `deferred` and `removed` fields, omitting candidate equivalence.  \n   **Repair:** Make explicit `--keep` previews honor deferral and assert their candidates equal actual removals while protection remains held. Preserve absent-flag behavior: `src/lifecycle.rs:1110\u20131113` explicitly expects ordinary deferred dry runs to expose candidates.\n\n2. **P2 \u2014 `--keep` can delete quarantine data while reporting retention deferral.**  \n   `src/store.rs:277\u2013290` sets `deferred` when protection is held, but `src/store.rs:295\u2013318` still deletes valid `.prune-ID-UUID` directories before reaching the deferred return. Concrete scenario: an earlier interrupted cleanup leaves a private quarantine directory; a bulk stop holds `.retention`; `prune --keep 0` deletes that directory and returns `deferred: true` with a nonempty `removed` list. This contradicts the ticket\u2019s requirement that nothing be deleted while protection is held. Existing `prune_keep` deferral coverage seeds ordinary records only.  \n   **Repair:** Gate explicit `--keep` cleanup\u2014including quarantine retries\u2014on retention permission, with a regression containing both ordinary history and quarantine data. Preserve ordinary collection\u2019s existing quarantine-retry behavior when the flag is absent.\n\nThe parser bounds, invocation-local count plumbing, age rule, finish-time/ID ordering, protected-record filtering, JSON fields, and documentation otherwise appear consistent with the ticket.\n\nRead-only source review completed; no tests executed, source changed, or extra review round performed. These are confirmed control-flow defects, not merely coverage suggestions."
+    ],
+    "handoff": "# Q4-B handoff\n\nTask: review the frozen ProcLease `prune --keep N` draft against the supplied evaluation ticket; one repair pass only if justified, then final verification.\n\n## Artifact and boundaries\n\n- Repository: `<study-work>/runs/Q4-B/repo`.\n- Frozen HEAD: `c640d92eed6f1502ba37830b518e1322547ce39e`.\n- Frozen tree: `32d36f73713aa3bf5a403cc330176b3c13e7865d`.\n- Initial worktree clean (`git status --short`, `git diff --stat`). Draft is already in HEAD.\n- Allowed source scope: `src/`, `tests/`, `README.md`. Lead and reviewer source intent read-only; only the requested CLI writer may repair source. No commits, pushes, dependencies, publishing or global changes.\n- Read project README, project context and affected implementation/tests. No public study package, rubric, hidden checks, other profiles or other runs inspected.\n\n## Review\n\n- Requested one fresh native `gpt-6-astra`, effort `high`, with no transcript inheritance, via native `frozen_draft_review` assignment.\n- Assignment includes ticket, artifact identity, project/process safeguards, scope, read-only restrictions, eight-minute target, and required check helper/environment.\n- Review complete; two accepted P2 findings, recorded with scenarios and source evidence in `scratch/review.md`:\n  - Deferred explicit `--keep` dry runs expose candidates that actual collection cannot remove, violating equivalence (`src/store.rs:361`; missing candidate comparison in the deferral test).\n  - Explicit `--keep` retries and deletes quarantine data even while reporting retention deferral (`src/store.rs:277\u2013318`).\n- Disposition: one repair pass justified. Preserve ordinary no-flag deferred previews and quarantine retries while gating all explicit `--keep` cleanup on retention permission.\n- Requested fresh `claude-opus-5-5`/`high` CLI writer with safe-mode, strict empty MCP, no session persistence, existing subscription login, API/provider-key variables removed, no fallback model and tools restricted to file tools plus helper/read-only git commands. Assignment and invocation metadata: `scratch/writer-task.md`, `scratch/writer-launch.json`; output: `scratch/writer-stream.jsonl`.\n- No lead/reviewer source changes. No reviewer follow-up or second review will run.\n\n## Required verification\n\nUse only the supplied helper, which sets the exact disposable build and fixture environment (`CARGO_TARGET_DIR` and `PROCLEASE_TEST_ROOT` outside Git):\n\n```text\n<python3> <study-work>/runs/Q4-B/checks.py\n```\n\nThe helper, `process_guard.py` and `test-env.json` were not edited or inspected.\n\n## Repair dispositions and final state\n\n- One fresh CLI writer completed successfully (exit 0); actual initialization confirmed `claude-opus-5-5`, `dontAsk` permission mode, only Bash/Edit/Glob/Grep/Read/Write tools, empty MCP servers. Existing subscription authentication was confirmed; no model substitution or spending fallback was used.\n- Both P2 findings resolved in this single repair pass. `src/main.rs` routes explicit `--keep` (including 100) through `Store::prune_explicit`; absent flag retains the ordinary `prune` path. `src/store.rs` returns a deferred, empty report before scans/quarantine retries whenever explicit collection lacks retention permission. Ordinary default previews and quarantine retry behavior remain covered and unchanged.\n- The deferral regression in `tests/lifecycle.rs` now seeds ordinary history and a private quarantine directory; verifies preview/actual empty candidate equivalence and preservation at N=0,3,100 under protection; verifies ordinary no-flag behavior; and verifies preview/removal equivalence including quarantine after release. README documents explicit deferral.\n- Final scope: only `README.md`, `src/main.rs`, `src/store.rs`, `tests/lifecycle.rs` modified (102 insertions, 36 deletions). Lead inspected final diff and scope read-only. HEAD unchanged. No commits, pushes, publishing, dependency or global changes.\n- Writer report: `scratch/writer-report.md`. Final file SHA-256 identities: `scratch/final-artifact-sha256.json`.\n\n## Final checks and evidence\n\n- Exact supplied helper executed by writer. First invocation: fmt exit 1 (long test assertion formatting), Clippy and tests exit 0. Writer corrected formatting with a file edit within the same repair pass and reran the helper. No additional critique loop.\n- Final helper invocation: `cargo fmt --check` exit 0; `cargo clippy --all-targets -- -D warnings` exit 0; `cargo test` exit 0. No timeouts; all owned command process groups reported absent.\n- Final cleanup: `jobs: []`, `unresolved_ids: []`, `observable_cleanup_complete: true`. Helper limitation: detached process absence is not guaranteed when metadata has been deleted; individual test counts are not included in its summary.\n- Raw writer/tool evidence: `scratch/writer-stream.jsonl`. Extracted final helper summary: `scratch/final-checks.json`.\n- Lead final `git diff --check`: exit 0. Final `git status --short` lists exactly the four allowed modified files above.\n- No unresolved task blocker. No second reviewer invocation or further repair pass.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 941927,
+          "inputTokens": 932400,
+          "cachedInputTokens": 886400,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 9527,
+          "reasoningOutputTokens": 1361
+        },
+        {
+          "totalTokens": 218573,
+          "inputTokens": 217182,
+          "cachedInputTokens": 165504,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 1391,
+          "reasoningOutputTokens": 211
+        }
+      ]
+    },
+    "skill_read_candidates": 0
+  },
+  {
+    "id": "Q4-C",
+    "native_dispatches": [
+      {
+        "model": "gpt-6-astra",
+        "reasoning": "high",
+        "fresh_history": "unknown"
+      }
+    ],
+    "cli_results": [
+      {
+        "receipt_path": "scratch/proclease/prune-keep/collaboration/writer-result.json",
+        "duration_ms": 155216,
+        "is_error": false,
+        "model_usage": {
+          "claude-opus-5-5": {
+            "inputTokens": 42,
+            "outputTokens": 14158,
+            "cacheReadInputTokens": 645758,
+            "cacheCreationInputTokens": 44831,
+            "webSearchRequests": 0
+          }
+        },
+        "result": "I fixed both findings, but I haven't run any checks, so nothing here is verified by fmt, clippy or tests yet. You said you'll run the helper, so I left that to you. The changes are uncommitted on HEAD `c640d92`.\n\n## File changes\n- **`src/store.rs`**\n  - The shared prune routine takes a new flag that makes a dry run list only what a real prune would delete right now.\n  - `prune_keeping` (the `--keep` path) sets the flag. `prune` and `prune_locked` don't, so their behaviour is unchanged.\n  - While another process holds retention protection, `prune_keeping` now returns before listing any jobs, for both dry and real runs. It still reports deferred as true.\n  - Leftover partly-deleted directories are still cleaned up and listed even under protection, as before.\n- **`src/main.rs`**\n  - `prune` without `--keep` uses the old default path, so its output, including the dry-run list of what *would* go once protection ends, is unchanged.\n  - Any supplied `--keep` value uses the exact-preview path. That includes `--keep 100`, because it checks whether the option was given, not whether the value equals the default of 100.\n  - JSON fields and human output are unchanged.\n- **`tests/lifecycle.rs`**\n  - *Protected-jobs test (R2):* the live guardian group record now has `keeper_pid = i32::MAX`. No process can have that PID on macOS or Linux. The test first checks that `kill(pid, 0)` fails with \"no such process\", so that record gets past the keeper check and only the live guardian group (which contains the test process) protects it. No extra processes are launched, and the collectable seeded records are still never-supervised failures.\n  - *Deferral test (R1):* while protection is held:\n    - A default `--dry-run` still lists the over-24h job.\n    - For `--keep 0` and `--keep 100`, the dry run and the real prune both show deferred true and no candidates, and nothing is deleted. The JSON `dry_run` and `max_finished` values are checked too.\n    - Human output reads `Would remove 0 finished jobs.`\n\n    After protection is released, the dry run and the real prune list the same three jobs, and those jobs are removed.\n- **`README.md`**: one sentence now says a `--keep` dry run shows exactly what prune would delete, and no job directories while collection is deferred.\n\n## Finding dispositions\n- **R1: fixed.** The cause was what the reviewer described: the early return under deferral only applied to real runs, not dry runs.\n- **R2: fixed.** With the old fixture, `keeper_pid` 0 made the record fail the keeper check, so the job was protected before the guardian check ran. I read the platform guardian code (`group_has_live_members`, macOS and Linux versions) and changed nothing there. Both versions report the test's own process group as live, and an error also leaves the job protected.\n\n## Checks\n- **Run:** read-only `git status`, `git diff` and `git rev-parse` only.\n- **Skipped:** the checks helper.\n- **Formatting:** written by hand to match rustfmt defaults (there is no rustfmt config in the repo).\n\n## Limits\n- **Untested assumption:** that the OS returns \"no such process\" for `kill(i32::MAX, 0)`. The test asserts this directly, so it will fail loudly if that's wrong.\n- **Not tested:** cleanup of leftover partly-deleted directories under `--keep` with protection held. That code path is unchanged and runs before the new early return.",
+        "permission_denial_count": 0
+      }
+    ],
+    "reviewer_messages": [
+      "I\u2019ll review the frozen draft against the task requirements and return only concrete, evidenced findings.",
+      "I found one mismatch: while retention is protected, `prune --keep N --dry-run` lists candidates that the matching real prune would defer. I\u2019m checking the surrounding tests and default behavior before finalizing the finding.",
+      "Review verdict: **one functional correction required**, plus one test coverage gap.\n\nArtifact: frozen HEAD `c640d92eed6f1502ba37830b518e1322547ce39e`, packet aggregate SHA256 `4253a507f5999f9a49f5f16924338f5030adec11a9bbe92ef464bbbd23f73d5d`.\n\n1. **P2 \u2014 Deferred `--keep` dry-run reports jobs actual prune cannot delete.**  \n   Location: `src/store.rs:361`; test coverage at `tests/lifecycle.rs:2735`.  \n   Scenario: hold the shared `.retention` lock and seed three collectable finished jobs, as the existing deferral test does. `prune --keep 0 --dry-run` returns all three as candidates and human output says \u201cWould remove 3 finished jobs.\u201d The corresponding actual invocation returns no candidates or removals.  \n   Evidence: the deferred early return applies only when `!dry_run`; dry-run proceeds to append every count/age candidate. The deferral test checks preview `removed` but omits preview `candidates`, missing the mismatch. This violates acceptance criterion 4.  \n   Action: make explicit `--keep` previews respect current deferral and add candidate equivalence assertions while protection is held. Preserve no-`--keep` behavior: the existing default-path unit test at `src/lifecycle.rs:1113` explicitly expects hypothetical candidates during deferral. Preserve quarantine cleanup semantics.\n\n2. **P3 \u2014 \u201cLive guardian group\u201d coverage never reaches the guardian check.**  \n   Location: `tests/lifecycle.rs:2676`, with filtering at `src/store.rs:338`.  \n   Scenario: removing or breaking the guardian-group safeguard would still leave this new test passing.  \n   Evidence: the seeded guardian record inherits `keeper_pid: 0`. Adding a guardian makes `never_supervised` false, and `process_is_absent(0)` is false, so the record is protected by the keeper check before guardian-group verification runs.  \n   Action: construct this protected-class case with a keeper verified absent, so the live guardian group is the sole protection.\n\nReviewed frozen README, project context, parser/dispatch, retention implementation, call sites and relevant tests. Other inspected behavior appears consistent with the requirements: range validation precedes dispatch; limits are invocation-local; filtering precedes counting; finish-time/ID ordering and inclusive age handling remain intact.\n\nThese are source-derived findings; no executable checks were run, per the review boundary. Final verification remains with the lead using the supplied helper. No files changed."
+    ],
+    "handoff": "# Q4-C handoff\n\nOutcome: reviewed the existing frozen `prune --keep N` draft, completed one justified repair pass, and verified the final state. No unresolved material findings. Changes remain uncommitted; no commits, pushes or publication performed.\n\n## Artifact and collaboration\n\n- Initial clean HEAD: `c640d92eed6f1502ba37830b518e1322547ce39e`.\n- Frozen artifact aggregate SHA256: `4253a507f5999f9a49f5f16924338f5030adec11a9bbe92ef464bbbd23f73d5d`; source snapshot and manifest retained in `scratch/proclease/prune-keep/collaboration/`.\n- Initial independent review: configured `gpt-6-astra`, requested high reasoning, fresh native context with no transcript inheritance. Interface accepted requested model/effort; independent runtime effort attestation unavailable.\n- Sole repair writer: configured `claude-opus-5-5`, explicit high effort through existing authenticated Claude subscription CLI. CLI 2.1.319, safe-mode, strict empty MCP, no session persistence, dontAsk permissions, source/test-tool allowlist. Successful result reported canonical model `claude-opus-5-5`, firstParty; no permission denials. Runtime effort independently unknown; no keys or alternate billing/provider path supplied.\n- One initial review and one repair pass; no reviewer follow-up or repeated critique loop. Advisory review target 8 minutes, repair target 20 minutes. Lead coordinated and inspected read-only; only assigned writer changed source.\n- Final patch SHA256: `6ee156e51c1cfcc4f5ea2ff0126838867bc61002901538420e1dd5b165479eda`. Changed files: `README.md`, `src/main.rs`, `src/store.rs`, `tests/lifecycle.rs`. Scope check and `git diff --check` pass.\n\n## Findings and dispositions\n\n### R1 \u2014 P2: deferred explicit-keep preview disagreed with real prune\n\nEvidence: initial `src/store.rs:361` returned early for deferred actual collection only (`report.deferred && !dry_run`). With the shared `.retention` lock held and three seeded collectable jobs, `prune --keep 0 --dry-run` listed all three as candidates, while `prune --keep 0` listed/deleted none. Initial `tests/lifecycle.rs:2735` checked preview removals but omitted preview candidates. This violated acceptance criterion 4.\n\nAddressed: explicit `--keep` collection uses exact current-preview semantics, including an explicit value of 100. During retention protection it reports no job candidates in dry or real runs. Default prune retains its existing hypothetical deferred preview semantics, required by existing lifecycle unit coverage. Quarantine cleanup remains unchanged. Added assertions for keep 0 and 100, JSON fields, human output, retained directories, and preview/removal equivalence after protection release. README explains deferred previews. Lead inspected delta; final checks pass.\n\n### R2 \u2014 P3: live-guardian fixture did not exercise guardian safeguard\n\nEvidence: initial `tests/lifecycle.rs:2676` inherited `keeper_pid = 0`. Once a guardian was added, `never_supervised` became false, and `process_is_absent(0)` was false; keeper filtering protected the record before guardian filtering at `src/store.rs:338`. A broken guardian safeguard would not fail this case.\n\nAddressed: fixture now seeds an absent keeper PID (`i32::MAX`) and asserts the OS reports ESRCH before seeding a live guardian process group containing the test process. The guardian check is consequently the sole protection for this class. Collectable finished seeds remain never-supervised failed launches; no extra process is started for this fixture. Final checks pass, including the explicit absence assertion.\n\n## Final verification\n\nExecuted the required helper without reading or modifying it:\n\n`<python3> <study-work>/runs/Q4-C/checks.py`\n\nIt supplied the exact disposable external build/fixture environment (`CARGO_TARGET_DIR` and `PROCLEASE_TEST_ROOT`). One final invocation, exit 0:\n\n- `cargo fmt --check`: pass, exit 0, no timeout.\n- `cargo clippy --all-targets -- -D warnings`: pass, exit 0, no timeout.\n- `cargo test`: pass, exit 0, no timeout.\n- All helper-owned process groups reported absent; cleanup reported no jobs or unresolved IDs and `observable_cleanup_complete: true`.\n\nEvidence: `scratch/proclease/prune-keep/collaboration/final-check.log`. Helper caveat retained: detached process absence is not guaranteed when metadata has been deleted. No additional platform validation claimed. The independent review assessed the original frozen draft; repaired delta received lead integration inspection and executable checks, with no follow-up reviewer assessment under the configured cap.\n\nNo project safeguards, dependencies, packaging, shared skill, website or out-of-scope documentation changed. Records remain outside the repository. No remaining blocker.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 1208633,
+          "inputTokens": 1197731,
+          "cachedInputTokens": 1151616,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 10902,
+          "reasoningOutputTokens": 2898
+        },
+        {
+          "totalTokens": 234707,
+          "inputTokens": 232811,
+          "cachedInputTokens": 177408,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 1896,
+          "reasoningOutputTokens": 426
+        }
+      ]
+    },
+    "skill_read_candidates": 1
+  },
+  {
+    "id": "Q5-A",
+    "native_dispatches": [],
+    "cli_results": [
+      {
+        "receipt_path": "scratch/writer-stream.jsonl",
+        "duration_ms": 133784,
+        "is_error": false,
+        "model_usage": {
+          "claude-opus-5-5": {
+            "inputTokens": 28,
+            "outputTokens": 9025,
+            "cacheReadInputTokens": 358538,
+            "cacheCreationInputTokens": 35355,
+            "webSearchRequests": 0
+          }
+        },
+        "result": "The review is complete and I left the draft unchanged. It meets all eight acceptance criteria, and all three checks passed.\n\n**Review:** I found no defects that justify a change. I checked each criterion against the source and the new test; the line references are in `scratch/review.md`. Two minor points I left alone:\n- The `list --help` text has backticks around `selected` and `retained`, and the help output prints them literally. This is cosmetic.\n- The new test assumes it reaches its default-window assertions within 30 seconds of seeding the records.\n\n**Changed files:** none. I made no repair pass, and `git status --porcelain` shows nothing changed.\n\n**Checks** (`checks.py`):\n\n| Check | Exit |\n|---|---|\n| `cargo fmt --check` | 0 |\n| `cargo clippy --all-targets -- -D warnings` | 0 |\n| `cargo test` | 0 |\n\nThe helper reported nothing left running after the tests. Its output gave only exit codes, not per-test counts.\n\n**Blockers:** none. My first `git diff` attempt used `git -C` and was denied by the permission mode; the plain `git diff` worked, so nothing was lost. Checks ran on macOS only.\n\nFiles are in `<study-work>/runs/Q5-A`:\n- `scratch/review.md`\n- `handoff.md`",
+        "permission_denial_count": 1
+      }
+    ],
+    "reviewer_messages": [],
+    "handoff": "# Q5-A handoff: list --summary (frozen draft review)\n\n- Route: claude-opus-5-5 (high), single writer/reviewer, no delegation. The route was available, and no block occurred.\n- Frozen HEAD: a2f3db51ddcf8bc3ddcf4372354e52bbcc42e976. The working tree was clean before and after.\n\n## Review evidence\n\nThe full review is in `scratch/review.md`. I reviewed `git diff ad6d169 a2f3db5` for\nREADME.md, src/display.rs, src/main.rs, src/model.rs and tests/lifecycle.rs. I also read\nAGENTS.md, docs/project-context.md, store.rs (`list`, `observed_record_until`,\n`unpublished_reservation`) and the test Fixture. I traced each acceptance criterion\n1-8 to source and test lines:\n\n- `retained_jobs`/`visible_jobs`/`summary_counts` share one prune + observed scan,\n  with no writes, signals or renewals (src/main.rs:344-405; src/store.rs:437-482).\n- `Record::category` is identical to the old table predicate (src/model.rs:148-156;\n  src/display.rs:143-150).\n- The JSON object has exactly the keys schema_version/selected/retained/warnings, and\n  each count object has exactly total/active/unverified/finished. Human output is two\n  stdout lines, with warnings on stderr and the exit status unchanged.\n- Clap enforces the `--resources` conflict (exit 2, no stdout). The non-summary list\n  arm and watch are unchanged.\n- Help long_help and README document the option and the categories.\n- The test `list_summary_counts_selected_and_retained_jobs_without_job_data`\n  (tests/lifecycle.rs:2937-3166) covers active/unknown/finished \u00b1 finish time/corrupt\n  records, both modes, --all, warning parity, the conflict, unchanged bytes and lease,\n  bounded output, help and leak needles (including an environment value). It also\n  stops the live job.\n\n## Material findings\n\nNone. Non-material notes, not acted on: clap prints the backticks in long_help\nliterally, and the test assumes it reaches the default-window assertions within\n30s of seeding.\n\n## Disposition and changes\n\nI preserved the draft. No repair pass was needed, and no files changed (`git status --porcelain` is empty).\n\n## Final checks (authoritative helper checks.py)\n\n| Command | Exit |\n|---|---|\n| cargo fmt --check | 0 |\n| cargo clippy --all-targets -- -D warnings | 0 |\n| cargo test | 0 |\n\nHelper cleanup: jobs [], unresolved_ids [], observable_cleanup_complete true\n(the helper notes that \"detached_process_absence: not guaranteed when metadata has been deleted\").\n\n## Limitations\n\n- I verified only through the helper's exit codes. Its output did not include\n  per-test counts.\n- macOS only. I did not run Linux.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 515244,
+          "inputTokens": 509581,
+          "cachedInputTokens": 474112,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 5663,
+          "reasoningOutputTokens": 1389
+        }
+      ]
+    },
+    "skill_read_candidates": 0
+  },
+  {
+    "id": "Q5-B",
+    "native_dispatches": [
+      {
+        "model": "gpt-6-astra",
+        "reasoning": "high",
+        "fresh_history": "unknown"
+      }
+    ],
+    "cli_results": [],
+    "reviewer_messages": [
+      "No material implementation defects found. Recommend retaining the frozen draft, subject to the required verification helper passing.\n\nReviewed clean HEAD `a2f3db51ddcf8bc3ddcf4372354e52bbcc42e976`, its five-file change, project instructions, README, project context, affected source/tests, and underlying observation/retention behavior.\n\nEvidence:\n\n- `src/main.rs:344` shares pruning, observed scanning, and warning handling with ordinary list; `src/main.rs:400` counts retained records before applying the existing selection.\n- `src/model.rs:148` implements the required category partition, including unknown records with timestamps and terminal records without timestamps.\n- `src/main.rs:768` emits only aggregate fields in JSON or exactly two human count lines, preserves warnings, and avoids resource sampling.\n- `src/main.rs:120` rejects `--summary --resources` through argument parsing.\n- The display refactor preserves the existing category predicates; ordinary list/watch selection remains unchanged.\n- `tests/lifecycle.rs:2937` covers both output modes, default/all selection, unknown and untimed terminal records, unreadable-record warnings, field privacy, conflicts, unchanged persisted records/deadlines, bounded aggregate output, and help. Fixtures honor `PROCLEASE_TEST_ROOT` and clean up processes.\n- `README.md:338` documents semantics, output shape, warnings, and option compatibility.\n\nNonblocking limitation: the integration test uses a real worker with a 30-second lifetime (`tests/lifecycle.rs:2945`, `:2959`) and a recent-history timestamp. A sufficiently long scheduler pause could invalidate its fixed expected counts. This is a timing sensitivity, not evidence of incorrect summary behavior; I did not reproduce a failure or recommend speculative changes.\n\nRead-only `git diff --check` passed and the working tree remained clean. I did not execute the verification helper, leaving the single prescribed verification run to the lead/writer. No source or artifact edits."
+    ],
+    "handoff": "# Q5-B handoff\n\nTask: review the frozen ProcLease `list --summary` draft, make at most one justified repair pass through the assigned writer, and verify. Source scope: `src/`, `tests/`, `README.md`; no commits, pushes, publishing, dependencies, safeguards or out-of-scope changes.\n\n## Frozen artifact and routing\n\n- Repository: `<study-work>/runs/Q5-B/repo`.\n- Frozen HEAD: `a2f3db51ddcf8bc3ddcf4372354e52bbcc42e976`; working tree initially clean.\n- Reviewer: fresh no-history native `gpt-6-astra`, high effort, read-only, one review. Assignment includes the complete acceptance criteria, project safeguards, scope, artifact identity, scratch location and exact verification helper/environment requirements. Target: 8 minutes; report at most 800 words. No follow-up review.\n- Writer, only if review justifies changes: fresh `claude-opus-5-5` CLI, high effort, safe mode, existing subscription login, strict empty MCP, no session persistence, restricted tools and no permission bypass. No alternative model or solo source editing.\n- Lead source access is read-only. Review/check and repair are limited to one pass each. Routine compile/test corrections during the repair pass remain permitted.\n- Temporary artifacts and collaboration records: case `scratch/` outside the repository. Final material findings, dispositions and checks will be recorded here.\n\n## Findings and dispositions\n\nThe fresh native `gpt-6-astra` / high reviewer found no material implementation defects and recommended retaining the draft subject to final checks. No writer was dispatched, and no repair pass or source edits were made.\n\nReview evidence:\n\n- `src/main.rs:344`: shared pruning, observed scanning and warning handling with ordinary list; `src/main.rs:400`: retained counts computed before existing selection.\n- `src/model.rs:148`: required category partition, including timestamped unknown and terminal records lacking finish timestamps.\n- `src/main.rs:768`: aggregate-only JSON and exact two-line human output, usual warnings, no resource sampling; `src/main.rs:120`: parser rejects `--summary --resources`.\n- Existing display category predicates and ordinary list/watch selection preserved.\n- `tests/lifecycle.rs:2937`: both modes, default/all selection, category edge cases, unreadable-record warnings, privacy, conflicts, unchanged persisted records/deadlines, bounded output and help. Fixtures honor `PROCLEASE_TEST_ROOT` and clean children.\n- `README.md:338`: semantics, category definitions, output schema, warnings and compatibility documented.\n\nOne low-severity, nonblocking observation: the integration test uses a real worker with a 30-second lifetime (`tests/lifecycle.rs:2945`, `:2959`) and recent-history timestamps. A sufficiently long scheduler pause could change expected counts. Evidence is the fixture timing, not a reproduced failure. Disposition: retain the existing draft; speculative changes are not justified by this review. Final checks determine whether there is an observed verification problem.\n\nReviewer scope: the frozen five-file change, project instructions/context, affected source/tests and underlying observation/retention behavior. Read-only `git diff --check` passed; working tree remained clean. Reviewer did not run the helper. No follow-up review round.\n\n## Final checks\n\nPASS. Ran the prescribed helper once, with the exact disposable build and fixture environment supplied by it:\n\n```sh\n<python3> <study-work>/runs/Q5-B/checks.py\n```\n\nThe helper, `process_guard.py` and `test-env.json` are not inspected or edited. No public study materials, rubric, hidden checks, other runs or other profiles are consulted.\n\nResults, retained in `scratch/final-checks.log`:\n\n- `cargo fmt --check`: exit 0; no timeout; owned process group absent.\n- `cargo clippy --all-targets -- -D warnings`: exit 0; no timeout; owned process group absent.\n- `cargo test`: exit 0; no timeout; owned process group absent.\n- Cleanup reported no jobs and no unresolved IDs, with observable cleanup complete. The helper explicitly limits this observation: absence of detached processes is not guaranteed when metadata has been deleted.\n\nFinal disposition: preserve the frozen draft unchanged. No repair needed, no writer invocation, no second review or repeated verification loop. Final working-tree status and frozen-source identity checked after verification. No commits, pushes or publication performed.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 446490,
+          "inputTokens": 441639,
+          "cachedInputTokens": 413184,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 4851,
+          "reasoningOutputTokens": 871
+        },
+        {
+          "totalTokens": 202923,
+          "inputTokens": 201473,
+          "cachedInputTokens": 153344,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 1450,
+          "reasoningOutputTokens": 512
+        }
+      ]
+    },
+    "skill_read_candidates": 0
+  },
+  {
+    "id": "Q5-C",
+    "native_dispatches": [
+      {
+        "model": "gpt-6-astra",
+        "reasoning": "high",
+        "fresh_history": "unknown"
+      }
+    ],
+    "cli_results": [],
+    "reviewer_messages": [
+      "I\u2019ll review the frozen draft against the supplied acceptance criteria and record only material findings, leaving source files unchanged.",
+      "I\u2019m using the agents-collab review procedure. The draft shares list scanning and category logic; I\u2019m checking selection, warning behavior, and fixture isolation for regressions.",
+      "The aggregate paths match the required schema and human output, and the shared category logic preserves normal list/watch behavior. I haven\u2019t found a material defect; the remaining verification is the coordinator\u2019s isolated format, lint, and test run.",
+      "No material findings in frozen draft `a2f3db5`. Keep the draft; required runtime checks remain for the coordinator.\n\nSaved evidence and verification limits in [initial-review.md](<study-work>/runs/Q5-C/scratch/proclease/list-summary/collaboration/initial-review.md). Source unchanged; static review only."
+    ],
+    "handoff": "# Q5-C handoff: list --summary\n\nStatus: complete. Independent review found no material issues; all required final checks passed. Draft retained unchanged.\n\n## Artifact and scope\n\nReviewed and retained frozen draft `a2f3db51ddcf8bc3ddcf4372354e52bbcc42e976` against base `ad6d169237770daf1123fa082bc901b1851c3c4d`. Working tree was clean; relevant source/supporting hashes still matched after review. Draft touches only README.md, src/display.rs, src/main.rs, src/model.rs and tests/lifecycle.rs. Coordinator and reviewer made no source changes. No repair was justified or dispatched. No commits, pushes, publishing, dependency or global-setting changes.\n\n## Independent review and disposition\n\nOne fresh native GPT-6-Astra / high assignment reviewed the frozen draft. Native interface accepted explicit model/effort and no transcript inheritance; runtime effort attestation remains unknown. Static review only; no follow-up or repeated critique loop. Configured Claude Opus 5.5 / high writer was not needed. Profile structure passed validation. Existing authenticated subscription access was checked without exposing credentials; no API-key override or spending fallback was used.\n\nMaterial findings: none. No concrete failure scenario with supporting evidence justified a change; no severity assigned. Disposition: retain the draft as required, rather than invent changes.\n\nEvidence: shared prune/observed scan and selection at src/main.rs:343; category precedence at src/model.rs:148; aggregate-only dispatch at src/main.rs:768; parser conflict at src/main.rs:119. The category extraction in src/display.rs preserves original list/watch calculation. README and long help describe categories, default/all selection, retained counts, warnings and resources conflict. Seeded integration coverage checks exact JSON keys/counts and human lines, both --all modes, warning parity/exit success, data exclusion, record/deadline preservation, conflict orders and watch rejection; its real child uses existing cleanup. Full initial review is in scratch/proclease/list-summary/collaboration/initial-review.md; packet, snapshot, manifest and state are beside it.\n\n## Final checks\n\nExecuted exactly `<python3> <study-work>/runs/Q5-C/checks.py` once, with its exact disposable build/fixture environment outside the repository.\n\n- `cargo fmt --check`: exit 0, no timeout.\n- `cargo clippy --all-targets -- -D warnings`: exit 0, no timeout.\n- `cargo test`: exit 0, no timeout.\n- All three owned process groups reported absent.\n- Cleanup: jobs [], unresolved_ids [], observable_cleanup_complete true.\n- Final `git diff --check` passed, working tree remained clean, and every frozen manifest hash still matched the reviewed artifact.\n\nRaw structured result: scratch/proclease/list-summary/collaboration/final-checks.json. No helper, process guard, environment file, grader material or hidden check was inspected or edited.\n\n## Limits and next operation\n\nNo unresolved blocker or required next operation. One initial independent review and one final verification run completed; zero repairs and no reviewer follow-up. The review and checks cover the same unchanged artifact. This is local verification, not cross-platform validation. The helper explicitly limits cleanup evidence: detached-process absence is not guaranteed when metadata has been deleted. No guarantees beyond the reported observable cleanup are claimed.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 838327,
+          "inputTokens": 831575,
+          "cachedInputTokens": 785920,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 6752,
+          "reasoningOutputTokens": 1095
+        },
+        {
+          "totalTokens": 374092,
+          "inputTokens": 371837,
+          "cachedInputTokens": 314240,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 2255,
+          "reasoningOutputTokens": 512
+        }
+      ]
+    },
+    "skill_read_candidates": 2
+  },
+  {
+    "id": "Q6-A",
+    "native_dispatches": [],
+    "cli_results": [
+      {
+        "receipt_path": "scratch/writer-stream.jsonl",
+        "duration_ms": 210469,
+        "is_error": false,
+        "model_usage": {
+          "claude-opus-5-5": {
+            "inputTokens": 34,
+            "outputTokens": 12370,
+            "cacheReadInputTokens": 538319,
+            "cacheCreationInputTokens": 40670,
+            "webSearchRequests": 0
+          }
+        },
+        "result": "The draft already met the ticket, so I left the source code alone. I made two small fixes to the README and tests, and the final state passes all checks.\n\n**What changed** (HEAD is still `fee79f9`, nothing committed):\n- **README.md (+3/\u22122):** There was no blank line after the last `--cwd` bullet, so the \"`--owner`, `--task`, `--name` and `--url` are declared metadata\u2026\" paragraph showed up inside that bullet. I added the blank line. I also added \"(unless `--cwd` is given)\" to the sentence saying the command inherits the caller's directory, which was no longer always true.\n- **tests/lifecycle.rs (+12):** The ticket asks that a `--cwd` with no value be treated differently from a path that doesn't exist, and no test checked that. I added a case where `run --cwd -- /usr/bin/true` must exit 2 (an argument error), print nothing to stdout and create no job.\n\n**Looked at but left alone:**\n- If the directory is deleted after it's checked but before the command starts, the job is recorded as `failed`, the same as any other launch failure.\n- `--cwd \"\"` is rejected by the argument parser with exit 2. The ticket accepts any nonzero exit here.\n- One overlong README line, which is only cosmetic.\n\n**Checks:** I ran the required helper twice. The first run failed `cargo fmt --check` because I'd written the new test call on one line; clippy and tests passed. After reformatting that call, the second run passed all three: fmt, clippy with warnings as errors, and `cargo test`, including the new case. The helper reported no leftover jobs. It also notes it can't guarantee that detached processes are gone once their metadata has been deleted.\n\n**Blockers:** none. The review and the result report are in `scratch/review.md` and `scratch/writer-result.md`.",
+        "permission_denial_count": 0
+      }
+    ],
+    "reviewer_messages": [],
+    "handoff": "# Q6-A handoff\n\nTask: review the existing `run --cwd PATH` draft, make at most one justified repair pass, then verify. Source allowlist: `src/`, `tests/`, `README.md`.\n\nFrozen draft: `fee79f9752b8e8604dcfef02cb8204f5f6bff6ef`; initial working tree clean.\n\nRoute: one fresh Claude CLI writer, explicitly `claude-opus-5-5`, effort `high`, reviewing its own model's draft and repairing in the same assignment. No separate reviewer or agents-collab delegation. Coordinator source intent is read-only. CLI uses safe mode, existing login, strict empty MCP, no session persistence, `dontAsk` permissions, and an explicit tool allowlist. Bash is limited to the designated check helper and read-only git status/diff/rev-parse. No permission bypass or fallback model.\n\nAssignment and CLI records: `scratch/writer-assignment.md`, `scratch/writer-stream.jsonl`, `scratch/writer-stderr.log`. Writer must record frozen-draft findings before editing in `scratch/review.md`, and final dispositions/checks in `scratch/writer-result.md`.\n\n## Final assessment and changes\n\nThe requested writer completed one fresh self-review and one repair pass in the same invocation. Its review judged the runtime draft to satisfy the ticket: canonical directory validation precedes job reservation, canonical cwd supplies retry identity, relative executable paths containing `/` resolve against launch cwd, and no process-wide working-directory change is introduced. Runtime source was retained without edits. No separate reviewer, follow-up critique or coordinator source edit occurred.\n\nFinal changes relative to the frozen draft are restricted to README.md (+3/-2) and tests/lifecycle.rs (+12). HEAD remains `fee79f9752b8e8604dcfef02cb8204f5f6bff6ef`; nothing committed, pushed or published.\n\n## Material findings and dispositions\n\n1. **F1 \u2014 Low, documentation \u2014 fixed.** README.md:104 unconditionally said the service inherits the caller's directory; a user supplying `--cwd` would read contradictory directory behavior. README.md:129 also lacked a blank line before the metadata paragraph, making that paragraph a CommonMark lazy continuation of the final cwd bullet. Writer qualified inheritance with \u201cunless `--cwd` is given\u201d and separated the paragraph. Evidence: frozen-draft review in `scratch/review.md` and final README diff.\n2. **F2 \u2014 Low, additional parser-boundary coverage \u2014 fixed.** A malformed invocation `run --cwd -- /usr/bin/true` must not consume the command as a directory or launch in the inherited directory. The added case asserts parser exit 2, empty stdout and no job. Evidence: final tests/lifecycle.rs diff inside `invalid_cwd_fails_before_any_job_is_created`. Qualification to the writer's report: the frozen draft already exercised a trailing `run --cwd` invocation; the new coverage specifically adds the `--` command boundary. The ticket does not itself prescribe exit 2 for this parser error; the existing README documents Clap's parser behavior. This is a regression extension, not a demonstrated runtime defect.\n\nNo runtime defect justified changing src/. The writer considered directory removal between validation and spawning and retained existing failed-launch semantics. Empty path parsing remains nonzero as required.\n\n## Final checks and evidence\n\nExecuted by the assigned writer using the required helper:\n\n```text\n<python3> <study-work>/runs/Q6-A/checks.py\n```\n\nThe helper supplies the designated external CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT. First execution: fmt exit 1 due to formatting of the added test call; Clippy and cargo test exit 0. The writer corrected only that formatting within the same repair pass and reran the helper. Final execution:\n\n| Check | Exit | Timeout |\n| --- | --- | --- |\n| cargo fmt --check | 0 | false |\n| cargo clippy --all-targets -- -D warnings | 0 | false |\n| cargo test | 0 | false |\n\nAll helper-owned process groups were reported absent. Cleanup reported `jobs: []`, `unresolved_ids: []`, and `observable_cleanup_complete: true`. Limit explicitly reported by helper: detached-process absence cannot be guaranteed when metadata has been deleted. No additional tests were run by the coordinator.\n\nCLI evidence confirms model `claude-opus-5-5`, permission mode `dontAsk`, empty MCP server list, tools Read/Edit/Write/Glob/Grep/Bash, no permission denials and zero spawned subagents. Effort `high` was explicitly selected in the invocation. The CLI completed successfully with no fallback model configured.\n\nFinal reports: `scratch/review.md`, `scratch/writer-result.md`. Full invocation record: `scratch/writer-stream.jsonl`; stderr: `scratch/writer-stderr.log`. Coordinator checked the final diff for scope and recorded the helper results; it did not conduct another source review.\n\nBlockers: none. Required route, single repair pass and final verification completed.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 603292,
+          "inputTokens": 596199,
+          "cachedInputTokens": 562944,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 7093,
+          "reasoningOutputTokens": 1563
+        }
+      ]
+    },
+    "skill_read_candidates": 0
+  },
+  {
+    "id": "Q6-B",
+    "native_dispatches": [
+      {
+        "model": "gpt-6-astra",
+        "reasoning": "high",
+        "fresh_history": "unknown"
+      }
+    ],
+    "cli_results": [
+      {
+        "receipt_path": "scratch/writer.jsonl",
+        "duration_ms": 164813,
+        "is_error": false,
+        "model_usage": {
+          "claude-opus-5-5": {
+            "inputTokens": 32,
+            "outputTokens": 10576,
+            "cacheReadInputTokens": 467448,
+            "cacheCreationInputTokens": 36640,
+            "webSearchRequests": 0
+          }
+        },
+        "result": "I fixed the one finding (P2), and the required checks helper passed. Everything ran on claude-opus-5-5 through the existing subscription login; nothing was unavailable. Nothing was committed.\n\n**P2: rewriting relative executables changed a script's `$0`: resolved**\n\nThe finding was correct. The draft turned `./bin/server` into an absolute path before running it, and setting `.arg0(...)` doesn't fix that: for a shebang script, the interpreter's `$0` comes from the path actually executed. That broke the rule that behavior without `--cwd` stays the same.\n\nThe rewrite also wasn't needed. The service command already has a `pre_exec` hook, so the standard library starts it with fork then exec, and the child changes into the launch directory before exec. A relative path containing `/` therefore already resolves against the launch directory, and its name passes through unchanged. ProcLease's own directory is never changed.\n\n**Changes**\n- **`src/lifecycle.rs`:**\n  - Removed `program_path`, the `.arg0(...)` call, its unit test and the unused `PathBuf` import.\n  - The command is again `Command::new(&launch.argv[0])` with `.current_dir(&launch.cwd)`.\n  - Added a comment explaining why relative paths resolve correctly and why the name must not be rewritten.\n- **`tests/lifecycle.rs`:** added the test `interpreter_scripts_keep_their_relative_pathname`.\n  - It runs a `#!/bin/sh` script that prints `$0` and `pwd -P`, invoked as `./bin/script` and as `bin/script`.\n  - It covers an absolute `--cwd`, a relative `--cwd`, and no `--cwd`.\n  - The caller's directory holds a different script at the same path that exits with 7, so a wrong resolution fails the test.\n  - The log must be exactly the program name as given, then the canonical directory.\n  - The earlier tests that use symlinks to `/bin/pwd` are unchanged.\n- **`README.md`:** the `--cwd` bullet now says the path is run as given, so argv, `argv[0]` and a script's `$0` stay unchanged.\n\nNo other findings were reported, so nothing else changed. The `--cwd` resolution, the empty/missing/non-directory errors, retry identity, help text and the other tests are as in the draft.\n\n**Checks** (the required helper, run once):\n- `cargo fmt --check`: exit 0\n- `cargo clippy --all-targets -- -D warnings`: exit 0\n- `cargo test`: exit 0\n- Cleanup: no jobs left, no unresolved ids, `observable_cleanup_complete: true`\n\n`git status` shows only `README.md`, `src/lifecycle.rs` and `tests/lifecycle.rs` modified.\n\n**Limitations**\n- The launch-directory resolution depends on the standard library changing into the child's directory before exec when a `pre_exec` hook is set. Rust's documentation calls the general case platform-specific. The new and existing tests would catch a change, but they ran only on this macOS host; Linux wasn't tested in this pass.\n\nA short report is saved at `scratch/writer-report.md`.",
+        "permission_denial_count": 1
+      }
+    ],
+    "reviewer_messages": [
+      "I\u2019ll review the frozen draft against the working-directory requirements and existing lifecycle safeguards, then return only actionable findings with concrete evidence.",
+      "The directory validation and retry identity paths appear consistent with the requirements. I\u2019m checking executable launch semantics next, particularly whether the new path rewriting preserves behavior when `--cwd` is omitted.",
+      "**P2 \u2014 Relative executable rewriting changes existing script behavior without `--cwd`.** In `src/lifecycle.rs:475`, `program_path` converts every slash-containing relative executable into an absolute pathname; `src/lifecycle.rs:507\u2013509` applies this unconditionally. For an executable shebang script invoked as `proclease run -- ./bin/server`, an interpreter-visible script name such as shell `$0` changes from `./bin/server` to `/canonical/cwd/./bin/server`. `.arg0(...)` does not preserve this: Unix shebang handling supplies the executed script pathname to the interpreter. A script that prints or branches on `$0` therefore changes output or behavior even without the new flag, violating acceptance requirement 6 and README.md:127.\n\nPreserve the original executable pathname while resolving it in the launched child\u2019s directory on the supported platforms, and cover interpreter-script invocation. The added executable tests (`tests/lifecycle.rs:3217` onward) point symlinks at `/bin/pwd`, so they cannot detect this regression.\n\nReviewed frozen HEAD `fee79f9752b8e8604dcfef02cb8204f5f6bff6ef` read-only. No other material findings. Builds and process tests were not run, as assigned."
+    ],
+    "handoff": "# Q6-B handoff\n\nTask: complete frozen ProcLease `run --cwd PATH` draft within `src/`, `tests/`, `README.md` only.\n\nFrozen artifact: clean HEAD `fee79f9752b8e8604dcfef02cb8204f5f6bff6ef` (Frozen common initial draft). File hashes: `scratch/frozen-artifact.json`.\n\nRoutes: one fresh no-history native `gpt-6-astra` reviewer, high effort; one fresh `claude-opus-5-5` CLI writer, high effort, existing subscription login. No model substitution. Lead source intent read-only. Reviewer source intent read-only. Writer invocation uses safe mode, restricted file tools, dontAsk permissions, strict empty MCP, no session persistence, API credentials removed; allowed Bash limited to exact check helper and read-only git status/diff/rev-parse. Invocation recorded in `scratch/writer-invocation.json`; no commits or publishing.\n\n## Independent frozen-draft review\n\nReview completed once, read-only; no builds/process tests by reviewer. Report: `scratch/review.md`.\n\n- **P2:** unconditional absolute rewriting of slash-containing relative executables changes a shebang script's interpreter-visible `$0` without `--cwd`, violating unchanged behavior requirement 6. Evidence: frozen `src/lifecycle.rs:475`, `:507-509`; `program_path` joins cwd and executable, while `.arg0` cannot control kernel shebang script pathname. Failure: `proclease run -- ./bin/server` with a script printing/branching on `$0` observes an absolute script name instead of `./bin/server`. Existing executable tests use `/bin/pwd` symlinks and miss scripts.\n- No other material findings reported.\n\nDisposition: **resolved in the single repair pass** by the assigned Claude writer. Removed absolute executable rewriting and the arg0 override; retained the existing command-local current_dir and Unix pre_exec lifecycle hook. Added interpreter-script coverage for `./bin/script` and `bin/script`, absolute and relative --cwd, and inherited cwd. A conflicting caller-directory script exits 7 to detect wrong-directory resolution. Assertions cover unchanged argv/pathname ($0), canonical working directory, successful exit, and exact output. Updated README language. No other changes requested or invented. Writer report: `scratch/writer-report.md`.\n\n## Final checks\n\nWriter executed once: `<python3> <study-work>/runs/Q6-B/checks.py`, which supplies exact disposable build and fixture environment outside repository. Helper, process guard and test-env are not edited or inspected. No second review or critique loop authorized.\n\n\nVerified helper output (`scratch/final-check-results.json`):\n\n| Check | Exit | Timed out |\n| --- | --- | --- |\n| cargo fmt --check | 0 | no |\n| cargo clippy --all-targets -- -D warnings | 0 | no |\n| cargo test | 0 | no |\n\nEach helper-owned process group was absent at completion. Cleanup reported `jobs: []`, `unresolved_ids: []`, `observable_cleanup_complete: true`; helper limitation: detached-process absence is not guaranteed when metadata has been deleted.\n\nLead verified the final diff and scope without changing source. `git diff --check` passed. Only README.md, src/lifecycle.rs, tests/lifecycle.rs changed relative to frozen HEAD; src/main.rs remains as reviewed. No commits, pushes, publishing, dependencies or out-of-scope source changes. One reviewer, one writer pass, one helper invocation; no reviewer follow-up. Writer CLI exit 0, exact requested model confirmed in initialization and result. One attempted read-only `git -C ... diff` was denied by the explicit command allowlist; ordinary allowed git diff succeeded, so no blocker or permission bypass occurred.\n\nValidation scope: macOS host only; Linux not exercised in this pass. Relative executable resolution relies on supported Unix child chdir-before-exec behavior with the existing pre_exec hook; regression tests exercise it on the host. No unresolved findings or route blocks.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 700133,
+          "inputTokens": 691472,
+          "cachedInputTokens": 659072,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 8661,
+          "reasoningOutputTokens": 1458
+        },
+        {
+          "totalTokens": 133897,
+          "inputTokens": 132255,
+          "cachedInputTokens": 93184,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 1642,
+          "reasoningOutputTokens": 869
+        }
+      ]
+    },
+    "skill_read_candidates": 0
+  },
+  {
+    "id": "Q6-C",
+    "native_dispatches": [
+      {
+        "model": "gpt-6-astra",
+        "reasoning": "high",
+        "fresh_history": "unknown"
+      }
+    ],
+    "cli_results": [
+      {
+        "receipt_path": "scratch/proclease/cwd/collaboration/format-result.json",
+        "duration_ms": 17242,
+        "is_error": false,
+        "model_usage": {
+          "claude-opus-5-5": {
+            "inputTokens": 8,
+            "outputTokens": 1409,
+            "cacheReadInputTokens": 32940,
+            "cacheCreationInputTokens": 4220,
+            "webSearchRequests": 0
+          }
+        },
+        "result": "I applied the rustfmt wrapping to the one call you specified. I haven't run any verification, including the required helper (`checks.py`), so whether formatting now passes is still unconfirmed.\n\n**Edited file:** `tests/lifecycle.rs:3300`. The single-line `fs::write(&script, format!(...)).unwrap();` is now:\n\n```rust\n        fs::write(\n            &script,\n            format!(\"#!/bin/sh\\nprintf '{label} %s\\\\n' \\\"$0\\\"\\n\"),\n        )\n        .unwrap();\n```\n\nThis matches the diff in `check-0.log` exactly. The string literal is unchanged and the indentation follows the surrounding loop body. I made no other edits.\n\n**Status:** `git status` still shows the same three modified files as before (`README.md`, `src/lifecycle.rs`, `tests/lifecycle.rs`). The only new change is this re-wrap in `tests/lifecycle.rs`. I didn't commit, push, or touch any dependencies.\n\n**Missing packet:** `writer-packet.md` wasn't in the repo or in the `Q6-C/` run directory, so I went by the scope and safeguards in your message.\n\n**Verification not run:** you'll need to rerun the required helper to confirm.",
+        "permission_denial_count": 0
+      },
+      {
+        "receipt_path": "scratch/proclease/cwd/collaboration/writer-result.json",
+        "duration_ms": 117761,
+        "is_error": false,
+        "model_usage": {
+          "claude-opus-5-5": {
+            "inputTokens": 26,
+            "outputTokens": 11205,
+            "cacheReadInputTokens": 373605,
+            "cacheCreationInputTokens": 37189,
+            "webSearchRequests": 0
+          }
+        },
+        "result": "I've made the F1 repair, but haven't run any checks yet. You asked me not to run the helper on the first pass, so this change has not been compiled, formatted or tested.\n\n**F1 disposition: valid, repaired.**\n- **Evidence:** at HEAD, the draft ran `cwd.join(argv[0])`, turning `./bin/x` into `/canonical/./bin/x`. When a `#!` script is run, the kernel hands the interpreter the path that was executed as the script name (`$0`). Setting `arg0` only changes `argv[0]`, which the kernel replaces for scripts. So even without `--cwd`, a relative script would now see an absolute `$0` instead of `./bin/x`. That breaks criterion 6 (\"no change without `--cwd`\"). The existing tests missed it because they only used symlinks to compiled binaries and checked the recorded argv. This comes from reading the source and how Unix runs scripts; I haven't reproduced it.\n- **Fix:** the program is passed through exactly as given, which is the pre-draft code. Criterion 4 (a relative path with `/` resolves in the launch directory) still holds. The launch code already sets a `pre_exec` hook, and that keeps Rust's standard library on its fork-then-exec path. On that path the child changes to `current_dir` before calling `execvp`, so `./bin/tool` resolves in the launch directory, not the supervisor's directory. Without `--cwd`, the spawn code is now the same as base 261adda apart from a comment. Lease, supervision, readiness, cleanup, permissions and argv-only execution are untouched. There is still no process-wide directory change.\n- **Caveat:** this relies on documented internals of Rust's standard library, and the code comment says so. The existing test `relative_command_paths_resolve_against_the_launch_directory` exercises it: the caller's directory holds a `bin/tool` that points to `false`, so resolving there would fail the test.\n\n**Changed files** (uncommitted, on top of fee79f9)\n- `src/lifecycle.rs`: removed `program_path`, its unit test, the `arg0` call and the now-unused `PathBuf` import, and added a comment explaining the resolution.\n- `tests/lifecycle.rs`: new `relative_scripts_keep_their_invocation_name`. It writes a short `#!/bin/sh` script that prints its `$0` into the launch directory, plus a decoy in the caller's directory. It checks that the log reads exactly `launch ./bin/name` or `launch bin/name`, both without `--cwd` and with an absolute or relative `--cwd`. It uses the existing `Fixture`, which honors `PROCLEASE_TEST_ROOT`, and short commands that are checked to exit.\n- `README.md`: the `--cwd` bullet now says the path runs exactly as given, so argv, `argv[0]` and the interpreter's `$0` are unchanged.\n\n**Verification**\n- Done: read-only `git status` and `git diff`. Only those three allowed files changed.\n- Not done: `cargo fmt --check`, clippy and `cargo test`. These are waiting on your run of `checks.py`. I formatted by hand to rustfmt conventions, which isn't proven until the helper runs.\n- Possible risk: on Linux, writing an executable and running it while other tests fork can rarely fail with \"text file busy\". That doesn't happen on macOS, and the time window is tiny.\n\n**Unresolved:** nothing beyond the verification you still need to run. If the helper reports a failure, I'll fix it within this repair pass.",
+        "permission_denial_count": 0
+      }
+    ],
+    "reviewer_messages": [
+      "I\u2019ll read the frozen review packet and inspect the draft for concrete correctness issues without changing files or running tests.\n",
+      "The directory validation and canonical retry matching look consistent with the requirements. I\u2019m checking one compatibility concern: converting relative executable paths to absolute paths can change how interpreter scripts receive their invocation path.\n",
+      "Review verdict for frozen HEAD `fee79f9752b8e8604dcfef02cb8204f5f6bff6ef`: **one material finding; repair recommended.**\n\n- **P2 \u2014 Relative interpreter scripts change behavior even without `--cwd`.** At `src/lifecycle.rs:474\u2013475`, `program_path` changes `./bin/script` into an absolute execution filename; `guard` applies this unconditionally at lines 507\u2013511. For a script beginning with `#!/bin/sh`, the kernel supplies that execution filename to the interpreter as the script name. `.arg0(original)` does not preserve the script\u2019s `$0`. Consequently, an existing `proclease run -- ./bin/script` whose script prints or branches on `$0` now receives `/canonical/project/./bin/script` instead of `./bin/script`. This violates acceptance criterion 6 and README line 127\u2019s preservation claim. The new integration test uses symlinks to native binaries and checks persisted argv, so it cannot detect this interpreter behavior.\n  \n  **Recommended action:** preserve relative script invocation semantics while selecting the child\u2019s working directory, and cover the actual interpreter-visible invocation name with a short regression both with and without `--cwd`. Updating documentation alone would not resolve the no-option behavior regression.\n\nThis finding is based on the changed execution filename and Unix shebang semantics; I did not execute a reproduction because the review packet prohibits tests during review.\n\nVerified HEAD and clean working tree; inspected the patch, project instructions, README/context, launch validation, retry matching, supervisor execution and fixture cleanup. No other material findings. No files changed or tests run; compile, formatting, Clippy and runtime verification remain for the authorized helper."
+    ],
+    "handoff": "# Q6-C handoff\n\nOutcome: reviewed the frozen `run --cwd PATH` draft, completed one justified repair pass, and verified the final state. No unresolved material findings. No commits, pushes, publication, dependency changes or changes outside the source allowlist.\n\n## Artifact and scope\n\n- Initial draft: clean HEAD `fee79f9752b8e8604dcfef02cb8204f5f6bff6ef`; base `261adda`.\n- Initial patch SHA-256: `987a65fa234be7e24c413617091cbb38ae83fd1fb2fbd4850c00c0f5d2eed744`.\n- Final artifact: initial HEAD plus uncommitted repairs to `README.md`, `src/lifecycle.rs`, `tests/lifecycle.rs`.\n- Repair patch SHA-256: `e67fbf777e8abaf7741d0ecc42ca4b0226e69b703163d24bdfddbcb85e3da3da`.\n- Complete feature patch against base SHA-256: `10ba2220e765cdda606a4bc316f34e3510f524c6e5ea92cd6cee222f471b6d2a`.\n- Full feature affects only `README.md`, `src/main.rs`, `src/lifecycle.rs`, `tests/lifecycle.rs`. Context documents were read and left unchanged under the explicit scope restriction.\n- Frozen packet, hashes, initial result, writer receipts, patches and check evidence: `scratch/proclease/cwd/collaboration/`.\n\n## Material finding and disposition\n\n**F1 \u2014 P2, addressed.** Frozen draft `src/lifecycle.rs:474\u2013475,507\u2013511` converted a relative program path to an absolute path and then set `arg0` to the original string. A script invoked as `./bin/script` with a `#!/bin/sh` header receives the executed filename as its interpreter-visible script name. Its `$0` therefore changed to `/canonical/project/./bin/script`, including launches without `--cwd`. `arg0` does not preserve the kernel-provided shebang script filename. This violated no-option compatibility (acceptance criterion 6) and the README preservation claim. Existing coverage used native-binary symlinks and persisted argv, which missed this scenario. Initial evidence was static inspection and Unix shebang semantics; the reviewer did not run a reproduction.\n\nThe assigned writer restored the original execution filename, removed the absolute-path helper and its implementation-specific unit test, and documented child-directory resolution. The existing child `current_dir` and `pre_exec` fork/exec path resolve relative slash-containing filenames within the launch directory. The new integration test `relative_scripts_keep_their_invocation_name` executes a short shebang script and checks its actual `$0`, with and without `--cwd`, using a different caller-directory script as a decoy. Existing relative-command resolution coverage also passes. The README now describes preservation of the interpreter-visible invocation name.\n\nNo additional justified material findings were returned. The lead changed no source.\n\n## Collaboration and limits\n\n- Used the invoked agents-collab skill and structurally validated the supplied external profile.\n- One independent initial review: native `gpt-6-astra`, explicit `high`, fresh context with no transcript inheritance. Review completed against the frozen initial artifact before any revision writer was dispatched.\n- One repair assignment: existing authenticated Claude subscription CLI, exact `claude-opus-5-5`, explicit `high`, fresh safe-mode invocations, strict empty MCP, no session persistence, restricted tools and no permission bypass. CLI result metadata identified canonical model `claude-opus-5-5`; no API/provider override was present. Effort controls were accepted; runtime effort attestation remains unknown.\n- One additional fresh writer invocation applied only a required rustfmt wrapping correction within that same repair assignment. It retained the original deadline. Its relative reference to the original packet was not located; the direct correction packet supplied scope, safeguards, helper/environment and the precise formatting request.\n- Review and writer targets were advisory (8 and 20 minutes); no claim of native filesystem isolation. The CLI supervisor provided a separate outer timeout. Finished within the 40-minute overall budget.\n- No reviewer follow-up, repeated critique loop or second repair pass. The final delta received lead scope inspection and executable checks, rather than another independent review.\n\n## Final verification\n\nExecuted the prescribed helper, which selects the exact disposable build and fixture environment outside the repository:\n\n```text\n<python3> <study-work>/runs/Q6-C/checks.py\n```\n\nFirst execution: Clippy and tests passed; rustfmt requested one multiline wrap in the new test. Preserved evidence in `scratch/proclease/cwd/collaboration/check-before-format/`. The assigned writer applied that exact correction; this justified the final rerun.\n\nFinal execution: **all passed**, exit status 0:\n\n- `cargo fmt --check`\n- `cargo clippy --all-targets -- -D warnings`\n- `cargo test`: 14 unit tests and 53 integration tests (67 total), no failures.\n\nCoverage includes absolute, relative and symlinked directories; invalid paths with no job; canonical retry equivalence and mismatch; inherited-directory compatibility; relative executable and interpreter-script resolution; and existing lifecycle/readiness safeguards. `git diff --check` passed and scope inspection found only allowed files changed.\n\nHelper cleanup reported no jobs, no unresolved IDs, observable cleanup complete, and absent owned check process groups. Its stated limit remains: detached process absence is not guaranteed when metadata has been deleted. Verification was local on the supplied macOS environment; no Linux run was performed. Final evidence is retained in `scratch/proclease/cwd/collaboration/final-checks/`.\n",
+    "token_usage": {
+      "completeness": "partial: observed lead/native-thread usage plus available CLI receipts; provider populations differ; not additive cross-provider cost",
+      "threads": [
+        {
+          "totalTokens": 2220981,
+          "inputTokens": 2206633,
+          "cachedInputTokens": 2144512,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 14348,
+          "reasoningOutputTokens": 3412
+        },
+        {
+          "totalTokens": 207193,
+          "inputTokens": 205222,
+          "cachedInputTokens": 154368,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 1971,
+          "reasoningOutputTokens": 836
+        }
+      ]
+    },
+    "skill_read_candidates": 1
+  }
+]

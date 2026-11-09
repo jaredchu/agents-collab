@@ -1,0 +1,350 @@
+{
+  "binary_sha256": "587481e246ddb87bd9fd11ba5ad970b88e0aa4db2edf4d081d72abe6fee8e48b",
+  "checks": [
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        1
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "prune --dry-run without --keep: only the 24h-old job, max_finished 100",
+      "evidence": "candidates: ok; removed: ok; max_finished: ok; deferred: ok",
+      "group": "compat",
+      "id": "q4.compat.default_dry",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        2,
+        4
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "--dry-run --keep 2 lists exactly the old job plus the four oldest collectable jobs",
+      "evidence": "candidates: ok; removed: ok",
+      "group": "dry-run",
+      "id": "q4.dry.selection",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        4
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "--dry-run --keep 2 and --keep 0 delete or change nothing",
+      "evidence": "changed after dry runs: []",
+      "group": "dry-run-safety",
+      "id": "q4.dry.no_delete",
+      "severity": "blocker",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        2
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "--keep 2 removes exactly the expected five and keeps the two newest",
+      "evidence": "removed: ok; gone: ok; kept newest: ok",
+      "group": "keep-count",
+      "id": "q4.keep.count",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        4
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "dry-run candidates equal the real removal set for the same state",
+      "evidence": "dry candidates vs real removed: ok",
+      "group": "dry-real-identity",
+      "id": "q4.dry.identical",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        2
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "--keep 0 removes every collectable job",
+      "evidence": "removed: ok; remaining collectable: ok",
+      "group": "keep-count",
+      "id": "q4.keep.zero",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        2
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "--keep 100 still removes the job finished more than 24h ago, nothing else",
+      "evidence": "removed: ok; recent kept: ok",
+      "group": "age-rule",
+      "id": "q4.age_rule",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        3
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "unknown, null-finish, unverifiable-supervisor and stopping jobs survive every prune unchanged",
+      "evidence": "protected files changed or removed: []",
+      "group": "protection",
+      "id": "q4.protected",
+      "severity": "blocker",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        5
+      ],
+      "dependent_symptom": false,
+      "depends_on": "q4.keep.count",
+      "description": "a later plain prune uses the normal limit",
+      "evidence": "candidates: ok; max_finished: ok",
+      "group": "per-invocation",
+      "id": "q4.not_persistent",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        3
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "while a shared retention lock is held, prune --keep 0 deletes nothing",
+      "evidence": "[--json prune --keep 0] exit 0; changed while protected: []",
+      "group": "in-progress-protection",
+      "id": "q4.deferred.no_delete",
+      "severity": "blocker",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        3,
+        4
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "deferral reported; dry-run under protection lists candidates; release allows collection",
+      "evidence": "held deferred: ok; held removed: ok; held dry deferred: ok; held dry candidates: expected \"{'000000000406', '000000000402', '000000000404', '000000000405', '000000000401', '000000000407', '000000000403'}\", got \"set()\"; released removed: ok",
+      "group": "in-progress-protection",
+      "id": "q4.deferred.report",
+      "severity": "major",
+      "status": "fail"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        1
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "invalid --keep values delete nothing",
+      "evidence": "changed after invalid values: []",
+      "group": "validation-safety",
+      "id": "q4.reject.no_delete",
+      "severity": "blocker",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        1
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "invalid --keep values fail nonzero without a report",
+      "evidence": "[--json prune --keep 101] exit 2; [--json prune --keep -1] exit 2; [--json prune --keep abc] exit 2; [--json prune --keep ] exit 2; [--json prune --keep 1.5] exit 2; [--json prune --dry-run --keep 101] exit 2",
+      "group": "validation",
+      "id": "q4.reject.exit",
+      "severity": "minor",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        6
+      ],
+      "dependent_symptom": false,
+      "depends_on": "q4.keep.count",
+      "description": "JSON keys unchanged; max_finished reports N; max_age_hours 24",
+      "evidence": "keys: ok; max_finished: ok; max_age_hours: ok",
+      "group": "envelope",
+      "id": "q4.envelope",
+      "severity": "minor",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        6
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "human dry-run summary line and candidate IDs",
+      "evidence": "[prune --dry-run --keep 2] exit 0; first line: ok; missing ids []",
+      "group": "human",
+      "id": "q4.human",
+      "severity": "minor",
+      "status": "pass"
+    }
+  ],
+  "cleanup": {
+    "command_groups": {
+      "all_absent": true,
+      "count": 18
+    },
+    "detached_fixture_inventory": {
+      "detached_process_absence": "not guaranteed when metadata has been deleted",
+      "jobs": [],
+      "observable_cleanup_complete": true,
+      "unresolved_ids": []
+    }
+  },
+  "counts": {
+    "fail": 1,
+    "not_run": 0,
+    "pass": 14
+  },
+  "duration_s": 0.34,
+  "fatal": false,
+  "fatal_evidence": null,
+  "grader_version": "2026-11-09.1",
+  "groups": {
+    "age-rule": {
+      "checks": [
+        "q4.age_rule"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "compat": {
+      "checks": [
+        "q4.compat.default_dry"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "dry-real-identity": {
+      "checks": [
+        "q4.dry.identical"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "dry-run": {
+      "checks": [
+        "q4.dry.selection"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "dry-run-safety": {
+      "checks": [
+        "q4.dry.no_delete"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "envelope": {
+      "checks": [
+        "q4.envelope"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "human": {
+      "checks": [
+        "q4.human"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "in-progress-protection": {
+      "checks": [
+        "q4.deferred.no_delete",
+        "q4.deferred.report"
+      ],
+      "failed": [
+        "q4.deferred.report"
+      ],
+      "severity": "major",
+      "status": "fail"
+    },
+    "keep-count": {
+      "checks": [
+        "q4.keep.count",
+        "q4.keep.zero"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "per-invocation": {
+      "checks": [
+        "q4.not_persistent"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "protection": {
+      "checks": [
+        "q4.protected"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "validation": {
+      "checks": [
+        "q4.reject.exit"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "validation-safety": {
+      "checks": [
+        "q4.reject.no_delete"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    }
+  },
+  "harness_error": null,
+  "task": "Q4"
+}

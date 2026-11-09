@@ -7,6 +7,32 @@ under its published rule. Inputs, selected receipts, patches and every planned
 run status are public; raw executions are not fully independently auditable.
 No quality, speed or cost benefit was established.
 
+## Public quality-first pilot: incomplete
+
+The [frozen quality protocol and full results](../evals/quality/2026-11-09/report.md)
+compare a fresh same-model self-check (A), manual independent review (B), and
+explicit Agents Collab with the same reviewer/writer (C). Six new authored
+ProcLease tasks each started from one genuine draft, frozen once and copied
+identically to all three paths. The protocol was pushed before drafting; all
+six initial patches were pushed before finishing. All 18 finishing runs completed.
+
+Quality was primary: confirmed defects, corrections and regressions, with hidden
+checks and anonymous assessment planned ahead of time. Independent reviews in
+B/C fixed a reproduced no-option script-invocation regression missed by A. B
+also fixed deletion of quarantine history during retention protection; C left
+it present. One frozen preview oracle contradicted the written task and is
+excluded for every Q4 state, with original outputs preserved. Two executions
+of an existing timing-sensitive test failed; those results remain published.
+
+The required Fable blind-grading stage hit its subscription limit: zero of six
+calls returned an assessment. Maintainability and complete task scores are
+unknown, and **all three comparisons are incomplete/inconclusive**. Operator
+corroboration does not replace the missing blinded stage. No skill-specific
+quality, speed, cost or equivalence claim follows. Every state, original grade,
+patch, available usage receipt, failed grader call and finding disposition is
+linked in the report. This separate explicit-invocation pilot does not restart
+the failed routing study or its cancelled 36-run comparison.
+
 ## Earlier private pilots
 
 The following entries summarize checks and trials run on 8 November 2026.

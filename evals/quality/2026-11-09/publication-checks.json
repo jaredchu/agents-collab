@@ -1,0 +1,76 @@
+{
+  "repository_tests": {
+    "count": 90,
+    "passed": true,
+    "extra_private_terms_scan_enabled": true
+  },
+  "offline_harness_regressions": {
+    "count": 4,
+    "passed": true
+  },
+  "website_build": {
+    "passed": true,
+    "internal_links_checked": true,
+    "package_sha256": "d7064c15da522e44b95eaf82d84ee286f8ebe1ab32856459638ec484f52350f4"
+  },
+  "local_browser": [
+    {
+      "route": "/",
+      "width": 1440,
+      "status": 200,
+      "title": "Agents Collab \u2014 a lab notebook on configured model collaboration",
+      "overflow": false,
+      "errors": [],
+      "missing_grading_visible": true
+    },
+    {
+      "route": "/experiments/",
+      "width": 1440,
+      "status": 200,
+      "title": "Experiments \u2014 Agents Collab",
+      "overflow": false,
+      "errors": [],
+      "missing_grading_visible": true
+    },
+    {
+      "route": "/",
+      "width": 390,
+      "status": 200,
+      "title": "Agents Collab \u2014 a lab notebook on configured model collaboration",
+      "overflow": false,
+      "errors": [],
+      "missing_grading_visible": true
+    },
+    {
+      "route": "/experiments/",
+      "width": 390,
+      "status": 200,
+      "title": "Experiments \u2014 Agents Collab",
+      "overflow": false,
+      "errors": [],
+      "missing_grading_visible": true
+    },
+    {
+      "route": "/",
+      "javascript": false,
+      "content_visible": true
+    },
+    {
+      "route": "/experiments/",
+      "javascript": false,
+      "content_visible": true
+    }
+  ],
+  "privacy_scan": {
+    "generic_hits": 0,
+    "maintainer_excluded_identifier_hits": 0,
+    "exception": "Frozen source uses synthetic evaluation@example.invalid Git identity; not a personal account."
+  },
+  "frozen_inputs_intact": true,
+  "installed_skill_files_unchanged": true,
+  "portable_posthoc_replay": {
+    "runs": 9,
+    "passed": true,
+    "note": "Replayed corroboration utility only; no participant or frozen acceptance retry."
+  }
+}

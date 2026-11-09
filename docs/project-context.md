@@ -147,9 +147,36 @@ are not fully independently auditable. Global instructions, the owner's profile,
 installed skill and the active target checkout were unchanged.
 
 The study-only RPC recorder lives in `evals/`, outside the distributable package.
-Activation/discovery remains the concrete unresolved product issue; the full
-usefulness comparison remains unperformed. Installation alone still provides
+Activation/discovery remains the concrete unresolved product issue; that
+study’s full usefulness comparison remains unperformed. Installation alone still provides
 no dependable automatic-routing guarantee.
+
+## Public quality-first pilot (9 November 2026)
+
+A separate explicitly invoked [three-way pilot](../evals/quality/2026-11-09/report.md)
+compared fresh same-model self-check, manual independent review, and Agents
+Collab with matched reviewer/writer models. Six authored tasks, rubric, success
+criteria and checker commitments were pushed before drafting; all six genuine
+initial drafts were pushed before the 18 finishing runs. All states completed,
+with 12 distinct source artifacts after identity deduplication. The original
+checker and anonymous mapping are now revealed, with every patch, deterministic
+grade, available receipt and failure outcome preserved publicly.
+
+Operator reproductions confirmed independent catches missed by self-check,
+including a script-invocation regression corrected in both review paths. Manual
+review corrected a protected-quarantine deletion that the skill path retained.
+One frozen checker oracle contradicted its task and was invalidated for every
+Q4 state; original outputs remain. Two actual executions of an existing expiry
+race test failed. Requested permissions also produced different CLI denials.
+These limits remain part of the result.
+
+All six required blind-grader calls failed on the existing subscription's
+five-hour limit, with no model/access fallback or reset. Maintainability and
+complete registered scores are unknown. **All comparisons are
+incomplete/inconclusive**, not evidence of parity or a skill-specific quality
+advantage. The publication review checks reporting accuracy; it does not replace
+blinded assessment. Owner configuration, installed skill and the active target
+checkout remained unchanged. Implicit activation is still unestablished.
 
 ## Progress
 
@@ -173,3 +200,8 @@ no dependable automatic-routing guarantee.
 - [x] Execute the routing gate and separately labelled explicit diagnostics.
 - [x] Record the failed gate and all 36 comparison runs as not started.
 - [ ] Establish reliable implicit activation before attempting the cancelled usefulness comparison.
+
+- [x] Freeze and publish six quality tasks, rubric and success criteria before execution.
+- [x] Preserve and publish all six initial drafts and 18 finishing outputs.
+- [x] Publish deterministic checks, post-freeze oracle defect and corroborated findings.
+- [x] Record all six blind-grader access failures and incomplete comparisons.

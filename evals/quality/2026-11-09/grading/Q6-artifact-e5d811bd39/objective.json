@@ -1,0 +1,263 @@
+{
+  "binary_sha256": "42f2b441a27a10787a26df8f613d8d8bfdd6e734b2bfcc640d2c1b44a54a27e4",
+  "checks": [
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        1,
+        6
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "absolute --cwd: recorded canonical cwd and the command runs there",
+      "evidence": "job.cwd: ok; final state: ok; pwd output: ok",
+      "group": "launch-dir",
+      "id": "q6.cwd.absolute",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        1
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "relative --cwd resolves against the caller directory",
+      "evidence": "job.cwd: ok; final state: ok; pwd output: ok",
+      "group": "relative-cwd",
+      "id": "q6.cwd.relative",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        1
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "symlinked --cwd is recorded and used canonically",
+      "evidence": "job.cwd: ok; final state: ok; pwd output: ok",
+      "group": "canonical",
+      "id": "q6.cwd.symlink",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        4
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "./cmd resolves in the launch directory, not the caller directory",
+      "evidence": "./rel-true in launch dir: [--json run --ttl 30s --grace 100ms --cwd <fixtures>/Q611bd39/o/w/d -- ./rel-true] exit 0 exited; ./only-caller (caller dir only): [--json run --ttl 30s --grace 100ms --cwd <fixtures>/Q611bd39/o/w/d -- ./only-caller] exit 1 failed",
+      "group": "relative-command",
+      "id": "q6.relative_command",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        2
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "missing, file and empty --cwd fail before any job directory exists",
+      "evidence": "<fixtures>/Q611bd39/o/w/nope: [--json run --ttl 30s --grace 100ms --cwd <fixtures>/Q611bd39/o/w/nope -- /usr/bin/true] exit 1 new dirs []; <fixtures>/Q611bd39/o/w/file: [--json run --ttl 30s --grace 100ms --cwd <fixtures>/Q611bd39/o/w/file -- /usr/bin/true] exit 1 new dirs []; empty: [--json run --ttl 30s --grace 100ms --cwd  -- /usr/bin/true] exit 2 new dirs []",
+      "group": "validation",
+      "id": "q6.validate",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        6
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "without --cwd: canonical caller cwd, unchanged envelope",
+      "evidence": "keys: ok; reused: ok; job.cwd: ok; pwd output: ok",
+      "group": "compat",
+      "id": "q6.default_unchanged",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        3
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "inherited D, --cwd D and --cwd link-to-D are the same keyed context",
+      "evidence": "--cwd D: [--json run --ttl 30s --grace 100ms --key grader-q6-key --cwd <fixtures>/Q611bd39/o/w/d -- /usr/bin/true] exit 0 id=30776eb7bb45 reused=True; --cwd link: [--json run --ttl 30s --grace 100ms --key grader-q6-key --cwd <fixtures>/Q611bd39/o/w/link -- /usr/bin/true] exit 0 id=30776eb7bb45 reused=True",
+      "group": "retry-identity",
+      "id": "q6.retry.equivalent",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        3
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "keyed retry with a different canonical --cwd is rejected without a new job, even from the original caller directory",
+      "evidence": "caller C, --cwd E: [--json run --ttl 30s --grace 100ms --key grader-q6-key --cwd <fixtures>/Q611bd39/o/w/e -- /usr/bin/true] exit 1 id=None new dirs []; caller D, --cwd E: [--json run --ttl 30s --grace 100ms --key grader-q6-key --cwd <fixtures>/Q611bd39/o/w/e -- /usr/bin/true] exit 1 id=None new dirs []; caller C, inherited: [--json run --ttl 30s --grace 100ms --key grader-q6-key -- /usr/bin/true] exit 1 id=None new dirs []",
+      "group": "retry-mismatch",
+      "id": "q6.retry.mismatch",
+      "severity": "blocker",
+      "status": "pass"
+    }
+  ],
+  "cleanup": {
+    "all_terminal": true,
+    "command_groups": {
+      "all_absent": true,
+      "count": 32
+    },
+    "detached_fixture_inventory": {
+      "detached_process_absence": "not guaranteed when metadata has been deleted",
+      "jobs": [
+        {
+          "final_state": "exited",
+          "id": "8768b8f62be8",
+          "registry": "<fixtures>/Q611bd39/o/st",
+          "state": "exited"
+        },
+        {
+          "final_state": "exited",
+          "id": "83df12f49dc7",
+          "registry": "<fixtures>/Q611bd39/o/st",
+          "state": "exited"
+        },
+        {
+          "final_state": "exited",
+          "id": "7cf6987377be",
+          "registry": "<fixtures>/Q611bd39/o/st",
+          "state": "exited"
+        },
+        {
+          "final_state": "failed",
+          "id": "f746fffb112e",
+          "registry": "<fixtures>/Q611bd39/o/st",
+          "state": "failed"
+        },
+        {
+          "final_state": "exited",
+          "id": "80edaa7e2f1f",
+          "registry": "<fixtures>/Q611bd39/o/st",
+          "state": "exited"
+        },
+        {
+          "final_state": "exited",
+          "id": "8284c020e0a0",
+          "registry": "<fixtures>/Q611bd39/o/st",
+          "state": "exited"
+        },
+        {
+          "final_state": "exited",
+          "id": "30776eb7bb45",
+          "registry": "<fixtures>/Q611bd39/o/st",
+          "state": "exited"
+        }
+      ],
+      "observable_cleanup_complete": true,
+      "unresolved_ids": []
+    },
+    "final_states": {
+      "30776eb7bb45": "exited",
+      "7cf6987377be": "exited",
+      "80edaa7e2f1f": "exited",
+      "8284c020e0a0": "exited",
+      "83df12f49dc7": "exited",
+      "8768b8f62be8": "exited",
+      "f746fffb112e": "failed"
+    },
+    "launched": 7,
+    "sockets_remaining": [],
+    "stop_requests": []
+  },
+  "counts": {
+    "fail": 0,
+    "not_run": 0,
+    "pass": 8
+  },
+  "duration_s": 2.64,
+  "fatal": false,
+  "fatal_evidence": null,
+  "grader_version": "2026-11-09.1",
+  "groups": {
+    "canonical": {
+      "checks": [
+        "q6.cwd.symlink"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "compat": {
+      "checks": [
+        "q6.default_unchanged"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "launch-dir": {
+      "checks": [
+        "q6.cwd.absolute"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "relative-command": {
+      "checks": [
+        "q6.relative_command"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "relative-cwd": {
+      "checks": [
+        "q6.cwd.relative"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "retry-identity": {
+      "checks": [
+        "q6.retry.equivalent"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "retry-mismatch": {
+      "checks": [
+        "q6.retry.mismatch"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "validation": {
+      "checks": [
+        "q6.validate"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    }
+  },
+  "harness_error": null,
+  "task": "Q6"
+}

@@ -1,0 +1,70 @@
+{
+  "task_id": "Q1",
+  "prompt": "Evaluation ticket (authored for this study; not an existing ProcLease issue).\n\n`proclease list` can only be widened with `--all`. Callers that want, for example, only failed jobs must filter JSON themselves. Add a repeatable `--state <STATE>` filter to `list`.\n\nAcceptance criteria:\n1. `list --state <STATE>` accepts exactly the nine lifecycle state names used in JSON `state` values: `starting`, `running`, `stopping`, `stopped`, `expired`, `exited`, `failed`, `interrupted`, `unknown` (lowercase, exact). Each occurrence takes one name. Comma-separated lists, other spellings or case, and aliases such as `active` or `unverified` fail with a nonzero exit status and print no job list. Repeating a name is allowed and has no extra effect.\n2. A job matches when its displayed state equals any requested name (OR across repeated options). The displayed state is the state `list` reports now, after the existing supervisor observation: a `running` record whose supervisor endpoint is unreachable is shown, and matched, as `unknown`.\n3. Filtering happens before the default recent-finished window. Without `--all`, matching active and unverified jobs are always shown, and the five most recently finished matching jobs stay visible for 30 seconds under the existing rules. With `--all`, every matching retained job is shown.\n4. Output order, fields and the JSON envelope are the same as today, restricted to matching jobs, in human and JSON output and with `--resources`. Scan warnings (for example an unreadable job record) are still reported when filtering, because the state of such a record is unknown.\n5. Without `--state`, `list` output is unchanged. `watch` is unchanged.\n6. The filter only reads: it adds no lease renewal, signal or record write. The opportunistic history collection that every `list` already performs is unchanged.\n7. Help text lists the accepted values. README `list` usage documents the option and that it matches the displayed state.\n8. Integration tests in tests/lifecycle.rs cover criteria 1 to 6 using seeded job records rather than timing-sensitive live processes.\n\nScope: src/, tests/ and README.md only. Do not change Cargo.toml, Cargo.lock, dependencies, the shared skill, website, release or packaging files. Tests must be deterministic, honour PROCLEASE_TEST_ROOT like the existing fixtures and stop anything they start. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` must pass with CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT set outside the repository.",
+  "review_items": [
+    "help text values (7)",
+    "README (7)",
+    "test coverage of 1-6 (8)",
+    "common acceptance"
+  ],
+  "common_acceptance": [
+    "cargo fmt --check passes",
+    "cargo clippy --all-targets -- -D warnings passes",
+    "cargo test passes (full suite, run by the grader with the case environment)",
+    "Cargo.toml and Cargo.lock unchanged; no new dependencies",
+    "changed paths are within allowed_paths; anything else is an out-of-scope change",
+    "no commits, pushes, tags, releases, website, packaging or skill changes; working-tree changes only",
+    "tests are deterministic, honour PROCLEASE_TEST_ROOT and stop every process they start"
+  ],
+  "artifacts": [
+    {
+      "artifact_id": "artifact-5cc3857931",
+      "source": "./artifact-5cc3857931",
+      "checks": "./artifact-5cc3857931.checks.json",
+      "diff": "./artifact-5cc3857931.patch"
+    }
+  ],
+  "rubric": {
+    "fatal": {
+      "definition": "The state does not compile, or no usable binary can be produced from it.",
+      "counting": "One fatal flag per state, ranked with blockers. Hidden checks are then not_run and are NOT counted as separate defects."
+    },
+    "severity": {
+      "blocker": "A stated safety invariant is violated: protected, active, unverified or retention-protected history deleted; a dry run or invalid input deletes; a read-only path writes, renews or signals; symlink refusal bypassed; environment values exposed; a mismatched keyed retry reused; or the requested feature is absent or unusable.",
+      "major": "A stated acceptance criterion fails in an ordinary scenario: wrong selection, window, order, count or path; an unchanged-behavior regression; an invalid value accepted with wrong behavior; full cargo test fails; required tests missing for a whole criterion.",
+      "minor": "An edge-case, message, envelope, help or README deviation; fmt or clippy failure; weak but present tests; nonzero required but a different nonzero class returned."
+    },
+    "causal_dedup": [
+      "Hidden-check severities are frozen in the grader declaration. Each failing causal group counts as one defect at the highest severity among its non-dependent failing checks.",
+      "A failing check whose declared depends_on check also failed is a dependent symptom and does not count.",
+      "Groups sharing one root cause are merged into one defect when the blind grader cites the single code location responsible; the merged defect takes the highest severity.",
+      "If the feature is absent or unusable, every positive check failure collapses into one blocker. Safety and compatibility checks still count separately when they fail.",
+      "One unique_issue_id is kept for the same causal issue across I, A, B and C on a task, so corrections and regressions can be tracked."
+    ],
+    "defect_record": {
+      "required_fields": [
+        "state_id",
+        "unique_issue_id",
+        "severity",
+        "criterion",
+        "failure_scenario",
+        "reproduction",
+        "evidence",
+        "source"
+      ],
+      "source_values": [
+        "hidden_check",
+        "common_acceptance",
+        "blind_grader_corroborated"
+      ],
+      "reproduction": "A command sequence with fixture or a cited code path plus the input that reaches it. A model opinion without one is recorded as unconfirmed and never counted."
+    }
+  },
+  "maintainability_anchors": {
+    "0": "Unmaintainable: logic conflicts with existing structure, misleading names or comments, dead or duplicated code paths that will diverge.",
+    "1": "Poor: works locally but is placed or duplicated inconsistently with existing helpers; tests brittle (timing, live processes) or missing.",
+    "2": "Adequate: follows the existing structure with some duplication, unclear edges or thin tests or docs.",
+    "3": "Good: idiomatic and localized, reuses existing helpers, deterministic tests cover the criteria, docs accurate.",
+    "4": "Excellent: minimal and clear, well-factored, precise deterministic tests, exact docs, nothing superfluous."
+  }
+}

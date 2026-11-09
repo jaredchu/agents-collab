@@ -1,0 +1,274 @@
+{
+  "binary_sha256": "f533a87a1bfe74c8a044a7d884acfa97fe6bbe662cc5578df51ba2fc912b1d1a",
+  "checks": [
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        3
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "JSON summary has exactly the documented keys and integer counts, no jobs",
+      "evidence": "keys: ok; schema_version: ok; selected block {\"active\": 2, \"finished\": 5, \"total\": 10, \"unverified\": 3}; retained block {\"active\": 2, \"finished\": 9, \"total\": 14, \"unverified\": 3}; warnings array",
+      "group": "shape",
+      "id": "q5.shape",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        1,
+        2
+      ],
+      "dependent_symptom": false,
+      "depends_on": "q5.shape",
+      "description": "selected/retained counts for the default window",
+      "evidence": "selected: ok; retained: ok",
+      "group": "counts",
+      "id": "q5.counts.default",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        2,
+        6
+      ],
+      "dependent_symptom": false,
+      "depends_on": "q5.shape",
+      "description": "with --all selected equals retained",
+      "evidence": "selected: ok; retained: ok",
+      "group": "counts-all",
+      "id": "q5.counts.all",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        4
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "exact two stdout lines and stderr warning",
+      "evidence": "[list --summary] exit 0; stdout lines: ok; stderr Warning: 0000000005ff: key must be a string at line 1 column 2\nWarning: 0000000005ff: history preserved: key must be a string at line 1 column 2\n",
+      "group": "human",
+      "id": "q5.human",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        3
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "unreadable record warning is preserved in summary JSON",
+      "evidence": "warnings [\"0000000005ff: key must be a string at line 1 column 2\", \"0000000005ff: history preserved: key must be a string at line 1 column 2\"]",
+      "group": "warnings",
+      "id": "q5.warnings",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        5
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "no environment value appears in summary output",
+      "evidence": "11 summary outputs scanned",
+      "group": "privacy-env",
+      "id": "q5.privacy.env",
+      "severity": "blocker",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        5
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "no per-job field appears in summary output",
+      "evidence": "per-job markers found: []",
+      "group": "privacy-fields",
+      "id": "q5.privacy.fields",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "fail",
+      "criteria": [
+        5
+      ],
+      "dependent_symptom": false,
+      "depends_on": "q5.shape",
+      "description": "summary size does not grow with 62 retained jobs",
+      "evidence": "summary size without warnings 167 bytes; no jobs key; retained total: ok",
+      "group": "bounded",
+      "id": "q5.bounded",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        6
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "--summary --resources fails nonzero without output",
+      "evidence": "[--json list --summary --resources] exit 2",
+      "group": "validation",
+      "id": "q5.reject.resources",
+      "severity": "minor",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        6
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "list without --summary unchanged",
+      "evidence": "keys: ok; default ids: ok; --all count: ok; --all keys: ok",
+      "group": "compat",
+      "id": "q5.compat",
+      "severity": "major",
+      "status": "pass"
+    },
+    {
+      "base_expectation": "pass",
+      "criteria": [
+        1
+      ],
+      "dependent_symptom": false,
+      "depends_on": null,
+      "description": "summary reads leave job files byte-identical and the endpoint in place",
+      "evidence": "changed files: []; endpoint present",
+      "group": "read-only",
+      "id": "q5.readonly",
+      "severity": "blocker",
+      "status": "pass"
+    }
+  ],
+  "cleanup": {
+    "command_groups": {
+      "all_absent": true,
+      "count": 17
+    },
+    "detached_fixture_inventory": {
+      "detached_process_absence": "not guaranteed when metadata has been deleted",
+      "jobs": [],
+      "observable_cleanup_complete": true,
+      "unresolved_ids": []
+    }
+  },
+  "counts": {
+    "fail": 0,
+    "not_run": 0,
+    "pass": 11
+  },
+  "duration_s": 0.47,
+  "fatal": false,
+  "fatal_evidence": null,
+  "grader_version": "2026-11-09.1",
+  "groups": {
+    "bounded": {
+      "checks": [
+        "q5.bounded"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "compat": {
+      "checks": [
+        "q5.compat"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "counts": {
+      "checks": [
+        "q5.counts.default"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "counts-all": {
+      "checks": [
+        "q5.counts.all"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "human": {
+      "checks": [
+        "q5.human"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "privacy-env": {
+      "checks": [
+        "q5.privacy.env"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "privacy-fields": {
+      "checks": [
+        "q5.privacy.fields"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "read-only": {
+      "checks": [
+        "q5.readonly"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "shape": {
+      "checks": [
+        "q5.shape"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "validation": {
+      "checks": [
+        "q5.reject.resources"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    },
+    "warnings": {
+      "checks": [
+        "q5.warnings"
+      ],
+      "failed": [],
+      "severity": null,
+      "status": "pass"
+    }
+  },
+  "harness_error": null,
+  "task": "Q5"
+}
