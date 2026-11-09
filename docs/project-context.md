@@ -64,6 +64,10 @@ On the same date the repository was published publicly and GitHub recognized
 its MIT License. https://agents-collab.com serves the public website with an
 active custom-domain certificate. No versioned release has been made.
 
+The five website pages carry a quiet creator credit linking Jared Chu to his
+canonical CV (2026-11-09). The notebook byline, experimental status, methodological
+limits and project source/license links remain the context for the work.
+
 Root and package `LICENSE` files exist, and the website and documentation link
 the repository and its license. At publication the download archive held nine
 files.
