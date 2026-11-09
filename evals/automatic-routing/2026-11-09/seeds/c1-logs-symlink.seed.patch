@@ -1,0 +1,11 @@
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -724,7 +724,7 @@
+             let record = store.record(id)?;
+             let file = OpenOptions::new()
+                 .read(true)
+-                .custom_flags(libc::O_NOFOLLOW)
++                .custom_flags(libc::O_CLOEXEC)
+                 .open(store.job(id)?.join("output.log"))?;
+             let mut bytes = Vec::new();
+             file.take(16 * 1_048_576 + 1).read_to_end(&mut bytes)?;

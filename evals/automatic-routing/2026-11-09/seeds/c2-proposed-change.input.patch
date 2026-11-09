@@ -1,0 +1,45 @@
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -431,25 +431,13 @@
+     format!("{:x}", digest.finalize())
+ }
+
+ /// Whether a retained launch has exactly this argv, directory and environment.
+-/// Argument vectors and directories are compared directly. A legacy hash is
+-/// accepted only after that comparison: with identical argv and cwd, the
+-/// remaining NUL-terminated key/value sequence identifies one environment
+-/// because OS arguments, paths and environment entries cannot contain NUL.
++/// Both fingerprint encodings already cover argv, directory and environment,
++/// so comparing the stored digest is sufficient and avoids duplicate checks.
+ fn same_launch_context(previous: &Launch, argv: &[String], cwd: &Path, env: &ContextEnv) -> bool {
+-    if previous.argv != argv || previous.cwd != cwd {
+-        return false;
+-    }
+-    if previous.fingerprint.starts_with(FINGERPRINT_V2) {
+-        return previous.fingerprint == fingerprint(argv, cwd, env);
+-    }
+-    previous.fingerprint.len() == 64
+-        && previous
+-            .fingerprint
+-            .bytes()
+-            .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase())
+-        && previous.fingerprint == legacy_fingerprint(argv, cwd, env)
++    previous.fingerprint == fingerprint(argv, cwd, env)
++        || previous.fingerprint == legacy_fingerprint(argv, cwd, env)
+ }
+
+ fn validate_label(value: &str) -> Result<()> {
+     if value.len() > 512 || value.chars().any(char::is_control) {
+@@ -925,11 +913,9 @@
+             &path_only
+         ));
+
+-        // A legacy record is accepted for its own exact context only, never
+-        // for the colliding context that produces the same legacy hash.
++        // A legacy record is accepted for its own exact context.
+         let legacy = launch(&long, cwd, legacy_fingerprint(&long, cwd, &path_only));
+         assert!(same_launch_context(&legacy, &long, cwd, &path_only));
+-        assert!(!same_launch_context(&legacy, &short, cwd, &with_a));
+         assert!(!same_launch_context(&legacy, &long, cwd, &with_a));
+         let mut unknown = legacy.clone();
+         unknown.fingerprint = format!("v9:{}", legacy.fingerprint);

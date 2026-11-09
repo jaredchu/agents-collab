@@ -1,0 +1,30 @@
+{
+  "frozen_at_utc": "2026-11-09T00:32:22.848436+00:00",
+  "participant_runs_before_freeze": 0,
+  "gate_runs_before_freeze": 0,
+  "files": {
+    "run.py": "a412b8012889ef35e8f16ef1f3a397ad27bd767a417be601ee61622aa119a563",
+    "profile.example.json": "3861c213fcbb144c3bc66a0f32e7a5f1887f6a434289ca61d0c72014fe6c9c3b",
+    "check_materials.py": "425316e3b1eb21c7d325ebbfbff5f1bda054646815d3c72435a89560064d8395",
+    "schedule.json": "f3d77a8ab9e40d0ea3e6164f27f3c35fd42022cb7585e088e53381c6ab96b916",
+    "tasks.json": "ecd7c125daa67e51ab8e424aa295480470cbaa75f7499dbfd6a2cbafe1a33df8",
+    "preflight.json": "c99db3fb8ac132b2838f92e7452fde847f2816b243535e2bf94db09815d604ea",
+    "fixtures.py": "125eea643c45c1dd1f42d9cb09af0f0c1202a564464774a94d711dd2035291e1",
+    "protocol.md": "f615c3ce2f515812cd894c81ca65214de88dfefc86adad30631c9ad15ca37a02",
+    "seeds/c2-proposed-change.input.patch": "3a55e03b8a230bd09b072ce969a42cd69437b244afaff7ef7baff4022e96ac8c",
+    "seeds/c1-logs-symlink.seed.patch": "59b0e72890d55d620ab399cb775eb8c59cefb9f2def1b3b14f9453afb58d5e01",
+    "seeds/manifest.json": "1fbfd23748f032f93cae27719ff2a8057ced8629e8038cd9b47fe9582f243e95"
+  },
+  "skill_files": {
+    "SKILL.md": "d4c13bff7b0de45407540e5995e9e28748a193650d439d679f3d62f047e135c9",
+    "LICENSE": "bf0b3a6c39b32ff957d53ac611948ec2eaa2792d42387b9f275f58b2b093338c",
+    "references/review-protocol.md": "88110c6e0756324ee379df2a3dbacc8d702a05a14a13e83d9db45c4cd9de2c52",
+    "references/configuration.md": "65c586a345ab86691a329f1ecf4c70b84cca9b9e8e50b960489509a3aeaae1b3",
+    "agents/openai.yaml": "b211e6c95b4c246a8e2f6da3d0915c7b8e8193d612ba9904073a3864bb09e98d",
+    "examples/profile.example.json": "bbf35ea9e7fbfa34411f545ea5c25ec0f916e5e2d3006eb44c2d7182c70cbfbf",
+    "scripts/setup_profile.py": "e2276baea8ac85eb1708933cdccac7d8c6b4920e44648fd49889f549b3df420b",
+    "scripts/validate_profile.py": "dac2de8edc3b3efb2342aedf0023921bdf1d77398fc0d98f96705aafe3608010",
+    "assets/task-state.json": "fde19e5c377570022dd2ed9fb5b24bcd6705df73fdf56713a343d1ebe553b59d",
+    "assets/review-packet.md": "fa49116b7e6fb39854810f32d8af9b1ce9d0d3f0ac0d445cfd0f094782785293"
+  }
+}

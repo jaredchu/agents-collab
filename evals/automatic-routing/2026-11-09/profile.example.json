@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "name": "automatic-routing-study-2026-11-09-trial-conditions",
+  "agents": {
+    "lead": {"model": "current", "transport": "host", "reasoning": "inherit"},
+    "writer": {"model": "claude-opus-5-5", "transport": "claude-cli", "reasoning": "high"},
+    "reviewer": {"model": "gpt-6-astra", "transport": "codex-native", "reasoning": "high"}
+  },
+  "routing": {"small_writer": "lead", "substantial_writer": "writer"},
+  "review": {
+    "on_consequential_work": "single",
+    "candidates": ["reviewer"],
+    "prefer_different_model": true,
+    "recipes": {},
+    "max_followup_rounds": 1
+  },
+  "effort_check": "supported-control",
+  "access": "existing-authorized-access",
+  "bounds": {"enforcement": "advisory", "writer_minutes": 30, "reviewer_minutes": 10, "review_output_words": 800},
+  "records_root": "~/.local/state/agents-collab-routing-study"
+}

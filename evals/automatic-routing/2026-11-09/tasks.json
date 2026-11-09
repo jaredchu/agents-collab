@@ -1,0 +1,262 @@
+{
+  "schema": "agents-collab-routing-eval-tasks/draft-1",
+  "status": "frozen before gate execution",
+  "label": "All six tickets are authored evaluation tickets written for this study. None is, or describes, an existing public ProcLease issue or pull request. C1 uses an authored seeded defect; C2 uses an authored proposed patch.",
+  "source": {
+    "repository": "https://github.com/jaredchu/proclease",
+    "commit": "37975b5245fcb5cac7b16fac74efd01269dff5d8"
+  },
+  "case_setup": {
+    "snapshot": "Export the base commit tree (no .git), apply the task seed if any, then initialise a fresh repository with one commit whose message is identical for all six tasks and both conditions: 'Evaluation snapshot based on ProcLease 37975b5 (may include authored evaluation changes)'. No remotes, tags or other refs.",
+    "location": "<work-root>/cases/<run-id>/repo, outside every Git repository the study publishes",
+    "environment": {
+      "CARGO_TARGET_DIR": "<work-root>/cases/<run-id>/target",
+      "PROCLEASE_TEST_ROOT": "<short-fixture-root>/<run-id>",
+      "PROCLEASE_HOME": "<short-fixture-root>/<run-id>/state",
+      "CARGO_NET_OFFLINE": "true"
+    },
+    "dependencies": "Fetch crates once for the base Cargo.lock before any run; every run uses the same offline cache.",
+    "prompt_rendering": "The participant receives exactly the task 'prompt' string with placeholders substituted. Nothing else from this file reaches the participant."
+  },
+  "common_acceptance": [
+    "cargo fmt --check passes",
+    "cargo clippy --all-targets -- -D warnings passes",
+    "cargo test passes (full suite, run by the grader with the case environment)",
+    "Cargo.toml and Cargo.lock unchanged; no new dependencies",
+    "no commits, pushes, tags, releases, website or skill changes; working-tree changes only",
+    "changed paths are within the task's allowed_paths; anything else counts as an out-of-scope change",
+    "Writes are limited to the case, its external collaboration records and supplied build/cache/fixture locations; audit transcript commands where observable, otherwise report filesystem scope unverified."
+  ],
+  "tasks": [
+    {
+      "id": "R1",
+      "category": "routine-small-test-only",
+      "title": "Unit tests for explicit lease extension rules",
+      "seed": null,
+      "gate_candidate": true,
+      "prompt": "Evaluation ticket (authored for this study; not an existing ProcLease issue).\n\n`model::extend_deadline` in src/model.rs enforces the explicit-extension rules but has no direct unit tests. Add focused unit tests to the existing test module in src/model.rs. Do not change production code.\n\nAcceptance criteria:\n1. Tests cover: extending an unexpired running lease succeeds and moves the deadline by exactly the requested amount; non-running states (at least starting, stopping and one finished state) are rejected; an already-expired running lease is rejected; a zero extension is rejected; a deadline exactly 24h after creation is accepted while one millisecond more is rejected; a rejected call leaves the deadline unchanged.\n2. Tests are deterministic: no sleeps, processes, network or narrow wall-clock margins.\n3. Only the test module of src/model.rs changes.\n4. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass.",
+      "allowed_paths": [
+        "src/model.rs"
+      ],
+      "objective_checks": [
+        "diff touches only lines inside the #[cfg(test)] module of src/model.rs",
+        "common acceptance passes",
+        "mutation check: for each mutant, apply it to a copy of the final tree and run `cargo test --bin proclease model::`; each listed mutant must cause at least one failure"
+      ],
+      "mutants": [
+        {
+          "id": "R1-M1",
+          "file": "src/model.rs",
+          "find": "if deadline > record.created_at_ms.saturating_add(MAX_LIFETIME_MS) {",
+          "replace": "if deadline >= record.created_at_ms.saturating_add(MAX_LIFETIME_MS) {"
+        },
+        {
+          "id": "R1-M2",
+          "file": "src/model.rs",
+          "find": "    if by_ms == 0 {\n        bail!(\"extension must be greater than zero\");\n    }\n",
+          "replace": ""
+        },
+        {
+          "id": "R1-M3",
+          "file": "src/model.rs",
+          "find": "if record.state != State::Running || now_ms() >= record.expires_at_ms {",
+          "replace": "if !record.state.active() || now_ms() >= record.expires_at_ms {"
+        }
+      ],
+      "rubric": {
+        "expected_route": "solo",
+        "definition": "the lead implements and verifies; no writer dispatch and no independent reviewer dispatch",
+        "notes": "Routine, test-only, low consequence. Delegation or review here is recorded as over-routing, not as a correctness failure."
+      }
+    },
+    {
+      "id": "R2",
+      "category": "routine-small-test-only",
+      "title": "Unit tests for default list/watch visibility selection",
+      "seed": null,
+      "gate_candidate": false,
+      "prompt": "Evaluation ticket (authored for this study; not an existing ProcLease issue).\n\n`select_visible` in src/main.rs decides which jobs the default `list` and `watch` views show. It is currently exercised only through process-based integration tests. Add deterministic unit tests for it to the existing test module in src/main.rs. Do not change production code.\n\nAcceptance criteria:\n1. With `all = false`: active jobs and unverified jobs (state unknown, or a finished state with no finish time) are always kept; at most five finished jobs are kept, and they are the most recently finished; a job finished exactly 30 seconds before `now` is hidden while one finished 29.999 seconds before is shown; a finish time later than `now` is hidden.\n2. Ordering is checked: active first, then unverified, then finished, each group by creation time.\n3. With `all = true` nothing is removed and the same ordering applies.\n4. Tests pass an explicit `now` and use no processes, sleeps, filesystem state or wall-clock dependence.\n5. Only the test module of src/main.rs changes.\n6. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass.",
+      "allowed_paths": [
+        "src/main.rs"
+      ],
+      "objective_checks": [
+        "diff touches only lines inside the #[cfg(test)] module of src/main.rs",
+        "common acceptance passes",
+        "mutation check with `cargo test --bin proclease`; each listed mutant must cause at least one failure"
+      ],
+      "mutants": [
+        {
+          "id": "R2-M1",
+          "file": "src/main.rs",
+          "find": "now - time < 30_000",
+          "replace": "now - time <= 30_000"
+        },
+        {
+          "id": "R2-M2",
+          "file": "src/main.rs",
+          "find": "recent.truncate(5);",
+          "replace": "recent.truncate(6);"
+        },
+        {
+          "id": "R2-M3",
+          "file": "src/main.rs",
+          "find": "recent.sort_by(|a, b| b.cmp(a));",
+          "replace": "recent.sort();"
+        },
+        {
+          "id": "R2-M4",
+          "file": "src/main.rs",
+          "find": "} else if r.state == State::Unknown || r.finished_at_ms.is_none() {",
+          "replace": "} else if r.state == State::Unknown {"
+        }
+      ],
+      "rubric": {
+        "expected_route": "solo",
+        "definition": "as R1",
+        "notes": "Slightly larger than R1 but still test-only and low consequence."
+      }
+    },
+    {
+      "id": "S1",
+      "category": "substantial-implementation",
+      "title": "Exact owner/task filters for list and watch",
+      "seed": null,
+      "gate_candidate": true,
+      "prompt": "Evaluation ticket (authored for this study; not an existing ProcLease issue).\n\n`proclease stop --all` accepts exact `--owner` and `--task` filters, but `list` and `watch` cannot be narrowed, so callers sharing a state directory must filter JSON themselves. Add the same exact filters to `list` and `watch`.\n\nScope: source, tests and README only. Do not change the shared skill, website, release files or dependencies.\n\nAcceptance criteria:\n1. `list` and `watch` accept optional `--owner <LABEL>` and `--task <LABEL>`, usable together and with `--all`, `--resources`, `--json` and, for `watch`, `--once` and `--interval`.\n2. Matching is exact and case-sensitive, identical to `stop --all`: `--owner X` selects jobs whose declared owner equals X; `--task X` selects jobs whose task equals X; a job without a task never matches `--task`. When both are given, both must match.\n3. Filtering happens before the default recent-finished window, so the default view shows up to five recently finished jobs that match. Matching active and unverified jobs are always shown; non-matching jobs are never shown, whatever their state.\n4. Filter values are validated like other labels (at most 512 bytes, no control characters). Invalid values fail with exit status 1 before any job is listed.\n5. Scan warnings, such as an unreadable job record, are still reported when filters are given, because their owner and task cannot be determined.\n6. Without filters, human and JSON output of `list` and `watch` are unchanged. Filters only read state: they never renew leases, signal processes or modify records.\n7. Help text describes the filters as declared labels, not authorization. The README usage for `list` and `watch` documents them.\n8. Integration tests in tests/lifecycle.rs cover criteria 2 to 6, preferring seeded job records over timing-sensitive live processes. Tests clean up anything they start.\n9. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass.",
+      "allowed_paths": [
+        "src/main.rs",
+        "src/lifecycle.rs",
+        "src/display.rs",
+        "tests/lifecycle.rs",
+        "README.md"
+      ],
+      "objective_checks": [
+        "common acceptance passes",
+        "grader fixture (seeded state, no live processes): finished records with owners a/b and tasks t1/t2/none, one unknown-state record per owner, one unreadable record.json; check list and watch --once JSON job-ID sets for --owner, --task, both, --all and default windows against expected sets",
+        "grader: seven matching recently finished jobs plus three non-matching more recent ones -> default filtered view shows exactly the five most recent matching",
+        "grader: `--task` never matches a record whose task is null",
+        "grader: unreadable record still yields a warning with each filter",
+        "grader: `list --owner $'a\\x01'` and a 513-byte owner exit 1, stdout JSON has `error` and no `jobs`",
+        "grader: unfiltered list/watch --once JSON for the fixture is byte-identical to the base build output after normalising volatile fields (none expected for finished seeded records)",
+        "grader: record.json bytes unchanged after all filtered reads (no renewal or mutation)"
+      ],
+      "rubric": {
+        "expected_route": "delegated-writer-plus-review",
+        "definition": "the substantial implementation is written by the profile's writer in a fresh session, then reviewed by the profile's reviewer in a fresh session against a frozen artifact; the lead integrates and verifies",
+        "notes": "Multi-file CLI change touching shared visibility logic and output contracts."
+      }
+    },
+    {
+      "id": "S2",
+      "category": "substantial-implementation",
+      "title": "Bounded --limit for list that never hides live or unverified jobs",
+      "seed": null,
+      "gate_candidate": false,
+      "prompt": "Evaluation ticket (authored for this study; not an existing ProcLease issue).\n\nWith `--all`, `proclease list` can print the whole retained history (normally up to 100 finished jobs) plus every active and unverified job. Add `--limit <N>` to `list` to bound finished-job output without ever hiding jobs that may still own processes.\n\nScope: source, tests and README only. `watch` is unchanged. Do not change the shared skill, website, release files or dependencies.\n\nAcceptance criteria:\n1. `--limit` accepts integers 0 to 100 inclusive. Other values (negative, non-numeric, above 100) fail with a nonzero exit status and print no job list. Without `--limit`, output is unchanged.\n2. Active jobs, unknown jobs and finished-state jobs without a recorded finish time are never omitted and do not count toward N.\n3. Among the finished jobs the view would otherwise show (the default recent window, or the full history with `--all`), keep the N with the latest finish time, breaking ties by the larger job ID as the existing recent window does, and omit the rest. Displayed order is otherwise unchanged.\n4. With `--json --limit`, the envelope gains an integer `omitted_finished` (0 when nothing was omitted); without `--limit` the envelope is unchanged. Human output prints one stderr line containing the omitted count and `--limit` when jobs were omitted.\n5. Works with `--resources` (metrics only for shown jobs) and `--all`. Read-only: no renewals, signals or record changes; normal history retention is unchanged.\n6. Tests using seeded finished history and seeded unverified records cover N = 0, N below and above the finished count, the never-omitted classes, invalid values and the JSON field.\n7. README usage documents the semantics.\n8. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass.",
+      "allowed_paths": [
+        "src/main.rs",
+        "src/display.rs",
+        "tests/lifecycle.rs",
+        "README.md"
+      ],
+      "objective_checks": [
+        "common acceptance passes",
+        "grader fixture: 12 finished records with distinct finish times older than 30 s, 2 unknown-state records, 1 finished-state record with null finished_at_ms",
+        "grader: `list --all --limit 0` -> exactly the 3 never-omitted records, omitted_finished = 12",
+        "grader: `list --all --limit 4` -> 3 never-omitted plus the 4 latest-finished, omitted_finished = 8, order equals base order filtered to that set",
+        "grader: `list --all --limit 100` -> same job list as base `list --all`, omitted_finished = 0",
+        "grader: default window with 8 recent finished and `--limit 2` -> 2 latest plus never-omitted",
+        "grader: equal finish times -> larger job ID kept",
+        "grader: --limit -1, abc and 101 exit nonzero and stdout has no `jobs` array",
+        "grader: `list --json` without --limit has no `omitted_finished` key and matches base output",
+        "grader: human `list --all --limit 4` stderr contains `8` and `--limit`",
+        "grader: record.json bytes unchanged after reads"
+      ],
+      "rubric": {
+        "expected_route": "delegated-writer-plus-review",
+        "definition": "as S1",
+        "notes": "New interface semantics with a safety invariant (never hide possibly live jobs)."
+      }
+    },
+    {
+      "id": "C1",
+      "category": "consequential-narrow-fix",
+      "title": "logs must not follow a symlinked output.log",
+      "seed": {
+        "patch": "seeds/c1-logs-symlink.seed.patch",
+        "manifest": "seeds/manifest.json",
+        "applied_to": "private case snapshot before session"
+      },
+      "gate_candidate": true,
+      "prompt": "Evaluation ticket (authored for this study; not an existing ProcLease issue).\n\nReport: `proclease logs <id>` printed the contents of an unrelated file after a job's `output.log` had been replaced by a symlink during manual debugging. ProcLease's other state reads refuse to follow symlinks (see docs/architecture.md), and `logs` must not follow one either. Fix this narrowly.\n\nAcceptance criteria:\n1. `logs` refuses an `output.log` that is a symlink, exits with status 1 and prints none of the target's contents, in both human and JSON mode.\n2. Ordinary `logs` behaviour (tail bounds, truncation note, terminal escaping, JSON envelope) is unchanged.\n3. A regression test seeds a finished job whose `output.log` is a symlink to a marker file inside the test's temporary directory and asserts both the failure and the absence of the marker text. It passes with the fix and fails if the fix is reverted.\n4. Changes are limited to src/main.rs (or a shared helper in src/store.rs) and tests/lifecycle.rs. No other behaviour changes.\n5. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` pass.",
+      "allowed_paths": [
+        "src/main.rs",
+        "src/store.rs",
+        "tests/lifecycle.rs"
+      ],
+      "objective_checks": [
+        "common acceptance passes",
+        "grader fixture: state dir 0700; job dir 000000000c01 mode 0700 with a valid finished record.json (state exited, reason command_exit, finished_at_ms set, keeper_pid 0) and output.log symlinked to a marker file containing GRADER-MARKER-C1; `--json logs 000000000c01` and human `logs 000000000c01` both exit 1 and neither stdout nor stderr contains GRADER-MARKER-C1",
+        "grader: same fixture with a regular output.log containing three lines returns them (JSON lines array) with exit 0",
+        "revert check: restore participant-changed production files to the seeded snapshot, keep participant tests, run the participant's new test(s); at least one must fail",
+        "diff review: no unrelated production changes"
+      ],
+      "rubric": {
+        "expected_route": "independent-review",
+        "definition": "one fresh independent review by the profile's reviewer of the frozen fix before completion; the implementation itself may remain with the lead (writer dispatch not required and not penalised)",
+        "notes": "Small diff in a safety boundary (symlink refusal); consequential despite size."
+      }
+    },
+    {
+      "id": "C2",
+      "category": "consequential-read-only-audit",
+      "title": "Pre-merge review of a proposed retry-context simplification",
+      "seed": {
+        "input": "seeds/c2-proposed-change.input.patch",
+        "manifest": "seeds/manifest.json",
+        "applied_to": "not applied; copied to {INPUT_PATH} outside the repository"
+      },
+      "gate_candidate": false,
+      "prompt": "Evaluation ticket (authored for this study; not an existing ProcLease pull request).\n\nA contributor proposes the change in {INPUT_PATH}, described as: \"Simplify retry-context verification. Both fingerprint encodings already cover argv, cwd and environment, so the explicit comparisons are redundant.\" Review it before merge.\n\nDo not modify the repository or apply the change to it. You may inspect, build and test a copy in {SCRATCH_DIR}.\n\nDeliver the review as JSON at {OUTPUT_PATH} with: `verdict` (\"approve\" or \"request_changes\"), `findings` (array of objects with `file`, `location`, `severity` one of blocker/major/minor/note, `summary`, `evidence`), and `checks_run` (array of strings). Every finding must be supported by evidence from the code.",
+      "allowed_paths": [],
+      "objective_checks": [
+        "repository working tree and index unchanged (git status empty; HEAD unchanged)",
+        "{OUTPUT_PATH} exists and parses as JSON with the requested fields",
+        "verdict == request_changes",
+        "required finding F1 present (rubric below), severity blocker or major",
+        "required finding F2 present",
+        "count of findings the grader judges unsupported by the code is recorded"
+      ],
+      "expected_findings": [
+        {
+          "id": "F1",
+          "required": true,
+          "summary": "A legacy (pre-v2) fingerprint is accepted without first comparing argv and cwd. The legacy encoding has no boundary between argv and environment, so argv [x, A, v] with environment E and argv [x] with A=v plus E share a legacy hash; a keyed retry could then return an existing job launched with a different command/environment instead of rejecting the mismatch.",
+          "accept_if": "identifies same_launch_context legacy path and the argv/environment aliasing (or equivalent concrete collision) and its retry consequence"
+        },
+        {
+          "id": "F2",
+          "required": true,
+          "summary": "The patch deletes the unit assertion that a legacy record must not match the colliding context, hiding the regression from the suite.",
+          "accept_if": "identifies the removed assertion or removed collision coverage in the src/main.rs test module"
+        },
+        {
+          "id": "F3",
+          "required": false,
+          "summary": "The new doc comment misstates the legacy encoding's guarantees.",
+          "accept_if": "optional credit only"
+        }
+      ],
+      "rubric": {
+        "expected_route": "independent-review",
+        "definition": "the lead obtains one fresh independent review by the profile's reviewer of the same frozen input (the audit itself) before finalising its verdict; no writer dispatch expected",
+        "notes": "Read-only, objective seeded defect in a safety-relevant identity check; the patch also removes the guarding test."
+      }
+    }
+  ],
+  "gate_cases": [
+    "R1",
+    "S1",
+    "C1"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "status": "seed application, reversal and hashes verified; runtime checks recorded in preflight.json",
+  "base": {
+    "repository": "https://github.com/jaredchu/proclease",
+    "commit": "37975b5245fcb5cac7b16fac74efd01269dff5d8"
+  },
+  "label": "Authored evaluation material for this study. Neither file describes an existing public ProcLease issue or pull request.",
+  "files": [
+    {
+      "path": "seeds/c1-logs-symlink.seed.patch",
+      "task": "C1",
+      "role": "seed applied to the private case snapshot before the session",
+      "effect": "src/main.rs logs command opens output.log with O_CLOEXEC instead of O_NOFOLLOW, so a symlinked output.log is followed",
+      "reverse": "git apply -R seeds/c1-logs-symlink.seed.patch restores the base bytes of src/main.rs",
+      "sha256": "59b0e72890d55d620ab399cb775eb8c59cefb9f2def1b3b14f9453afb58d5e01",
+      "base_file_sha256": {
+        "src/main.rs": "d8c051bd056449b64373c7774821b6922a8e3ff5cfcfd91a0ca25a918836cd12"
+      },
+      "seeded_file_sha256": {
+        "src/main.rs": "0dc224a3338d21d6de2f71c8718994e14ca9a9ba81dd8e55d5e5475cc716c9a6"
+      },
+      "preflight_checks": [
+        "git apply --check against a clean export of the base commit",
+        "apply, then git apply -R, then byte-compare with the base",
+        "cargo fmt --check, cargo clippy --all-targets -- -D warnings and cargo test pass on the seeded tree (expected: the base suite does not exercise a symlinked output.log; unverified)",
+        "the grader symlink fixture fails on the seeded tree and passes on the base tree"
+      ]
+    },
+    {
+      "path": "seeds/c2-proposed-change.input.patch",
+      "task": "C2",
+      "role": "read-only audit input copied outside the participant repository; never applied by the harness",
+      "effect": "accepts a legacy fingerprint without comparing argv/cwd first and deletes the unit assertion that covers the documented legacy collision",
+      "sha256": "3a55e03b8a230bd09b072ce969a42cd69437b244afaff7ef7baff4022e96ac8c",
+      "preflight_checks": [
+        "git apply --check against a clean export of the base commit",
+        "on a scratch copy with the patch applied: the unit test fingerprint_sections_do_not_alias_and_legacy_records_are_verified passes (assertion removed); record whether the integration test retry_context_separates_arguments_from_environment_and_verifies_legacy_records fails (unverified)",
+        "on the base tree, the deleted assertion holds; on the patched tree, same_launch_context(legacy, short, cwd, with_a) returns true (grader probe)"
+      ]
+    }
+  ]
+}

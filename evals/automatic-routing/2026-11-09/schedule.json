@@ -1,0 +1,257 @@
+{
+  "seed": 20261109,
+  "runs": [
+    {
+      "run_id": "R1-rep1-B",
+      "task": "R1",
+      "repetition": 1,
+      "condition": "B",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "R1-rep1-A",
+      "task": "R1",
+      "repetition": 1,
+      "condition": "A",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "C1-rep1-B",
+      "task": "C1",
+      "repetition": 1,
+      "condition": "B",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "C1-rep1-A",
+      "task": "C1",
+      "repetition": 1,
+      "condition": "A",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "S2-rep1-B",
+      "task": "S2",
+      "repetition": 1,
+      "condition": "B",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "S2-rep1-A",
+      "task": "S2",
+      "repetition": 1,
+      "condition": "A",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "R2-rep1-B",
+      "task": "R2",
+      "repetition": 1,
+      "condition": "B",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "R2-rep1-A",
+      "task": "R2",
+      "repetition": 1,
+      "condition": "A",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "C2-rep1-A",
+      "task": "C2",
+      "repetition": 1,
+      "condition": "A",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "C2-rep1-B",
+      "task": "C2",
+      "repetition": 1,
+      "condition": "B",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "S1-rep1-B",
+      "task": "S1",
+      "repetition": 1,
+      "condition": "B",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "S1-rep1-A",
+      "task": "S1",
+      "repetition": 1,
+      "condition": "A",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "C1-rep2-A",
+      "task": "C1",
+      "repetition": 2,
+      "condition": "A",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "C1-rep2-B",
+      "task": "C1",
+      "repetition": 2,
+      "condition": "B",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "R1-rep2-A",
+      "task": "R1",
+      "repetition": 2,
+      "condition": "A",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "R1-rep2-B",
+      "task": "R1",
+      "repetition": 2,
+      "condition": "B",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "S1-rep2-A",
+      "task": "S1",
+      "repetition": 2,
+      "condition": "A",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "S1-rep2-B",
+      "task": "S1",
+      "repetition": 2,
+      "condition": "B",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "C2-rep2-B",
+      "task": "C2",
+      "repetition": 2,
+      "condition": "B",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "C2-rep2-A",
+      "task": "C2",
+      "repetition": 2,
+      "condition": "A",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "R2-rep2-B",
+      "task": "R2",
+      "repetition": 2,
+      "condition": "B",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "R2-rep2-A",
+      "task": "R2",
+      "repetition": 2,
+      "condition": "A",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "S2-rep2-A",
+      "task": "S2",
+      "repetition": 2,
+      "condition": "A",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "S2-rep2-B",
+      "task": "S2",
+      "repetition": 2,
+      "condition": "B",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "S2-rep3-A",
+      "task": "S2",
+      "repetition": 3,
+      "condition": "A",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "S2-rep3-B",
+      "task": "S2",
+      "repetition": 3,
+      "condition": "B",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "C1-rep3-B",
+      "task": "C1",
+      "repetition": 3,
+      "condition": "B",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "C1-rep3-A",
+      "task": "C1",
+      "repetition": 3,
+      "condition": "A",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "R1-rep3-A",
+      "task": "R1",
+      "repetition": 3,
+      "condition": "A",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "R1-rep3-B",
+      "task": "R1",
+      "repetition": 3,
+      "condition": "B",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "S1-rep3-B",
+      "task": "S1",
+      "repetition": 3,
+      "condition": "B",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "S1-rep3-A",
+      "task": "S1",
+      "repetition": 3,
+      "condition": "A",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "C2-rep3-A",
+      "task": "C2",
+      "repetition": 3,
+      "condition": "A",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "C2-rep3-B",
+      "task": "C2",
+      "repetition": 3,
+      "condition": "B",
+      "order_in_pair": 2
+    },
+    {
+      "run_id": "R2-rep3-A",
+      "task": "R2",
+      "repetition": 3,
+      "condition": "A",
+      "order_in_pair": 1
+    },
+    {
+      "run_id": "R2-rep3-B",
+      "task": "R2",
+      "repetition": 3,
+      "condition": "B",
+      "order_in_pair": 2
+    }
+  ]
+}

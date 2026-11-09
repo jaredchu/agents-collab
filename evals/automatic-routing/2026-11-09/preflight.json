@@ -1,0 +1,123 @@
+{
+  "source_commit": "37975b5245fcb5cac7b16fac74efd01269dff5d8",
+  "baseline_full_suite": {
+    "unit": 14,
+    "integration": 48,
+    "status": "pass"
+  },
+  "fixture_root_shortened_after_first_path_limit_failure": true,
+  "checks": {
+    "base-fmt": {
+      "exit_code": 0
+    },
+    "base-clippy": {
+      "exit_code": 0
+    },
+    "c1-seed-fmt": {
+      "exit_code": 0
+    },
+    "c1-seed-clippy": {
+      "exit_code": 0
+    },
+    "c1-seed-test": {
+      "exit_code": 0
+    },
+    "c2-unit": {
+      "exit_code": 0
+    },
+    "c2-integration": {
+      "exit_code": 101
+    },
+    "base-rebuild": {
+      "exit_code": 0
+    }
+  },
+  "base_fixtures": {
+    "C1": {
+      "symlink_refused_json": true,
+      "symlink_refused_human": true,
+      "regular_log": true
+    },
+    "S1": {
+      "list-owner-all": false,
+      "list-owner-all-warnings": false,
+      "list-task-all": false,
+      "list-task-all-warnings": false,
+      "list-both": false,
+      "list-both-warnings": false,
+      "list-default": false,
+      "list-default-warnings": false,
+      "list-case": false,
+      "list-case-warnings": false,
+      "list-owner-b": false,
+      "list-owner-b-warnings": false,
+      "list-invalid-2": false,
+      "list-invalid-513": false,
+      "watch-owner-all": false,
+      "watch-owner-all-warnings": false,
+      "watch-task-all": false,
+      "watch-task-all-warnings": false,
+      "watch-both": false,
+      "watch-both-warnings": false,
+      "watch-default": false,
+      "watch-default-warnings": false,
+      "watch-case": false,
+      "watch-case-warnings": false,
+      "watch-owner-b": false,
+      "watch-owner-b-warnings": false,
+      "watch-invalid-2": false,
+      "watch-invalid-513": false,
+      "record_bytes_unchanged": true
+    },
+    "S2": {
+      "all-limit-0": false,
+      "all-limit-4": false,
+      "all-limit-100": false,
+      "without_limit_envelope": true,
+      "human_notice": false,
+      "invalid--1": true,
+      "invalid-abc": true,
+      "invalid-101": true,
+      "recent_window": false,
+      "finish_time_tie": false,
+      "record_bytes_unchanged": true
+    }
+  },
+  "c1_seed_fixtures": {
+    "symlink_refused_json": false,
+    "symlink_refused_human": false,
+    "regular_log": true
+  },
+  "environment": {
+    "codex_cli": "0.167.0-alpha.3.2",
+    "claude_cli": "2.1.319",
+    "platform": "macOS arm64",
+    "rustc": "1.99.1",
+    "cargo": "1.99.1",
+    "participant_python": "3.14.6"
+  },
+  "capability_checks": {
+    "lead_interface_accepted": {
+      "model": "gpt-6.1-sol",
+      "reasoningEffort": "high"
+    },
+    "native_subagent_start_observed": {
+      "model": "gpt-6-astra",
+      "reasoningEffort": "high"
+    },
+    "claude_cli_model_usage_observed": "claude-opus-5-5",
+    "claude_effort_control_requested_and_accepted": "high",
+    "runtime_effort_attestation": false,
+    "native_no_history_evidence": "requested; not independently established in capability probe",
+    "per_invocation_skill_toggle": true,
+    "workspace_write_and_network_control_accepted": true,
+    "new_api_or_paid_fallback_used": false
+  },
+  "offline_checks": {
+    "repository_tests": 90,
+    "study_material_tests": 7,
+    "seed_application_reversal_hashes": "pass",
+    "mutation_find_strings": "all unique; participant test efficacy graded after runs",
+    "snapshot_construction": "R1 and seeded C1 clean single-commit snapshots verified"
+  }
+}
