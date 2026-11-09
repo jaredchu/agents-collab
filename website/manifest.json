@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "name": "Agents Collab content map",
+  "url": "https://agents-collab.com/",
+  "description": "Canonical navigation and evidence map for the experimental Agents Collab project.",
+  "creator": {
+    "name": "Jared Chu",
+    "url": "https://cv.jaredchu.com/"
+  },
+  "license": "https://github.com/jaredchu/agents-collab/blob/main/LICENSE",
+  "pages": [
+    {
+      "title": "Agents Collab — Configurable AI collaboration and independent review",
+      "url": "https://agents-collab.com/",
+      "description": "Configure AI writers and independent reviewers outside project files. Explore the experimental skill, optional Rust backend, research and measured results."
+    },
+    {
+      "title": "Agents Collab setup guide — Install, configure and review",
+      "url": "https://agents-collab.com/guide/",
+      "description": "Install Agents Collab for Codex, configure your own writer and reviewers, and choose manual records or the optional local Rust backend."
+    },
+    {
+      "title": "AI agent collaboration research — Agents Collab",
+      "url": "https://agents-collab.com/research/",
+      "description": "Research behind Agents Collab: existing agent-team approaches, independent review, personal workflow configuration and the limits of the evidence."
+    },
+    {
+      "title": "AI collaboration experiments and results — Agents Collab",
+      "url": "https://agents-collab.com/experiments/",
+      "description": "Read Agents Collab experiments on independent review, skill activation and the Rust CLI, with methods, results, source artifacts and limitations."
+    },
+    {
+      "title": "Why Agents Collab exists — From project rules to profiles",
+      "url": "https://agents-collab.com/story/",
+      "description": "How repeated model instructions and cleanup work led to Agents Collab: personal collaboration profiles separated from durable project knowledge."
+    }
+  ],
+  "evidence": {
+    "results": "https://agents-collab.com/experiments/",
+    "methodology": "https://github.com/jaredchu/agents-collab/tree/main/evals",
+    "limits": "Small pilot studies do not establish general productivity, quality, token savings or reliable automatic activation."
+  }
+}

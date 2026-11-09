@@ -6,10 +6,28 @@
   <link rel="icon" href="../favicon.ico" type="image/x-icon" sizes="16x16 32x32 48x48">
   <link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png" sizes="180x180">
-  <title>Guide — Agents Collab</title>
-  <meta name="description" content="Install the Agents Collab skill folder, keep or create a personal profile, validate its structure and invoke the skill explicitly.">
+  <title>Agents Collab setup guide — Install, configure and review</title>
+  <meta name="description" content="Install Agents Collab for Codex, configure your own writer and reviewers, and choose manual records or the optional local Rust backend.">
   <link rel="stylesheet" href="../assets/site.css">
   <script src="../assets/site.js" defer></script>
+  <link rel="canonical" href="https://agents-collab.com/guide/">
+  <meta name="author" content="Jared Chu">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Agents Collab">
+  <meta property="og:title" content="Agents Collab setup guide — Install, configure and review">
+  <meta property="og:description" content="Install Agents Collab for Codex, configure your own writer and reviewers, and choose manual records or the optional local Rust backend.">
+  <meta property="og:url" content="https://agents-collab.com/guide/">
+  <meta property="og:image" content="https://agents-collab.com/assets/mark.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="Agents Collab abstract evergreen and rust mark">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Agents Collab setup guide — Install, configure and review">
+  <meta name="twitter:description" content="Install Agents Collab for Codex, configure your own writer and reviewers, and choose manual records or the optional local Rust backend.">
+  <meta name="twitter:image" content="https://agents-collab.com/assets/mark.png">
+  <link rel="alternate" type="application/json" href="https://agents-collab.com/manifest.json" title="Agents Collab content map">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://agents-collab.com/#creator","name":"Jared Chu","url":"https://cv.jaredchu.com/"},{"@type":"SoftwareSourceCode","@id":"https://agents-collab.com/#project","name":"Agents Collab","url":"https://agents-collab.com/","description":"Experimental agent skill for configured collaboration and independent reviews, with an optional local Rust record backend.","codeRepository":"https://github.com/jaredchu/agents-collab","license":"https://github.com/jaredchu/agents-collab/blob/main/LICENSE","creator":{"@id":"https://agents-collab.com/#creator"}},{"@type":"WebSite","@id":"https://agents-collab.com/#website","name":"Agents Collab","url":"https://agents-collab.com/","inLanguage":"en","creator":{"@id":"https://agents-collab.com/#creator"},"about":{"@id":"https://agents-collab.com/#project"}},{"@type":"WebPage","@id":"https://agents-collab.com/guide/#page","url":"https://agents-collab.com/guide/","name":"Agents Collab setup guide — Install, configure and review","description":"Install Agents Collab for Codex, configure your own writer and reviewers, and choose manual records or the optional local Rust backend.","inLanguage":"en","dateModified":"2026-11-09","isPartOf":{"@id":"https://agents-collab.com/#website"},"about":{"@id":"https://agents-collab.com/#project"},"breadcrumb":{"@id":"https://agents-collab.com/guide/#breadcrumb"}},{"@type":"BreadcrumbList","@id":"https://agents-collab.com/guide/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://agents-collab.com/"},{"@type":"ListItem","position":2,"name":"Guide","item":"https://agents-collab.com/guide/"}]}]}</script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -31,7 +49,9 @@
   <main id="main">
     <article class="page">
       <p class="kicker">Reference · Codex-led setup</p>
+      <p class="breadcrumb"><a href="../">Home</a> / Guide</p>
       <h1>Install, configure, invoke</h1>
+      <p class="page-meta">Project by <a href="https://cv.jaredchu.com/">Jared Chu</a> · Updated <time datetime="2026-11-09">9 November 2026</time></p>
       <p class="lede">Install one folder, keep your preferences in one private file, check its structure, then ask for the skill by name.</p>
 
       <div class="note" role="note">
@@ -60,7 +80,7 @@
       <p>Continue with <a href="#profile">profile setup</a>; skip the manual copy blocks below. Installing the skill does not configure model access or enable automatic routing. Other lead assistants remain unvalidated.</p>
       <h3 id="manual">Manual installation without Node.js</h3>
       <p>These ZIP and checkout routes need Python 3.9+.</p>
-      <p>Install only the skill package: the workflow files, the profile validator and setup wizard scripts, and its MIT <code>LICENSE</code>. Keep <code>LICENSE</code> with the folder when you copy or share it. A repository checkout keeps it in <code>skills/agents-collab/</code>; the website ZIP extracts to <code>agents-collab/</code>. The website, tests and notes are not part of the skill.</p>
+      <p>Install only the skill package: workflow files, configuration helpers, the optional CLI adapter and installer, and its MIT <code>LICENSE</code>. Keep <code>LICENSE</code> with the folder when you copy or share it. A repository checkout keeps it in <code>skills/agents-collab/</code>; the website ZIP extracts to <code>agents-collab/</code>. The website, tests and notes are not part of the skill.</p>
       <p>Codex’s documented user skills location is described in OpenAI’s <a href="https://learn.chatgpt.com/docs/build-skills#how-chatgpt-and-codex-use-skills">Build skills documentation</a>. Check it for your version. Choose <strong>one</strong> source below, then run the shared install block in the same shell.</p>
       <h3 id="download">From the website ZIP</h3>
       <p>Save <a href="../downloads/agents-collab-skill.zip">agents-collab-skill.zip</a>, then run this from the folder containing it. It extracts into a fresh system temporary directory. The archive is reproducible; compare its SHA-256 hash with the ZIP entry in <a href="../downloads/SHA256SUMS">SHA256SUMS</a>. The ZIP includes the MIT <code>LICENSE</code> notice.</p>
@@ -197,6 +217,12 @@ fi</code></pre>
 
       <h2 id="native"><span class="num">Step 5</span>Native settings stay separate</h2>
       <p>Your host’s own configuration sets the lead model, its reasoning level and subagent defaults. The profile only tells the skill what to request and check for delegated work. Using the skill never requires changing global configuration or bypassing permissions.</p>
+
+      <h2 id="backend">Optional local Rust backend</h2>
+      <p>The manual workflow needs no executable backend. A separately packaged Rust CLI adds immutable source and packet records, local lifecycle gates and review imports. It calls no models. Current packages support macOS arm64 and local APFS only; there is no published cross-platform binary release channel.</p>
+      <p>Install and explicitly enable a trusted archive using the <a href="https://github.com/jaredchu/agents-collab/blob/main/docs/cli.md#optional-backend-installation">source repository’s backend instructions</a>. Its separate setting is <code>~/.config/agents-collab/backend.json</code>; your collaboration profile is not rewritten. Check your selected backend with:</p>
+      <pre><code>python3 ~/.agents/skills/agents-collab/scripts/backend.py status</code></pre>
+      <p>Missing backend settings select manual records. Once enabled, the skill uses the CLI for collaboration records when the skill is loaded. Enablement does not guarantee automatic skill activation, truthful review evidence or fewer tokens.</p>
 
       <h2 id="run"><span class="num">In practice</span>What happens in a run</h2>
       <ol>

@@ -134,6 +134,7 @@ strong { font-weight: 700; }
   color: var(--ink-soft);
 }
 .lede { font-size: 1.3rem; line-height: 1.5; color: var(--ink-soft); }
+.page-meta, .breadcrumb { font-size: 0.9rem; color: var(--ink-soft); }
 
 hr { border: 0; border-top: 1px solid var(--rule); margin: 3rem 0; }
 

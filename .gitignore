@@ -12,3 +12,4 @@ profiles/
 
 # Build output for the separate source-only Rust prototype
 cli/target/
+.wrangler/

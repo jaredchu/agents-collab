@@ -242,7 +242,7 @@ including five explicit real-CLI/APFS flows; the static build and skill metadata
 validation passed. Independent review found no material implementation issue;
 its minor stale-installer documentation finding was corrected. A separately
 checked release archive installed successfully and its version probe passed.
-No versioned public binary release or new website deployment was made here.
+That integration step made no versioned public binary release or website deployment.
 
 An ordinary documentation task then corrected the CLI guide's stale live-validation
 status through the installed adapter: declared scope and checks, frozen writer
@@ -250,6 +250,40 @@ and neutral review packets, actual independent review, imported original result,
 retained check evidence and completed record with integrity verified. The task
 preserved the other 344 source files and required no per-task lifecycle helper.
 This verifies one supported operational path, not a quality or efficiency gain.
+
+## Site discovery and Cloudflare hosting (9 November 2026)
+
+Production at https://agents-collab.com now serves the checked static build
+directly from Cloudflare Pages. `wrangler.toml` selects `dist/`; there are no
+Pages Functions or application server. The custom domain, HTTPS, all nineteen
+served files and downloads, a genuine 404 response, cache headers and preservation
+of the three other DNS records were verified. The owner retained deletion of
+the former ChatGPT-hosted Site; no deletion by the agent is claimed.
+
+Five canonical pages have descriptive search/social metadata, visible project
+credit/update dates and linked project/page data. `robots.txt`, `sitemap.xml`,
+`llms.txt` and `manifest.json` expose consistent navigation and evidence limits.
+The source remains readable without JavaScript and adds no external assets,
+analytics or forms. All 119 local tests passed, including five real CLI flows;
+desktop/mobile, keyboard and no-JavaScript checks passed. Independent source
+review passed without findings. These checks establish implementation behavior,
+not search indexing, rankings or AI citation gains.
+
+The implementation follows relevant [NavSEO canonical guidance](https://navseo.com/learn/technical-seo/canonical-tags-and-duplicate-content/),
+[entity clarity](https://navseo.com/learn/ai-citation-seo/structured-data-and-ai-visibility/)
+and [research citation guidance](https://navseo.com/learn/ai-citation-seo/original-research-as-citation-assets/),
+checked against [Google's AI search guidance](https://developers.google.com/search/docs/appearance/ai-features).
+Keep visible claims and metadata consistent; discovery maps are navigation aids,
+not special search requirements or indexing guarantees.
+
+The [deployment workflow](../.github/workflows/deploy-site.yml) runs portable
+tests and the static build on pull requests and pushes. Only a successful main
+push or explicit main workflow run reaches Wrangler deployment. Official action
+commits and Wrangler are pinned; GitHub token permission is read-only. The
+Cloudflare account ID and account-scoped Pages Write token are repository secrets
+supplied only to the guarded deploy step. CI has no DNS credential. The five
+macOS/APFS runtime tests require their explicit binary and do not run on Linux.
+The Actions run and Cloudflare deployment receipt establish each release outcome.
 
 ## Progress
 
@@ -283,3 +317,4 @@ This verifies one supported operational path, not a quality or efficiency gain.
 - [x] Complete and report the three-case manual-versus-CLI comparison, retaining qualifications.
 - [x] Package the CLI and integrate an optional backend without changing the profile contract.
 - [x] Review, install and verify the adapter on an ordinary documentation task.
+- [x] Add checked SEO/AI-search discovery resources and direct Cloudflare Pages hosting.

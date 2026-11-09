@@ -1,0 +1,55 @@
+name: Site checks and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check-and-deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - name: Run portable source checks
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Build static site and check links
+        run: python3 scripts/build_website.py
+
+      - name: Set up Node for production deployment
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Deploy checked build to Cloudflare Pages
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4.113.0 pages deploy dist --project-name agents-collab --branch main --commit-hash "$GITHUB_SHA" --commit-dirty=false

@@ -269,7 +269,10 @@ class Website(unittest.TestCase):
     def test_no_external_dependencies_forms_or_tracking(self):
         banned = re.compile(r"<form|<iframe|<input|googletagmanager|google-analytics"
                             r"|plausible\.io|gtag\(|fonts\.googleapis|document\.cookie", re.I)
-        external_asset = re.compile(r'<(?:script|link|img)[^>]+(?:src|href)="(?:https?:)?//', re.I)
+        external_asset = re.compile(
+            r'<(?:script|img)[^>]+src="(?:https?:)?//'
+            r'|<link(?=[^>]*rel="(?:stylesheet|icon|apple-touch-icon|preload|modulepreload|prefetch|preconnect|dns-prefetch)")'
+            r'[^>]+href="(?:https?:)?//', re.I)
         for path in sorted(WEBSITE.rglob("*")):
             if path.is_file() and path.suffix in {".html", ".css", ".js"}:
                 text = path.read_text(encoding="utf-8")
@@ -307,7 +310,8 @@ class Website(unittest.TestCase):
                         r"[0-9]{4}-[0-9]{2}-[0-9]{2}/(?:protocol\.md|report\.md|results\.json)"
                         r"|tree/main/evals/cli-usefulness/[0-9]{4}-[0-9]{2}-[0-9]{2}/artifacts)", ref
                     )
-                    self.assertTrue(ref in allowed or study_ref or quality_ref or cli_ref, ref)
+                    backend_ref = ref == REPO_URL + "/blob/main/docs/cli.md#optional-backend-installation"
+                    self.assertTrue(ref in allowed or study_ref or quality_ref or cli_ref or backend_ref, ref)
                 self.assertNotRegex(text, r'href="[^"]*(?:OWNER|your-org|example-org)')
                 self.assertNotIn('href="#"', text)
                 self.assertIn("MIT License", text)

@@ -6,10 +6,28 @@
   <link rel="icon" href="favicon.ico" type="image/x-icon" sizes="16x16 32x32 48x48">
   <link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" sizes="180x180">
-  <title>Agents Collab — a lab notebook on configured model collaboration</title>
-  <meta name="description" content="An experimental agent skill that keeps personal model-collaboration settings out of project files, and the notebook of research and small trials behind it.">
+  <title>Agents Collab — Configurable AI collaboration and independent review</title>
+  <meta name="description" content="Configure AI writers and independent reviewers outside project files. Explore the experimental skill, optional Rust backend, research and measured results.">
   <link rel="stylesheet" href="assets/site.css">
   <script src="assets/site.js" defer></script>
+  <link rel="canonical" href="https://agents-collab.com/">
+  <meta name="author" content="Jared Chu">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Agents Collab">
+  <meta property="og:title" content="Agents Collab — Configurable AI collaboration and independent review">
+  <meta property="og:description" content="Configure AI writers and independent reviewers outside project files. Explore the experimental skill, optional Rust backend, research and measured results.">
+  <meta property="og:url" content="https://agents-collab.com/">
+  <meta property="og:image" content="https://agents-collab.com/assets/mark.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="Agents Collab abstract evergreen and rust mark">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Agents Collab — Configurable AI collaboration and independent review">
+  <meta name="twitter:description" content="Configure AI writers and independent reviewers outside project files. Explore the experimental skill, optional Rust backend, research and measured results.">
+  <meta name="twitter:image" content="https://agents-collab.com/assets/mark.png">
+  <link rel="alternate" type="application/json" href="https://agents-collab.com/manifest.json" title="Agents Collab content map">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://agents-collab.com/#creator","name":"Jared Chu","url":"https://cv.jaredchu.com/"},{"@type":"SoftwareSourceCode","@id":"https://agents-collab.com/#project","name":"Agents Collab","url":"https://agents-collab.com/","description":"Experimental agent skill for configured collaboration and independent reviews, with an optional local Rust record backend.","codeRepository":"https://github.com/jaredchu/agents-collab","license":"https://github.com/jaredchu/agents-collab/blob/main/LICENSE","creator":{"@id":"https://agents-collab.com/#creator"}},{"@type":"WebSite","@id":"https://agents-collab.com/#website","name":"Agents Collab","url":"https://agents-collab.com/","inLanguage":"en","creator":{"@id":"https://agents-collab.com/#creator"},"about":{"@id":"https://agents-collab.com/#project"}},{"@type":"WebPage","@id":"https://agents-collab.com/#page","url":"https://agents-collab.com/","name":"Agents Collab — Configurable AI collaboration and independent review","description":"Configure AI writers and independent reviewers outside project files. Explore the experimental skill, optional Rust backend, research and measured results.","inLanguage":"en","dateModified":"2026-11-09","isPartOf":{"@id":"https://agents-collab.com/#website"},"about":{"@id":"https://agents-collab.com/#project"}}]}</script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -32,6 +50,7 @@
     <article class="page">
       <p class="kicker">Notebook · November 2026 · Jared Chu</p>
       <h1>Personal collaboration habits don’t belong in project files.</h1>
+      <p class="page-meta">Project by <a href="https://cv.jaredchu.com/">Jared Chu</a> · Updated <time datetime="2026-11-09">9 November 2026</time></p>
       <p class="lede">Agents Collab is an experimental agent skill for choosing a writer and independent reviewers from a personal profile, and for keeping execution records private. This site is the notebook of how it came about: an earlier setup that drifted, research showing the “agent team” idea already existed, two small trials that missed their targets, a public routing gate, a recovered quality pilot, and a cleanup that showed why the boundary matters.</p>
 
       <div class="note" role="note">
@@ -92,9 +111,9 @@
 
     <article class="page">
       <h2 id="what"><span class="num">What it is</span>A procedure, not a runtime</h2>
-      <p>The package is a small folder: instructions, a configuration contract, a review protocol, two inert templates, an example profile, interface metadata, two dependency-free configuration helpers (a profile validator and a setup wizard) and the MIT <code>LICENSE</code>. A lead assistant session follows the instructions with its own tools; neither helper calls a model.</p>
+      <p>The package contains instructions, configuration and review references, inert templates, profile helpers, an optional CLI adapter and installer, and the MIT <code>LICENSE</code>. A lead assistant session follows the procedure and calls models with its own tools. The optional Rust backend stores frozen source, sealed packets and local task records. <a href="guide/#backend">Backend setup and current platform limits</a>.</p>
       <ul class="limits" aria-label="Limits">
-        <li><strong>Prompt-led.</strong> No automatic dispatcher, snapshot freezing, hard-deadline implementation or enforcement layer.</li>
+        <li><strong>Host-led.</strong> Manual records remain available. The optional backend adds snapshots and structural gates; it supplies no model dispatcher or deadline supervisor.</li>
         <li><strong>Codex-led pilot.</strong> Other lead assistants and adapters are not validated.</li>
         <li><strong>Accepted is not attested.</strong> An interface accepting a model or effort request is not runtime proof of it.</li>
         <li><strong>Fresh is not isolated.</strong> A fresh reviewer context is not filesystem isolation.</li>
@@ -107,6 +126,16 @@
       <p>The <a href="experiments/#automatic-routing">public routing gate</a> matched 1/3 expected routes on ordinary prompts. Explicit skill invocation matched all three in a separate diagnostic, without naming models. The planned 36-run comparison stopped; reliable implicit activation remains unestablished.</p>
       <p>Two earlier five-task pilots compared an existing workflow with and without the skill. Neither met the 20% coordinator-improvement rule fixed locally before each trial. Some writer-time and quality figures moved, in different directions and with confounds. The defensible conclusion is narrow: separating personal settings from project files is workable. It is not a productivity result.</p>
       <p><a href="experiments/">Read the experiment notes and their limits</a>.</p>
+
+      <h2 id="answers">Questions about Agents Collab</h2>
+      <h3>What is Agents Collab?</h3>
+      <p>An experimental skill for a Codex-led workflow. It reads your private model preferences to coordinate writing and independent review, while shared project files retain decisions, verified behavior and relevant risks. <a href="guide/">Read the setup guide</a>.</p>
+      <h3>Does installing it enable automatic collaboration?</h3>
+      <p>No. Installation makes the skill available; it does not configure access or guarantee that the host will load it. Explicitly invoke <code>$agents-collab</code> for a task. Routine solo work normally stays with the lead. <a href="experiments/#automatic-routing">See the routing measurements</a>.</p>
+      <h3>Does the Rust CLI connect the models directly?</h3>
+      <p>No. It stores artifacts, packets, assignments and review records. The host still passes context and calls the models. The current packaged backend supports macOS arm64 and local APFS; manual coordination remains available.</p>
+      <h3>Has a quality or efficiency advantage been proven?</h3>
+      <p>The small trials do not establish a general advantage. Independent reviews corrected a reproduced regression missed by self-check, but the skill showed no added quality advantage over matched manual coordination. The CLI pilot demonstrated no added usefulness under its frozen rule. <a href="experiments/">Read the methods, results and qualifications</a>.</p>
 
       <h2 id="entries"><span class="num">Notebook</span>Entries</h2>
       <ul class="entries">

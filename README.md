@@ -145,6 +145,18 @@ without JavaScript. The build copies it to `dist/`, adds a reproducible zip of t
 curated package files (including `LICENSE`) with SHA-256 sums, and checks internal
 links.
 
+The production site is hosted directly on Cloudflare Pages. The
+[deployment workflow](.github/workflows/deploy-site.yml) runs portable source
+checks and builds the site on pull requests and pushes to `main`. A successful
+`main` run deploys that same checked build with Wrangler; pull requests never
+run the deployment step. A manual main-branch workflow run is also available.
+Deployment uses the repository secrets `CLOUDFLARE_API_TOKEN` (account-scoped Pages
+Write only) and `CLOUDFLARE_ACCOUNT_ID`; no DNS credential belongs in CI.
+
+The site exposes canonical metadata, structured project/page data, a sitemap,
+robots file and compact `llms.txt`/JSON navigation maps. These improve discovery
+and clarity without promising search rankings or AI citations.
+
 ## License
 
 Agents Collab is licensed under the [MIT License](LICENSE), copyright 2026

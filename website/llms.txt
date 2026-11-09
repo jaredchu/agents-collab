@@ -1,0 +1,21 @@
+# Agents Collab
+
+> Experimental Codex-led skill for configured model collaboration and independent review. Personal preferences and execution records stay outside shared project files.
+
+Project by Jared Chu: https://cv.jaredchu.com/
+Source and MIT license: https://github.com/jaredchu/agents-collab
+
+## Canonical pages
+- [Home](https://agents-collab.com/): purpose, boundaries and answers.
+- [Guide](https://agents-collab.com/guide/): install, configure and invoke; optional local Rust record backend.
+- [Research](https://agents-collab.com/research/): existing approaches and design rationale.
+- [Experiments](https://agents-collab.com/experiments/): methods, results, qualifications and original source artifacts.
+- [Story](https://agents-collab.com/story/): why personal workflow policy was separated from project knowledge.
+- [Content map](https://agents-collab.com/manifest.json): JSON page and evidence index.
+
+## Evidence and limits
+Independent reviews corrected a reproduced regression missed by self-check in a small pilot; the result is sensitive to existing failures. No added quality advantage over matched manual coordination was established for the skill.
+The three-case, six-workflow Rust CLI comparison showed passing final code in both arms, with no added CLI usefulness demonstrated; its frozen rule was inconclusive. Execution qualifications remain in the report.
+Installation alone does not establish reliable automatic skill activation. The optional CLI records artifacts, packets and lifecycle state; the host still calls models. Current binary packaging supports macOS arm64 and local APFS.
+
+This file is a navigation aid, not an access rule or a promise of search indexing or AI citations. Source reports are authoritative for their own methods and findings. Raw private execution data is not published.

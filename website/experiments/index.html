@@ -6,10 +6,28 @@
   <link rel="icon" href="../favicon.ico" type="image/x-icon" sizes="16x16 32x32 48x48">
   <link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png" sizes="180x180">
-  <title>Experiments — Agents Collab</title>
-  <meta name="description" content="Manual versus Rust CLI, independent review, routing and earlier Agents Collab trials, with frozen criteria and limitations.">
+  <title>AI collaboration experiments and results — Agents Collab</title>
+  <meta name="description" content="Read Agents Collab experiments on independent review, skill activation and the Rust CLI, with methods, results, source artifacts and limitations.">
   <link rel="stylesheet" href="../assets/site.css">
   <script src="../assets/site.js" defer></script>
+  <link rel="canonical" href="https://agents-collab.com/experiments/">
+  <meta name="author" content="Jared Chu">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Agents Collab">
+  <meta property="og:title" content="AI collaboration experiments and results — Agents Collab">
+  <meta property="og:description" content="Read Agents Collab experiments on independent review, skill activation and the Rust CLI, with methods, results, source artifacts and limitations.">
+  <meta property="og:url" content="https://agents-collab.com/experiments/">
+  <meta property="og:image" content="https://agents-collab.com/assets/mark.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="Agents Collab abstract evergreen and rust mark">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="AI collaboration experiments and results — Agents Collab">
+  <meta name="twitter:description" content="Read Agents Collab experiments on independent review, skill activation and the Rust CLI, with methods, results, source artifacts and limitations.">
+  <meta name="twitter:image" content="https://agents-collab.com/assets/mark.png">
+  <link rel="alternate" type="application/json" href="https://agents-collab.com/manifest.json" title="Agents Collab content map">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Person","@id":"https://agents-collab.com/#creator","name":"Jared Chu","url":"https://cv.jaredchu.com/"},{"@type":"SoftwareSourceCode","@id":"https://agents-collab.com/#project","name":"Agents Collab","url":"https://agents-collab.com/","description":"Experimental agent skill for configured collaboration and independent reviews, with an optional local Rust record backend.","codeRepository":"https://github.com/jaredchu/agents-collab","license":"https://github.com/jaredchu/agents-collab/blob/main/LICENSE","creator":{"@id":"https://agents-collab.com/#creator"}},{"@type":"WebSite","@id":"https://agents-collab.com/#website","name":"Agents Collab","url":"https://agents-collab.com/","inLanguage":"en","creator":{"@id":"https://agents-collab.com/#creator"},"about":{"@id":"https://agents-collab.com/#project"}},{"@type":"CollectionPage","@id":"https://agents-collab.com/experiments/#page","url":"https://agents-collab.com/experiments/","name":"AI collaboration experiments and results — Agents Collab","description":"Read Agents Collab experiments on independent review, skill activation and the Rust CLI, with methods, results, source artifacts and limitations.","inLanguage":"en","dateModified":"2026-11-09","isPartOf":{"@id":"https://agents-collab.com/#website"},"about":{"@id":"https://agents-collab.com/#project"},"breadcrumb":{"@id":"https://agents-collab.com/experiments/#breadcrumb"}},{"@type":"BreadcrumbList","@id":"https://agents-collab.com/experiments/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://agents-collab.com/"},{"@type":"ListItem","position":2,"name":"Experiments","item":"https://agents-collab.com/experiments/"}]}]}</script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -31,7 +49,9 @@
   <main id="main">
     <article class="page">
       <p class="kicker">Notebook entry · 9 November 2026</p>
+      <p class="breadcrumb"><a href="../">Home</a> / Experiments</p>
       <h1>Testing collaboration and its tooling</h1>
+      <p class="page-meta">Project by <a href="https://cv.jaredchu.com/">Jared Chu</a> · Updated <time datetime="2026-11-09">9 November 2026</time></p>
       <p class="lede">The latest three-case trial compared the same skill with and without its Rust CLI. Both paths produced passing code and recovered a missing reviewer receipt. No added CLI usefulness was demonstrated. Earlier quality and routing studies remain below, with their limits.</p>
 
       <h2 id="cli-usefulness"><span class="num">9 November 2026 · Six workflows complete</span>Same skill, with and without the Rust CLI</h2>
