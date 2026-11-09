@@ -267,8 +267,11 @@ The helper's `observe` no longer marks observations reconciled by default.
 `--reconciled` and `--absence-established` are explicit host assertions that need
 a reason; contradictory flags fail before any mutation. Callers that relied on
 the old implicit reconciliation must now pass `--reconciled --reason`. The
-source changes await independent review; no runtime quality or efficiency gain
-is claimed.
+source changes passed both independent reviews and their focused follow-up.
+All 126 local tests passed, including eight real-CLI cases. The published
+13-file package passed 20 backend tests in an isolated installed-only fixture;
+automatic deployment verified all 19 public files. These checks establish
+implementation behavior; no runtime quality or efficiency gain is claimed.
 
 ## Site discovery and Cloudflare hosting (9 November 2026)
 
@@ -353,4 +356,4 @@ release outcome; this single-run check is not continuous availability monitoring
 - [x] Review, install and verify the adapter on an ordinary documentation task.
 - [x] Add checked SEO/AI-search discovery resources and direct Cloudflare Pages hosting.
 - [x] Implement owner-approved skill clarity and helper observation fixes.
-- [ ] Complete independent review of those fixes, then publish and update the installed skill.
+- [x] Complete independent review and publish the validated skill package.
