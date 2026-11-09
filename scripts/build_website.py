@@ -33,8 +33,8 @@ DOWNLOADS = "downloads"
 ZIP_NAME = "agents-collab-skill.zip"
 EXAMPLE_PROFILE = REPO / "docs" / "examples" / "writer-review.profile.example.json"
 
-# The curated distributable package: the workflow files, the two
-# dependency-free helper scripts (profile validator and setup wizard) and the
+# The curated distributable package: the workflow files, the
+# dependency-free profile and optional-backend helpers and the
 # MIT LICENSE. Only these files are zipped, under the top-level folder name
 # users install. Nothing else from the repository ships.
 PACKAGE_FILES = (
@@ -44,8 +44,11 @@ PACKAGE_FILES = (
     "assets/review-packet.md",
     "assets/task-state.json",
     "examples/profile.example.json",
+    "references/backend.md",
     "references/configuration.md",
     "references/review-protocol.md",
+    "scripts/backend.py",
+    "scripts/install_backend.py",
     "scripts/setup_profile.py",
     "scripts/validate_profile.py",
 )

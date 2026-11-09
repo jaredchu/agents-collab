@@ -25,6 +25,15 @@ After installation, skip the manual copy blocks and continue with
 [profile setup](#2-create-or-keep-a-profile). Other lead assistants remain
 unvalidated, even when a skill installer can place files in their directories.
 
+### Optional executable backend
+
+The manual workflow needs no executable backend. To enable local snapshots,
+sealed packets and structural lifecycle records, use the separately packaged
+[Rust backend and installer](cli.md#optional-backend-installation). Its setting
+is `~/.config/agents-collab/backend.json`; installation and enablement preserve
+the collaboration profile. This does not add automatic model dispatch or make
+unprompted skill selection reliable.
+
 ### Manual installation
 
 The ZIP and checkout routes below need Python 3.9+ and no Node.js.
@@ -57,7 +66,7 @@ collab_source="$collab_unpack/agents-collab"
 ```
 
 The ZIP contains exactly the curated package files under `agents-collab/`: the
-workflow files, the profile validator and setup wizard scripts, and `LICENSE`,
+workflow files, configuration and optional backend helpers, and `LICENSE`,
 the MIT notice. Compare the ZIP's SHA-256 hash with its entry in
 https://agents-collab.com/downloads/SHA256SUMS.
 

@@ -34,7 +34,7 @@ PAGES = ("index.html", "guide/index.html", "research/index.html",
 REPO_URL = "https://github.com/jaredchu/agents-collab"
 LICENSE_URL = REPO_URL + "/blob/main/LICENSE"
 # Curated package size: workflow files, the validator and setup scripts, LICENSE.
-PACKAGE_FILE_COUNT = 10
+PACKAGE_FILE_COUNT = 13
 TEXT_SUFFIXES = {".md", ".json", ".yaml", ".yml", ".py", ".html", ".css", ".js", ".txt"}
 
 _previous_flag = sys.dont_write_bytecode

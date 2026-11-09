@@ -12,7 +12,7 @@ were separated from project knowledge.
 
 - The distributable skill is the curated file list in
   `scripts/build_website.py` (all files in `skills/agents-collab/`): workflow
-  files, the profile validator and setup wizard scripts, and `LICENSE`. Users
+  files, configuration and optional backend helpers, and `LICENSE`. Users
   install that folder, not this repository. `LICENSE` is byte-identical to the
   root `LICENSE`. Through the 2026-11-08 license and publication preparation the
   eight original workflow files stayed byte-for-byte unchanged from the
@@ -23,10 +23,10 @@ were separated from project knowledge.
   or evidence limits.
 - Personal profiles, credentials, raw traces, private or client project
   information and machine-specific paths stay outside this repository and site.
-- The package is a prompt-led workflow with two configuration helpers: a
-  structural profile validator and an interactive setup wizard that writes a
-  profile only after confirmation. Neither calls a model. It has no dispatcher,
-  snapshot freezing, deadline implementation or enforcement.
+- The manual workflow uses a structural profile validator and interactive setup
+  wizard. The optional adapter uses a separately installed Rust executable for
+  snapshots, sealed packets and local structural gates. No helper dispatches or
+  supervises models, enforces deadlines or attests truthful model observations.
 - The pilot targeted a Codex lead. Other leads and adapters are unvalidated.
 
 ## Evidence and limits
@@ -52,7 +52,7 @@ were separated from project knowledge.
 | [Research](research.md) | Sanitized research notes |
 | [Experiments](experiments.md) | Validation and pilot summaries |
 | [History](history.md) | How the project emerged |
-| [Rust CLI prototype](cli.md) | Source-only executable commands, storage bounds and offline checks |
+| [Rust CLI backend](cli.md) | Optional installation, executable commands, storage bounds and checks |
 | [Rust CLI prototype plan](plans/rust-cli-prototype.md) | Original acceptance scope, rationale and implementation status |
 | [Contributing](../CONTRIBUTING.md) | Contribution and evidence guidelines |
 | [License](../LICENSE) | MIT License (identical copy in the skill package) |
@@ -89,8 +89,8 @@ and per-agent reasoning requests, uses neutral access and advisory bounds,
 reuses the unchanged validator, previews, and writes only after confirmation
 (mode 0600, atomic, preserving existing profiles and rejecting symlink or
 nonregular targets). A generated profile does not establish model availability,
-supported effort, access or records-path isolation. The download archive now
-holds ten files. On 2026-11-08 all 90 tests passed after the addition and cleanup-error correction, with
+supported effort, access or records-path isolation. At the setup-wizard
+publication, the download archive held ten files. On 2026-11-08 all 90 tests passed after the addition and cleanup-error correction, with
 profile writes tested only at temporary output paths. Skill metadata validation,
 the website build, both manual install paths and installation of all ten files
 through Skills CLI 1.7.6 passed. The installed wizard produced a valid profile
@@ -99,8 +99,8 @@ at a prompt left no target file. No real user profile or HOME environment was
 changed. These checks establish configuration behavior, not model availability
 or runtime reasoning support. Local browser checks at 1440px and 390px passed, including the wizard command
 copy buttons and content without JavaScript. Independent review found and resolved one staging-cleanup reporting issue;
-the focused follow-up independently passed all 19 wizard tests. The live
-package matches the checked ten-file build; its downloaded wizard created a
+the focused follow-up independently passed all 19 wizard tests. At that
+publication the live package matched the checked ten-file build; its downloaded wizard created a
 valid mode-0600 profile at a temporary output path, and the published home/guide
 setup-command copy buttons passed desktop/mobile checks. A saved profile
 with incomplete staging cleanup now reports its saved state and remaining file
@@ -226,6 +226,31 @@ speed, cost or equivalence claim. The skill, saved configuration and CLI under
 test were unchanged; experimental validator patches were not merged into the
 product. Source reproduction is public; raw execution evidence stays private.
 
+## Optional backend integration (9 November 2026)
+
+The skill now includes a reusable adapter and offline installer for the separate
+macOS arm64 CLI package. Missing backend settings keep the manual workflow.
+Explicit enablement uses `~/.config/agents-collab/backend.json`; the saved
+collaboration profile is preserved. The [CLI guide](cli.md#optional-backend-installation)
+is canonical for installation and the [backend reference](../skills/agents-collab/references/backend.md)
+for host-led lifecycle use and limits. Readable packets currently support
+selected regular UTF-8 files. No dispatcher, supervisor or automatic skill
+activation is added.
+
+The checked skill ZIP contains thirteen files. All 114 Python tests passed,
+including five explicit real-CLI/APFS flows; the static build and skill metadata
+validation passed. Independent review found no material implementation issue;
+its minor stale-installer documentation finding was corrected. A separately
+checked release archive installed successfully and its version probe passed.
+No versioned public binary release or new website deployment was made here.
+
+An ordinary documentation task then corrected the CLI guide's stale live-validation
+status through the installed adapter: declared scope and checks, frozen writer
+and neutral review packets, actual independent review, imported original result,
+retained check evidence and completed record with integrity verified. The task
+preserved the other 344 source files and required no per-task lifecycle helper.
+This verifies one supported operational path, not a quality or efficiency gain.
+
 ## Progress
 
 - [x] Preserve the eight-file validated package as the initial source.
@@ -256,3 +281,5 @@ product. Source reproduction is public; raw execution evidence stays private.
 - [x] Exercise synthetic workflow, source identity, fault and concurrency cases.
 - [x] Complete independent implementation review and required focused corrections.
 - [x] Complete and report the three-case manual-versus-CLI comparison, retaining qualifications.
+- [x] Package the CLI and integrate an optional backend without changing the profile contract.
+- [x] Review, install and verify the adapter on an ordinary documentation task.

@@ -1,10 +1,42 @@
 # Local record-and-packet CLI
 
-**Experimental source prototype, 9 November 2026.** The separate `cli/` crate
-builds `agents-collab`; it is not included in the skill download or installation.
+**Experimental local backend, 9 November 2026.** The separate `cli/` crate
+builds `agents-collab`; its executable is packaged separately from the skill.
 It stores local records and frozen inputs. An authorized host still performs all
 writing, dispatch, supervision and review. This binary calls no models, launches
 no workers and changes no profile, source checkout or global settings.
+
+## Optional backend installation
+
+The skill includes a reusable adapter and offline archive installer. Installing
+the skill alone keeps the manual workflow. Package an already built native
+release executable, using a selected private output directory:
+
+```sh
+python3 scripts/package_cli.py --binary "$CARGO_TARGET_DIR/release/agents-collab" --output-dir "$collab_package"
+```
+
+The archive contains the executable, MIT notice and a version/platform/binary-hash
+manifest; `SHA256SUMS` accompanies it. Only macOS arm64 packaging is currently
+supported. See [build instructions](#build-and-checks) below. There is no published
+cross-platform release channel.
+
+Install a trusted archive using its expected digest, then explicitly enable it:
+
+```sh
+python3 ~/.agents/skills/agents-collab/scripts/install_backend.py --archive "$collab_archive" --sha256 "$collab_sha256" --enable
+python3 ~/.agents/skills/agents-collab/scripts/backend.py status
+```
+
+The variables name your selected archive and its SHA-256. The default binary
+location is `~/.local/bin/agents-collab`. Separate preferences in
+`~/.config/agents-collab/backend.json` record the absolute binary path and enabled
+mode. The profile, shell PATH and project instructions are not rewritten.
+Unrelated existing targets require explicit replacement authorization.
+
+The [backend procedure](../skills/agents-collab/references/backend.md) covers
+setup, frozen packets, host dispatch, result import and completion. Helper
+subcommand help describes its flags. Low-level contracts below remain available.
 
 ## Validation status
 
@@ -22,9 +54,15 @@ including conflicting activity; original invocation identities and deadlines
 are preserved. Recovery tests check refusal without mutation and successful
 handoff after prior work is reconciled as terminal.
 
-This validates the local record-and-packet prototype within its documented
-platform and evidence limits. Live model dispatch, usefulness, review quality
-and usage savings remain unmeasured.
+This validates the local record-and-packet core within its documented platform
+and evidence limits. A later [six-workflow live pilot](../evals/cli-usefulness/2026-11-09/report.md)
+compared the same skill with and without the CLI. Both paths produced passing
+final code and recovered the same reviewer invocation after a controlled missing
+receipt. No added CLI usefulness was demonstrated; the frozen rule returned
+inconclusive. One coordinator provenance mistake affected two CLI rows and
+required correction. These small observations establish no general quality,
+speed, token, cost or equivalence advantage. The host still dispatches models;
+the CLI records the handoff rather than providing a model transport.
 
 ## Build and checks
 
@@ -486,6 +524,7 @@ ordinary error injection, and `AGENTS_COLLAB_CAPTURE_PAUSE=test` for a short
 capture-race handshake. Leave these unset in normal use. Abrupt process tests
 are not power-loss testing or a universal hardware/filesystem durability claim.
 
-No exactly-once external launch guarantee exists without host cooperation. No
-live host integration, deadline supervisor, filesystem sandbox, source restore,
-implicit routing, daemon, MCP, installer or effectiveness comparison is included.
+No exactly-once external launch guarantee exists without host cooperation. The
+optional skill adapter and offline installer integrate local records with the
+host-led procedure. They add no model dispatcher, deadline supervisor, filesystem
+sandbox, source restore, implicit routing, daemon or MCP server.

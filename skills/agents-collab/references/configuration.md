@@ -3,8 +3,8 @@
 This is the version 1 contract. The executing agent interprets it; neither
 Codex nor Claude automatically applies these JSON fields as native settings.
 The package includes a structural validator (`scripts/validate_profile.py`), an
-interactive setup wizard (`scripts/setup_profile.py`) and inert templates. It
-does not include a runner, an installer or a dispatcher.
+interactive setup wizard (`scripts/setup_profile.py`), inert templates and
+optional backend/installer helpers. No helper dispatches or supervises models.
 
 ## Interactive setup
 
@@ -30,6 +30,13 @@ and calls no model. A generated profile establishes structure only, not model
 availability, supported effort, access or records-path isolation.
 
 ## Location and loading
+
+Optional executable-backend preferences live separately in
+`~/.config/agents-collab/backend.json`; they are not v1 collaboration-profile
+fields. The backend installer can enable an explicitly installed CLI without
+rewriting the profile. See [the backend procedure](backend.md). With no backend
+setting, this skill keeps its manual procedure. Do not add backend keys to this
+profile or silently migrate it.
 
 Use an explicit profile path supplied by the user; otherwise use
 `~/.config/agents-collab/profile.json`. Read only that file. User defaults

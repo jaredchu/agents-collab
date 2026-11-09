@@ -57,8 +57,8 @@ agent does not establish support for that lead.
 ## What it is
 
 `skills/agents-collab/` is an agent skill: Markdown instructions, a reference
-contract, inert templates, two dependency-free configuration helpers (a profile
-validator and an interactive setup wizard) and a copy of the MIT `LICENSE`. It
+contract, inert templates, configuration helpers, an optional CLI adapter and
+installer, and a copy of the MIT `LICENSE`. It
 helps a
 lead assistant session:
 
@@ -71,20 +71,21 @@ lead assistant session:
 - hand only durable outcomes (decisions, verified behavior, risks, remaining
   work) back to the project.
 
-The separate, source-only [Rust CLI prototype](docs/cli.md) now records local
-handoffs and immutable packets. It is experimental, not installed with the skill,
-and dispatches no models. Its supported storage and offline validation limits
-are documented separately.
+The optional [Rust CLI backend](docs/cli.md) records local handoffs and immutable
+packets. Install its separately packaged executable and explicitly enable it;
+installing the skill alone keeps the manual workflow. Backend preferences live
+in `~/.config/agents-collab/backend.json`, leaving `profile.json` unchanged.
+The CLI dispatches no models. Support is currently limited to macOS arm64 and
+local APFS; see [installation and use](docs/cli.md#optional-backend-installation).
 
 ## What it is not
 
 Read these before relying on it:
 
-- **Prompt-led, not a runtime.** The lead follows written instructions. The distributable skill's executable
-  code consists of two configuration helpers: a structural profile validator and a setup
-  wizard that writes a profile file. Neither calls a model. There is no automatic
-  dispatcher, no snapshot freezing, no hard-deadline implementation and no
-  enforcement layer.
+- **Host-led collaboration.** The lead follows the workflow and dispatches models.
+  The manual path has no executable lifecycle enforcement. The optional Rust
+  backend adds local snapshots, packets and structural gates; it supplies no
+  automatic dispatcher, deadline supervisor or model/authority attestation.
 - **Codex-led pilot only.** The design targets a Codex lead with native subagents
   and optional Claude CLI dispatch. Other lead assistants and adapters are not
   validated; loading the Markdown elsewhere does not establish support.
@@ -107,7 +108,7 @@ Read these before relying on it:
 
 | Path | Purpose |
 | --- | --- |
-| [`skills/agents-collab/`](skills/agents-collab/SKILL.md) | The distributable skill package (workflow files, two helper scripts and `LICENSE`) |
+| [`skills/agents-collab/`](skills/agents-collab/SKILL.md) | Workflow files, configuration/backend helpers and `LICENSE` |
 | [`LICENSE`](LICENSE) | MIT License for the repository |
 | [`docs/guide.md`](docs/guide.md) | Installation, profile setup, invocation and limits |
 | [`docs/examples/`](docs/examples/writer-review.profile.example.json) | Illustrative profile with deliberate placeholders |

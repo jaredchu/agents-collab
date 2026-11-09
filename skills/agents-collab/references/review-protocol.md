@@ -1,5 +1,10 @@
 # Independent review protocol
 
+The [optional CLI backend](backend.md) automates record preparation, frozen
+packet rendering and structural gates. These independence, evidence, authority
+and round-limit rules apply to both backends. CLI import success is not proof
+that a result is valid, truthful or approved. Inspect its validation field.
+
 ## Neutral packet
 
 Construct and freeze the common packet for all initial reviewers before launching

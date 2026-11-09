@@ -10,18 +10,16 @@ current session owns scope and integration. Keep model preferences outside
 project documentation unless intentionally adopted as shared project policy.
 A profile supplies preferences, not new authority.
 
-The first pilot targets a Codex lead with native subagents and optional Claude
-CLI dispatch. End-to-end runtime behavior is not yet validated for any host.
-Do not claim other lead assistants are supported until their adapters are tested.
+The workflow targets a Codex lead with native subagents and optional Claude
+CLI dispatch. Small live trials establish only their reported cases; do not
+claim other lead assistants are supported until their adapters are tested.
 
-Version 1 contents: these instructions, the references, a structural profile
-validator (`scripts/validate_profile.py`), an interactive profile setup wizard
-(`scripts/setup_profile.py`, configuration only), inert templates
-(`assets/task-state.json`, `assets/review-packet.md`), an illustrative example
-profile (`examples/profile.example.json`) and interface metadata
-(`agents/openai.yaml`). The lead drives native
-tools and the CLI by following this skill. No script dispatches workers,
-freezes snapshots, enforces deadlines or attests model/effort.
+The profile validator and interactive setup wizard remain configuration helpers.
+The optional `scripts/backend.py` adapter uses a separately installed Rust CLI
+for frozen inputs, sealed packets and local lifecycle records. Its installer
+and settings are separate from the collaboration profile. Templates and the
+manual workflow remain available. No helper dispatches models, supervises
+workers, enforces deadlines or attests model/effort.
 
 ## Load and resolve
 
@@ -68,6 +66,19 @@ stays blocked until an authorized path exists. Do not request delegation merely
 to satisfy an optional personal preference when solo completion is allowed.
 
 ## Check the dispatch
+
+When collaboration is needed, run `python3 <skill-dir>/scripts/backend.py status`.
+An absent backend setting selects the manual procedure below. An enabled CLI
+setting selects [the optional backend procedure](references/backend.md); read
+it before starting that task. Never install or enable the backend implicitly.
+Keep routine solo work free of task records. Backend selection does not cause
+this skill to load automatically or change the configured model routing.
+
+Once a task starts, keep its backend and record identity through completion.
+If an enabled backend is unavailable or refuses an operation, preserve its
+state and report the affected blocker; do not silently create a second manual
+record, reset review rounds or launch another worker. A backend setting grants
+no project, execution, spending or publication authority.
 
 Confirm the selected model, supported reasoning control, available authenticated
 access and tools before launching. Use the configured existing access path.
