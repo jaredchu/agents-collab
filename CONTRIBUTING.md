@@ -62,6 +62,25 @@ When reporting an experiment:
 - publish only sanitized summaries; say plainly that raw evidence is private if
   it is.
 
+## Interrupted experiments
+
+A subscription, rate or temporary access limit is an infrastructure blocker,
+not an experimental result or completion condition. Leave required work pending
+and wait for the existing authorized access path. Do not silently substitute
+models, spend on another path, or publish final conclusions to close the task.
+
+Preserve frozen tasks, rubric, outputs and failed-attempt receipts. On recovery,
+resume only unfinished work and disclose the interruption; do not reroll completed
+outputs or change success criteria. Reconcile any running invocation before retry.
+If interruption requires a protocol amendment, disclose it before resumption.
+Check that anonymous grading remains valid, especially if mappings or findings
+were already revealed publicly.
+
+Keep final results unpublished until all required stages are complete. If partial
+results have already been shared, mark them clearly as interim/on hold and leave
+the experiment unfinished. Withdrawing a results page must not silently erase
+preregistration, failed attempts or prior public claims from the research record.
+
 ## Documentation
 
 `docs/project-context.md` is the current project context. Update it when project

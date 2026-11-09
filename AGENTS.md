@@ -6,6 +6,7 @@ Read `README.md` and `docs/project-context.md` before changes.
 
 - Keep the reusable skill in `skills/agents-collab/` generic and configured through external profiles. Project documentation has no personal model or reasoning defaults.
 - Keep private profiles, credentials, raw execution traces, private project details and personal filesystem paths out of this repository and website. Use synthetic examples and sanitized summaries.
+- A transient subscription, rate or access limit leaves an experiment blocked and unfinished. Preserve frozen inputs, completed outputs and failed-attempt receipts. Wait for access; keep final results unpublished until every required stage is complete. An interim record is not completion or a negative experimental result.
 - Preserve historical experiment qualifications, negative results, unknown measurements and the distinction between structural validation and runtime evidence. Do not claim universal support, autonomous enforcement or general productivity/cost gains from the limited trials.
 - Keep public notes authoritative for their purpose and source links useful. Product code and website changes need appropriate local checks; documentation edits need diff/link and information-preservation checks. Preserve unrelated work.
 - Test with isolated synthetic data. Work on this project grants no authority to alter global configuration, unrelated projects, saved automations or paid access paths.
