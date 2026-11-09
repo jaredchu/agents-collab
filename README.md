@@ -151,9 +151,11 @@ checks and builds the site on pull requests and pushes to `main`. A successful
 `main` run deploys that same checked build with Wrangler; pull requests never
 run the deployment step. A manual main-branch workflow run is also available.
 Immediately before deployment, the workflow checks canonical `main` and skips
-outdated commits; a failed lookup stops the run. After deployment it compares
-all public build files with their HTTPS responses, including downloads and the
-custom 404 response. Persistent differences fail the workflow after bounded retries.
+outdated commits; a failed lookup stops the run. It repeats the check before live
+verification and skips it if `main` advanced during deployment. For a current
+run it compares all public build files with their HTTPS responses, including
+downloads and the custom 404 response. Persistent differences fail the workflow
+after bounded retries.
 Deployment uses the repository secrets `CLOUDFLARE_API_TOKEN` (account-scoped Pages
 Write only) and `CLOUDFLARE_ACCOUNT_ID`; no DNS credential belongs in CI.
 

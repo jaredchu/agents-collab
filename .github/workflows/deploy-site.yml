@@ -85,8 +85,31 @@ jobs:
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           npx --yes wrangler@4.113.0 pages deploy dist --project-name agents-collab --branch main --commit-hash "$GITHUB_SHA" --commit-dirty=false
 
-      - name: Verify live files match checked build
+      - name: Confirm commit is still current main
+        id: verification_freshness
         if: steps.freshness.outputs.current == 'true'
+        timeout-minutes: 2
+        shell: bash
+        env:
+          GIT_TERMINAL_PROMPT: "0"
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$*"; exit 1; }
+          remote=https://github.com/jaredchu/agents-collab.git
+          refs=$(timeout 60 git -c credential.helper= ls-remote --exit-code -- "$remote" refs/heads/main) \
+            || fail "Could not read canonical main before verification"
+          head=$(printf '%s\n' "$refs" | awk -F '\t' '$2 == "refs/heads/main" { print $1 }')
+          [ "$(printf '%s\n' "$head" | grep -c .)" -eq 1 ] && [[ $head =~ ^[0-9a-f]{40}$ ]] \
+            || fail "Unexpected main lookup result before verification"
+          if [ "$head" = "$GITHUB_SHA" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping verification of $GITHUB_SHA; main advanced to $head during deployment"
+          fi
+
+      - name: Verify live files match checked build
+        if: steps.verification_freshness.outputs.current == 'true'
         timeout-minutes: 3
         shell: bash
         run: |
