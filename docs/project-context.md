@@ -260,6 +260,12 @@ served files and downloads, a genuine 404 response, cache headers and preservati
 of the three other DNS records were verified. The owner retained deletion of
 the former ChatGPT-hosted Site; no deletion by the agent is claimed.
 
+Cloudflare's Always Use HTTPS setting is enabled. A proxied `www` CNAME and
+an exact-host Single Redirect permanently send `www.agents-collab.com` to
+`https://agents-collab.com`, preserving paths and query strings. The HTTP apex
+and both `www` variants reached the canonical HTTPS page in one redirect in
+live checks, with valid TLS. These settings live in Cloudflare, outside `dist/`.
+
 Five canonical pages have descriptive search/social metadata, visible project
 credit/update dates and linked project/page data. `robots.txt`, `sitemap.xml`,
 `llms.txt` and `manifest.json` expose consistent navigation and evidence limits.
