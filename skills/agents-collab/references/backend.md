@@ -6,6 +6,12 @@ the collaboration profile: `~/.config/agents-collab/backend.json` contains only
 `version`, `mode` and an absolute `binary` path. Never install or enable it
 implicitly. Installation does not edit the profile, shell or project instructions.
 
+Contents: installation, conservative limits, identities, initial cycle,
+follow-up round, observations and retries, review contract, dispositions and
+completion, partial helper failure.
+
+## Installation
+
 Install a trusted macOS arm64 archive with its expected SHA-256:
 
 ```sh
@@ -16,64 +22,214 @@ python3 <skill-dir>/scripts/backend.py status
 The default binary location is `~/.local/bin/agents-collab`; the adapter uses its
 absolute path even without a PATH entry. The digest is an integrity check against
 the selected archive, not a publisher signature. The engine supports local APFS
-on macOS; the current package supports arm64 only. Required supervised timing and
-runtime effort attestation remain unsupported. Resolve required capabilities
-before dispatch rather than silently downgrading them.
+on macOS; the current package supports arm64 only.
 
 The installer rejects symlink targets and ancestors. If an approved installation
 directory is a symlink, verify its canonical destination and supply that path
 explicitly with `--bin-dir`; do not remove the link or relax the guard.
 
-## Task and packet preparation
+## Conservative limits
 
-Read project rules, validate the unchanged profile and resolve agent assignments
-as usual. `start --help` supplies the repository, project/task IDs, writer,
-reviewers, exact editable scope, requirements, criteria, boundaries and checks.
-Named agents must exist in the profile; `current-session` can be the writer.
-Global `--config`, `--profile` and `--actor` options precede the subcommand.
-Do not add models to a profile, waive project rules or infer human approvals.
+Once a task starts, it keeps this backend and record through completion. Where
+the CLI is stricter than the manual protocol, report the limit; do not switch the
+task to a manual record, rename it or launch extra workers to get around it.
 
-The returned record is `records_root/{project}/{task}/collaboration`; adapter
-inputs, receipts and rendered packets live in its private sibling `host/`.
-Keep the same task identity on resumption. Each mutation reads its revision;
-conflicts require reconciliation, not automatic retries or renamed tasks.
+- `start` fixes the reviewer set. Reviewers cannot be added or replaced later.
+- If the profile's `review.on_consequential_work` is `single`, `start` requires a
+  reviewer even for work not classified consequential. Include one or report the
+  limit. Routine solo work needs no task record at all.
+- A sealed initial (`round 0`) review packet cannot be replaced, even before any
+  result is recorded. Finish the initial round on it, or block/cancel the task
+  and report; a new task does not reset rounds.
+- Required timing and `runtime-attestation` are refused at launch intent,
+  because the record-only CLI cannot validate a supervisor or runtime effort.
+  There is no manual fallback; resolve the requirement before starting.
+- `context` renders only selected regular UTF-8 files. Binary, symlink and
+  deleted selections need another authorized path. Snapshots are not
+  filesystem isolation or frozen external services.
 
-Use `context` with explicit `--paths`, `--instructions`, `--purpose`, `--round`,
-`--quiescence` and `--output` under that task's `host/` directory.
-`--omit-other-paths` supplies an explicit reason for excluding the remaining Git
-inventory. Review the selection for adequate context; a diff alone is not enough.
-No implicit file sweep is authorized. The adapter renders selected UTF-8 source
-from stored frozen bytes, with complete requirements and boundaries. Its text
-mode rejects binary, symlink and deleted-file selections; resolve another
-authorized low-level path if those are necessary. Source snapshots are not
-filesystem isolation or frozen external services.
+## Identities and arguments
 
-Initial source writing uses `writer_context`; review uses `review`. Writer
-context consumes no review round. Keep initial review packets neutral: no writer
-transcript, persuasive report or other initial findings. The fixed reviewer set,
-independence requirements and follow-up cap still apply.
+`start` returns `record` (`records_root/{project}/{task}/collaboration`) and
+`host`, its private sibling for inputs, outputs, receipts and traces. Pass
+`--record` to every later command and keep all `--output`/`--output-destination`
+files inside `host/`. `context` returns `artifact` and `packet` hashes; reviewers
+must echo both. Assignment IDs are new for every writing or review job; there is
+one assignment per agent and packet.
 
-## Host dispatch and results
+Global `--config`, `--profile` and `--actor` precede the subcommand. `--actor`
+(default `lead`) is attribution on every mutation and, at `start`, the task's
+only declared decision authority. It authenticates no one: naming a person as
+actor is not their approval. Real human approvals need actual evidence through
+the low-level completion contract below; the helper never infers them.
 
-Before dispatch, `assignment` prepares the assigned agent and persists launch
-intent. The host launches native agents or fresh Claude CLI processes, then
-attaches the actual invocation using `observe`. Record interface model/effort
-separately from unknown runtime attestation. Omit `--exit-code` for native
-notifications that expose no process exit. Actual Claude process exit can be
-recorded, but it alone proves no valid review. Reconcile uncertain workers and
-original deadlines before retrying; the backend never cancels a worker.
+`--requirement` and `--criterion` take `ID=TEXT` (IDs use letters, digits, `_`,
+`-`). `--instructions` is a UTF-8 **file**, not inline text. `--round` is `0` for
+initial writing and the initial review; `N` for the repair `writer_context` and
+follow-up review after every reviewer finished round `N-1`. The profile's
+`max_followup_rounds` caps `N`; a follow-up review must name a changed artifact.
+`<command> --help` shows every flag.
 
-`import-review` accepts the low-level review contract in the source repository's
-`docs/cli.md`. Have the reviewer return that contract with exact artifact, packet
-and assignment identities, meaningful verification limits and findings. Original
-bytes are retained. Inspect `validation`: only `valid_structure_only` covers the
-required review; exit zero can accompany a rejected or incomplete result.
-Preserve originals and disclose any explicit host adaptation; do not silently
-rewrite a result to make it valid. Structural validity attests neither truth nor
-authority. The generic `command` route exposes existing low-level contracts for
-dispositions and reconciliation without bypassing their gates.
+## Initial cycle
 
-For an installed skill without the source checkout, the review contract is:
+```sh
+B="python3 <skill-dir>/scripts/backend.py"
+$B start --repository "$REPO" --project demo --task guide-fix-1 \
+  --writer current-session --reviewer reviewer-a --scope docs/guide.md \
+  --requirement "R1=Keep documented commands accurate" \
+  --criterion "C1=Unit tests pass" --boundary "No publication" --check unit-tests
+# -> {"record": RECORD, "host": HOST, ...}
+
+# Optional recorded writing; skip when the change already exists.
+$B context --record "$RECORD" --purpose writer_context --round 0 \
+  --paths docs/guide.md --omit-other-paths "Unrelated to this edit" \
+  --quiescence "No writer active" --instructions "$HOST/write.txt" \
+  --output "$HOST/write-context.txt"            # -> packet WRITER_PACKET
+$B assignment --record "$RECORD" --id write-1 --packet "$WRITER_PACKET" \
+  --agent current-session --role writer --output-destination "$HOST/write-1.txt"
+# Launch only after assignment succeeds, then attach the real invocation:
+$B observe --record "$RECORD" --assignment write-1 --state completed \
+  --invocation "$SESSION" --boundary-observations "Lead session; no isolation"
+
+# Initial review on the finished source (neutral instructions only).
+$B context --record "$RECORD" --purpose review --round 0 --paths docs/guide.md \
+  --omit-other-paths "Unrelated to this edit" --quiescence "Writer stopped" \
+  --instructions "$HOST/review.txt" --output "$HOST/review-0.txt"   # -> ARTIFACT, PACKET
+$B assignment --record "$RECORD" --id review-1 --packet "$PACKET" \
+  --agent reviewer-a --role reviewer --output-destination "$HOST/review-1.json"
+# Dispatch a fresh reviewer with review-0.txt, then:
+$B observe --record "$RECORD" --assignment review-1 --state completed \
+  --invocation "$REVIEW_SESSION" --exit-code 0 \
+  --boundary-observations "Fresh CLI process; tools disabled; memory may load"
+$B import-review --record "$RECORD" --input "$HOST/review-1.json"
+```
+
+Writer context consumes no review round. Keep initial review packets neutral: no
+writer transcript, persuasive report or other initial findings. Select enough
+source for adequate context; a diff alone is not enough, and no implicit file
+sweep is authorized. `--omit-other-paths` gives one reason for all unselected
+inventory.
+
+## Follow-up round
+
+After every required reviewer has a recorded result on the current packet:
+
+```sh
+$B context --record "$RECORD" --purpose writer_context --round 1 ... \
+  --output "$HOST/fix-context.txt"              # -> FIX_PACKET
+$B assignment --record "$RECORD" --id fix-1 --packet "$FIX_PACKET" \
+  --agent current-session --role writer --output-destination "$HOST/fix-1.txt"
+# Write the fix, observe fix-1 completed, then freeze the changed source:
+$B context --record "$RECORD" --purpose review --round 1 ... \
+  --output "$HOST/review-r1.txt"                # -> new ARTIFACT, PACKET
+$B assignment --record "$RECORD" --id review-2 --packet "$PACKET" \
+  --agent reviewer-a --role reviewer --output-destination "$HOST/review-2.json"
+```
+
+`...` repeats the same `--paths`, `--omit-other-paths`, `--quiescence` and
+`--instructions` choices. The fix is a new assignment; see
+[assignment timing](configuration.md#assignment-timing). A follow-up packet may
+include prior findings, labeled as follow-up input.
+
+## Observations and retries
+
+`assignment` prepares the assignment, then records `launching` intent with no
+invocation. Dispatch only after both steps commit. `observe` then attaches what
+the host actually saw. Record interface model/effort separately; runtime
+attestation stays unknown. Omit `--exit-code` when a native host exposes none;
+an exit code alone proves no valid review. The backend never cancels a worker.
+
+`--reconciled` and `--absence-established` default to false and are recorded
+host assertions, not proof. Use them only after checking the host or
+supervisor, and give that evidence in `--reason`. The engine requires
+`--reconciled` to change an `unknown`, `interrupted`, `blocked` or `completed`
+assignment, and both flags to attach a different invocation identity. The
+helper rejects contradictory flags (absence without reconciliation, either flag
+without a reason, launching with an invocation) before writing anything; the
+engine's own refusals leave the record unchanged. `--process-start` is optional
+supporting evidence.
+
+### Retrying an assignment
+
+A retry keeps the same assignment ID, packet, original target and deadline; it
+gets no fresh deadline, cap or assignment ID. The record-only CLI cannot record a
+second launch intent and does not prove that a worker is gone. Without host
+bookkeeping or a supervisor that can do both steps below, do not relaunch: the
+retry stays blocked.
+
+1. Record the old state, for example `$B observe --record "$RECORD"
+   --assignment write-1 --state interrupted --invocation session-a
+   --boundary-observations "Lead session; no isolation"`.
+2. Establish from the host or supervisor that `session-a` is actually gone. If
+   that is not possible, do not relaunch. Reattach, wait or report the assignment
+   as uncertain.
+3. **Before spawning anything**, durably create a new pending-attempt record
+   under `$HOST/retries/`. Number labels in sequence (`write-1.attempt-2`,
+   `write-1.attempt-3`, ...). Never reuse or overwrite an earlier attempt file.
+4. Launch. Then promptly record the actual new invocation in a
+   `<label>.launched.json` file (same exclusive creation) **and** with `observe`.
+
+Pending attempt `$HOST/retries/write-1.attempt-2.json` (times are Unix UTC
+seconds, deadline values copied from `show`):
+
+```json
+{
+  "kind": "agents-collab-retry-intent",
+  "attempt": "write-1.attempt-2",
+  "assignment": "write-1",
+  "packet": "WRITER_PACKET",
+  "agent": "current-session",
+  "original_target": "advisory 30 minutes",
+  "original_deadline": 1794220200,
+  "previous_invocation": "session-a",
+  "previous_absence_evidence": "Supervisor log: session-a exited 1794218950; process list empty at 1794219010",
+  "state": "launching",
+  "new_invocation": null,
+  "created_at": 1794219020
+}
+```
+
+The file is private host bookkeeping. It is not an engine receipt and does not
+show whether a worker is alive. A private copy of the skill's
+`assets/task-state.json` invocation entry may hold the same fields instead. Write
+the draft JSON to a file `$DRAFT` outside `retries/`, then create the attempt file. Creation fails if the label
+already exists and syncs the file before you launch:
+
+```sh
+mkdir -p "$HOST/retries"
+python3 -c 'import json,os,sys
+d=open(sys.argv[1],"rb").read(); json.loads(d)
+f=os.open(sys.argv[2],os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+os.write(f,d); os.fsync(f); os.close(f)
+g=os.open(os.path.dirname(sys.argv[2]),os.O_RDONLY); os.fsync(g); os.close(g)' \
+  "$DRAFT" "$HOST/retries/write-1.attempt-2.json"
+```
+
+Use the same command to create `write-1.attempt-2.launched.json`, for example
+`{"attempt":"write-1.attempt-2","state":"running","new_invocation":"session-b","observed_at":1794219040}`.
+Only after both steps, attach the replacement:
+
+```sh
+$B observe --record "$RECORD" --assignment write-1 --state running \
+  --invocation session-b --reconciled --absence-established \
+  --reason "Attempt write-1.attempt-2: supervisor log and process list show session-a exited before relaunch" \
+  --boundary-observations "Lead session; no isolation"
+```
+
+**On resume**, an attempt file without a matching `.launched.json` is a pending
+intent. Before any new worker starts, check the host or supervisor for that
+attempt. If it launched, record its invocation as in step 4. If it definitely did
+not launch, create `<label>.not-launched.json` with that evidence. Then a later
+attempt, under the next label, may begin at step 2. If you cannot tell whether it
+launched, start nothing. Report the uncertainty and block the task
+(`command --entity task --action block`); never risk a duplicate worker.
+`observe --state launching` only re-records missing intent for a still-prepared
+assignment.
+
+## Review contract
+
+The reviewer returns this JSON with the identities from `context` and
+`assignment`:
 
 ```json
 {
@@ -91,27 +247,63 @@ For an installed skill without the source checkout, the review contract is:
 }
 ```
 
-The host supplies the three identities from `context` and `assignment` as a
-recipient envelope. Verdicts are `pass`, `changes_required` or `blocked`.
-Verification categories are `source_claim`, `verified_observation`,
-`interpretation`, `reviewer_opinion`, `unknown` and `unavailable`.
-Each finding requires nonempty `id`, `location`, `scenario`, `evidence`,
-`uncertainty` and `recommendation`, plus boolean `material`. Finding IDs remain
-unique across rounds. A pass cannot contain material findings. These declarations
-are evidence to assess, not proof of truth or independence.
+Verdicts are `pass`, `changes_required` or `blocked`. Verification categories are
+`source_claim`, `verified_observation`, `interpretation`, `reviewer_opinion`,
+`unknown` and `unavailable`. Each finding has nonempty `id`, `location`,
+`scenario`, `evidence`, `uncertainty` and `recommendation`, plus boolean
+`material`. Finding IDs stay unique across rounds; a pass cannot contain material
+findings. The assignment must first be observed `completed`.
 
-## Evidence and completion
+`import-review` retains original bytes and exits 1 unless `valid_review` is true
+(`validation: "valid_structure_only"`); rejected or incomplete results stay as
+evidence. Disclose any explicit host adaptation; do not silently rewrite a result
+to make it valid. Structural validity attests neither truth nor authority.
 
-`evidence --input` retains actual UTF-8 check output or disposition text in a
-reconciliation-input object; the prototype has no separate evidence-upload
-command. Use its returned hash in `complete --evidence`. Keep private output
-private. A stored assertion alone does not prove that a check ran. Completion
-fills the declared criterion/check coverage and delegates final source/review
-gates to the engine. Real human approvals require actual evidence and explicit
-low-level coverage; the helper must not infer them.
+## Dispositions and completion
 
-A read-only writer disposition can remain host-tracked without becoming a new
-source-writing assignment. Preserve its original output as evidence. Material
-source fixes require recorded writing, a new artifact and applicable follow-up.
+`evidence --input FILE` retains actual UTF-8 check output or disposition text and
+returns its object hash (`EVIDENCE_HASH`). A stored assertion alone does not prove
+that a check ran. Record each finding decision through the generic command with
+this `disposition.json`:
+
+```json
+{"finding":"F1","decision":"addressed","reason":"Follow-up review of the changed artifact passed","evidence":["EVIDENCE_HASH"],"authority":"lead","criterion_compatible":true}
+```
+
+```sh
+$B command --record "$RECORD" --entity finding --action resolve --input "$HOST/disposition.json"
+$B complete --record "$RECORD" --evidence "$EVIDENCE_HASH" --reason "Criteria and checks covered"
+```
+
+Decisions are `addressed`, `rejected`, `deferred` or `unresolved`; `authority`
+must equal `--actor`. Addressed material findings need a changed artifact and a
+passing follow-up; rejections need evidence. `complete` maps the evidence to every
+declared criterion and check. Tasks with `--approval` need the low-level contract
+via `command --entity task --action complete` and an input such as
+`{"artifact":"ARTIFACT_HASH","criteria":{"C1":["EVIDENCE_HASH"]},"checks":{"unit-tests":["EVIDENCE_HASH"]},"approvals":{"owner":["APPROVAL_EVIDENCE_HASH"]},"reason":"..."}`,
+where the approval object contains the person's actual approval.
+
+`task block`, `activate`, `cancel` and `reconcile` take `{"reason": "Concrete
+reason"}` through `command`. `reconcile` marks unattached launch intents
+`unknown`; it never relaunches, resets deadlines or declares a worker stopped.
+A read-only writer disposition can remain host-tracked as evidence without a new
+source-writing assignment.
+
+## Partial helper failure
+
+`start`, `context` and `assignment` each run several engine mutations and are not
+atomic. On failure, stderr names `incomplete_workflow`; that JSON lists each step
+as `committed` or `incomplete` with a trace folder holding its request, input,
+stdout and stderr. Before continuing:
+
+1. Run `show` and `check`; compare the revision, artifacts, packets and
+   assignments with the last committed step.
+2. Establish whether any worker was launched and which packet it received.
+3. Continue only the missing step, for example `observe --state launching` after
+   a committed `assignment prepare`, or `context` with corrected flags after a
+   committed freeze but rejected seal.
+
+Never rerun a whole helper blindly or under new task/assignment IDs. Rejected
+operations are not retried automatically; revision conflicts need inspection.
 Use `show`, `check` and `packet` for resumption. Backend selection does not enable
 automatic skill discovery or establish quality, token or productivity gains.

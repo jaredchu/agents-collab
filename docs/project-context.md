@@ -251,6 +251,25 @@ retained check evidence and completed record with integrity verified. The task
 preserved the other 344 source files and required no per-task lifecycle helper.
 This verifies one supported operational path, not a quality or efficiency gain.
 
+## Skill clarity and helper observation fixes (9 November 2026)
+
+Two independent source reviews of the skill requested changes; the owner
+approved fixing them. `SKILL.md` is now a short five-step decision flow that
+links to canonical detail. [Assignment timing](../skills/agents-collab/references/configuration.md#assignment-timing)
+is defined once, with a worked example: an advisory overrun is recorded and
+reported rather than stopping work; a retry keeps its assignment and deadline;
+a fix is a new assignment within the unchanged review cap. The
+[backend reference](../skills/agents-collab/references/backend.md) is usable
+without the source checkout, including conservative CLI limits and recovery
+after partial helper failure.
+
+The helper's `observe` no longer marks observations reconciled by default.
+`--reconciled` and `--absence-established` are explicit host assertions that need
+a reason; contradictory flags fail before any mutation. Callers that relied on
+the old implicit reconciliation must now pass `--reconciled --reason`. The
+source changes await independent review; no runtime quality or efficiency gain
+is claimed.
+
 ## Site discovery and Cloudflare hosting (9 November 2026)
 
 Production at https://agents-collab.com now serves the checked static build
@@ -333,3 +352,5 @@ release outcome; this single-run check is not continuous availability monitoring
 - [x] Package the CLI and integrate an optional backend without changing the profile contract.
 - [x] Review, install and verify the adapter on an ordinary documentation task.
 - [x] Add checked SEO/AI-search discovery resources and direct Cloudflare Pages hosting.
+- [x] Implement owner-approved skill clarity and helper observation fixes.
+- [ ] Complete independent review of those fixes, then publish and update the installed skill.

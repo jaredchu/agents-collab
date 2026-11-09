@@ -155,7 +155,7 @@ class Backend:
         safe.private_dir(self.host)
         self.workflow = self.host / ("workflow-" + uuid.uuid4().hex + ".json")
         self.workflow_data = {"command": command, "status": "incomplete", "steps": self.steps,
-                              "note": "A multi-operation helper is not atomic. Inspect steps before continuing."}
+                              "note": "A multi-operation helper is not atomic. Inspect show/check and the last committed step before continuing; never rerun the whole helper blindly."}
         self.save_workflow()
 
     def save_workflow(self):
@@ -296,18 +296,52 @@ def context(backend, args, state):
             "limits": "Exact frozen UTF-8 regular files; host must assess neutral instructions and actual isolation"}
 
 
+LAUNCH_REASON = "Persist intent before authorized host dispatch"
+
+
+def check_observation(args):
+    """Reject contradictory observation flags before any record or trace is written."""
+    reconciled = getattr(args, "reconciled", False)
+    absent = getattr(args, "absence_established", False)
+    if args.state == "launching":
+        if args.invocation or reconciled or absent or args.exit_code is not None or getattr(args, "process_start", None):
+            raise ValueError("launching records intent only: omit --invocation, --exit-code, --process-start, --reconciled and --absence-established")
+        return
+    if absent and not reconciled:
+        raise ValueError("--absence-established requires --reconciled")
+    if (reconciled or absent) and not (args.reason and args.reason.strip()):
+        raise ValueError("--reconciled/--absence-established require an explicit --reason stating the host evidence")
+
+
 def receipt(args, state, launching=False):
-    return {"schema_version": 1, "assignment": args.id if launching else args.assignment,
-            "state": "launching" if launching else args.state,
-            "invocation": None if launching else args.invocation, "process_start": None,
-            "interface_model": None if launching else args.interface_model,
-            "interface_effort": None if launching else args.interface_effort,
+    """Build a host receipt. Flags are host assertions; nothing here proves them."""
+    if launching or args.state == "launching":
+        return {"schema_version": 1, "assignment": args.id if launching else args.assignment,
+                "state": "launching", "invocation": None, "process_start": None,
+                "interface_model": None, "interface_effort": None,
+                "observed_model": None, "observed_effort": None,
+                "boundary_observations": "Host dispatch has not occurred; restrictions remain unobserved" if launching else nonempty(args.boundary_observations),
+                "exit_code": None, "reason": LAUNCH_REASON if launching or not args.reason else nonempty(args.reason),
+                "reconciled": False, "absence_established": False}
+    reconciled = bool(getattr(args, "reconciled", False))
+    absent = bool(getattr(args, "absence_established", False))
+    reason = args.reason if args.reason else f"Host reported {args.state} observation; not declared reconciled"
+    return {"schema_version": 1, "assignment": args.assignment, "state": args.state,
+            "invocation": args.invocation, "process_start": getattr(args, "process_start", None),
+            "interface_model": args.interface_model, "interface_effort": args.interface_effort,
             "observed_model": None, "observed_effort": None,
-            "boundary_observations": "Host dispatch has not occurred; restrictions remain unobserved" if launching else nonempty(args.boundary_observations),
-            "exit_code": None if launching else args.exit_code,
-            "reason": "Persist intent before authorized host dispatch" if launching else nonempty(args.reason),
-            "reconciled": False if launching else args.state != "launching",
-            "absence_established": False}
+            "boundary_observations": nonempty(args.boundary_observations),
+            "exit_code": args.exit_code, "reason": nonempty(reason),
+            "reconciled": reconciled, "absence_established": absent}
+
+
+GENERIC_COMMANDS = {("finding", "resolve"), ("task", "block"), ("task", "activate"),
+                    ("task", "cancel"), ("task", "reconcile"), ("task", "complete")}
+
+
+def check_command(args):
+    if (args.entity, args.action) not in GENERIC_COMMANDS:
+        raise ValueError("generic mutation limited to finding resolve and task block/activate/cancel/reconcile/complete")
 
 
 def run_bound(backend, args, state):
@@ -321,6 +355,7 @@ def run_bound(backend, args, state):
         intent = backend.mutation("assignment", "observe", receipt(args, state, launching=True))
         return {"prepared": prepared, "launch_intent": intent, "dispatch": "Host may now dispatch the authorized assignment"}
     if args.command == "observe":
+        check_observation(args)
         return backend.mutation("assignment", "observe", receipt(args, state))
     if args.command == "import-review":
         result = backend.mutation("review", "import", raw=safe.read_regular(args.input, MAX_INPUT))
@@ -344,60 +379,93 @@ def run_bound(backend, args, state):
                  "approvals": {}, "reason": nonempty(args.reason)}
         return backend.mutation("task", "complete", value)
     if args.command == "command":
-        command = (args.entity, args.action)
-        allowed = {("finding", "resolve"), ("task", "block"), ("task", "activate"),
-                   ("task", "cancel"), ("task", "reconcile"), ("task", "complete")}
-        if command not in allowed:
-            raise ValueError("generic mutation limited to finding resolve and task block/activate/cancel/reconcile/complete")
-        return backend.mutation(*command, raw=safe.read_regular(args.input, MAX_INPUT))
+        check_command(args)
+        return backend.mutation(args.entity, args.action, raw=safe.read_regular(args.input, MAX_INPUT))
     raise ValueError("unknown helper command")
+
+
+HELP = {
+    "context": "freeze selected source and seal a writer_context or review packet",
+    "assignment": "prepare one writer/reviewer assignment and persist its launch intent",
+    "observe": "attach a host observation to an existing assignment (flags default false)",
+    "import-review": "import a reviewer JSON result; exit 1 unless valid_structure_only",
+    "evidence": "retain a UTF-8 check/disposition text file and return its object hash",
+    "complete": "complete the task with evidence covering every declared criterion/check",
+    "show": "read the current record (revision, assignments, packets, blockers)",
+    "check": "verify record integrity and list completion blockers",
+    "packet": "print one registered sealed packet",
+    "command": "send a JSON file to one supported low-level command: finding resolve or task block/activate/cancel/reconcile/complete",
+}
 
 
 def parser():
     result = argparse.ArgumentParser(description=__doc__)
-    result.add_argument("--config", default=str(safe.DEFAULT_CONFIG), help="separate backend selector")
-    result.add_argument("--profile", default=str(DEFAULT_PROFILE), help="saved profile, read only at start")
-    result.add_argument("--actor", default="lead", help="actor and task decision authority; no authentication")
+    result.add_argument("--config", default=str(safe.DEFAULT_CONFIG), metavar="FILE", help="separate backend selector")
+    result.add_argument("--profile", default=str(DEFAULT_PROFILE), metavar="FILE", help="saved profile, read only at start")
+    result.add_argument("--actor", default="lead", metavar="NAME",
+                        help="attribution on each mutation, declared as decision authority at start; not authentication or human approval")
     commands = result.add_subparsers(dest="command", required=True)
     commands.add_parser("status", help="manual when absent, otherwise probe configured CLI --version")
     start_parser = commands.add_parser("start", help="validate unchanged profile, create and activate bounded task")
-    for flag in ("repository", "project", "task", "writer"):
-        start_parser.add_argument("--" + flag, required=True)
-    for flag in ("reviewer", "scope", "requirement", "criterion", "boundary", "check", "approval"):
-        start_parser.add_argument("--" + flag, action="append", default=[])
+    start_parser.add_argument("--repository", required=True, metavar="DIR", help="canonical absolute Git root")
+    start_parser.add_argument("--project", required=True, metavar="ID")
+    start_parser.add_argument("--task", required=True, metavar="ID", help="unique task ID; never reused to reset rounds")
+    start_parser.add_argument("--writer", required=True, metavar="AGENT", help="profile agent or current-session")
+    for flag, metavar, text in (("reviewer", "AGENT", "fixed required reviewer; repeat per reviewer"),
+                                ("scope", "PATH", "exact editable relative path; repeat"),
+                                ("requirement", "ID=TEXT", "requirement, e.g. R1='Preserve API'; repeat"),
+                                ("criterion", "ID=TEXT", "acceptance criterion, e.g. C1='Tests pass'; repeat"),
+                                ("boundary", "TEXT", "authority boundary; at least one"),
+                                ("check", "NAME", "required check covered at completion; repeat"),
+                                ("approval", "NAME", "required real approval; helper cannot complete such tasks")):
+        start_parser.add_argument("--" + flag, action="append", default=[], metavar=metavar, help=text)
     for name in ("context", "assignment", "observe", "import-review", "evidence", "complete", "show", "check", "packet", "command"):
-        p = commands.add_parser(name)
-        p.add_argument("--record", required=True)
+        p = commands.add_parser(name, help=HELP[name])
+        p.add_argument("--record", required=True, metavar="DIR", help="collaboration record returned by start")
         if name == "context":
             p.add_argument("--purpose", choices=("writer_context", "review"), required=True)
-            p.add_argument("--paths", action="append", required=True, help="one exact source path per flag")
-            p.add_argument("--omit-other-paths", help="explicit reason applying to all unselected inventory")
-            p.add_argument("--quiescence", required=True, help="host declaration that writer has stopped")
-            p.add_argument("--instructions", required=True)
-            p.add_argument("--round", type=int, default=0)
-            p.add_argument("--output", required=True, help="new file inside task host/")
+            p.add_argument("--paths", action="append", required=True, metavar="PATH", help="one exact source path per flag")
+            p.add_argument("--omit-other-paths", metavar="REASON", help="explicit reason applying to all unselected inventory")
+            p.add_argument("--quiescence", required=True, metavar="TEXT", help="host declaration that writer has stopped")
+            p.add_argument("--instructions", required=True, metavar="FILE", help="UTF-8 instruction file (a path, not inline text)")
+            p.add_argument("--round", type=int, default=0, metavar="N",
+                           help="0 for initial writing and initial review; N for repair writer_context and its follow-up review after round N-1 finished")
+            p.add_argument("--output", required=True, metavar="FILE", help="new file inside task host/")
         elif name == "assignment":
-            for flag in ("id", "packet", "agent", "output-destination"):
-                p.add_argument("--" + flag, required=True)
+            p.add_argument("--id", required=True, metavar="ID", help="new stable assignment ID; one per agent/packet")
+            p.add_argument("--packet", required=True, metavar="HASH", help="packet hash returned by context")
+            p.add_argument("--agent", required=True, metavar="AGENT")
+            p.add_argument("--output-destination", required=True, metavar="FILE", help="new file inside task host/")
             p.add_argument("--role", choices=("writer", "reviewer"), required=True)
         elif name == "observe":
-            p.add_argument("--assignment", required=True)
-            p.add_argument("--state", required=True, choices=("launching", "running", "completed", "interrupted", "blocked", "unknown"))
-            for flag in ("invocation", "interface-model", "interface-effort"):
-                p.add_argument("--" + flag)
-            p.add_argument("--exit-code", type=int, help="leave absent when native host does not expose it")
-            p.add_argument("--boundary-observations", required=True)
-            p.add_argument("--reason", default="Host reconciled the observed assignment state")
+            p.add_argument("--assignment", required=True, metavar="ID")
+            p.add_argument("--state", required=True, choices=("launching", "running", "completed", "interrupted", "blocked", "unknown"),
+                           help="launching only re-records missing intent for a prepared assignment")
+            p.add_argument("--invocation", metavar="ID", help="host session/invocation identity; required for running/completed")
+            p.add_argument("--process-start", metavar="TEXT", help="optional supplementary process start evidence")
+            p.add_argument("--interface-model", metavar="MODEL")
+            p.add_argument("--interface-effort", metavar="LEVEL")
+            p.add_argument("--exit-code", type=int, metavar="N", help="leave absent when native host does not expose it")
+            p.add_argument("--boundary-observations", required=True, metavar="TEXT")
+            p.add_argument("--reason", metavar="TEXT", help="required with --reconciled; state the host evidence")
+            p.add_argument("--reconciled", action="store_true",
+                           help="host asserts it checked this assignment's actual state (default false)")
+            p.add_argument("--absence-established", action="store_true",
+                           help="host asserts the previous invocation is actually absent; needs --reconciled and --reason; not proof (default false)")
         elif name in ("import-review", "evidence", "command"):
-            p.add_argument("--input", required=True)
+            kind = {"import-review": "review result JSON file", "evidence": "UTF-8 text file with actual output",
+                    "command": "low-level JSON input file"}[name]
+            p.add_argument("--input", required=True, metavar="FILE", help=kind)
             if name == "command":
                 p.add_argument("--entity", choices=("task", "finding"), required=True)
-                p.add_argument("--action", required=True)
+                p.add_argument("--action", required=True, choices=("resolve", "block", "activate", "cancel", "reconcile", "complete"),
+                               help="finding: resolve; task: block, activate, cancel, reconcile or complete")
         elif name == "complete":
-            p.add_argument("--evidence", action="append", required=True, help="known object covering all declared criteria/checks")
-            p.add_argument("--reason", required=True)
+            p.add_argument("--evidence", action="append", required=True, metavar="HASH",
+                           help="known object covering all declared criteria/checks; repeat")
+            p.add_argument("--reason", required=True, metavar="TEXT")
         elif name == "packet":
-            p.add_argument("--packet", required=True)
+            p.add_argument("--packet", required=True, metavar="HASH")
     return result
 
 
@@ -415,6 +483,11 @@ def main(argv=None):
                     raise ValueError("configured CLI version probe failed; no manual fallback")
                 value = {"mode": "cli", "binary": str(binary), "version": probe.stdout.strip()}
         else:
+            # Invalid flag combinations fail before any record, trace or workflow write.
+            if args.command == "observe":
+                check_observation(args)
+            elif args.command == "command":
+                check_command(args)
             backend = Backend(args)
             if args.command == "start":
                 value = start(backend, args)

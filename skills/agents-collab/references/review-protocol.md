@@ -83,9 +83,9 @@ The lead runs these steps itself. No bundled script dispatches reviewers.
    "skip permissions" options. Use only the tool and permission options the
    task permits. If a required tool is denied, report it rather than widening
    access.
-5. With `bounds.enforcement: required`, wrap the process in a supervisor that can
-   stop it at the deadline (for example a parent subprocess timeout). Check for
-   surviving child processes before any retry. Otherwise label the target advisory.
+5. Apply [assignment timing](configuration.md#assignment-timing): a required
+   deadline needs a supervisor that can stop this process; an advisory target
+   is labeled as such and does not by itself justify stopping the reviewer.
 6. Record the requested model/effort, what the CLI accepted, the process
    identity and its final state. Store the reviewer's output as that reviewer's
    initial result before showing it to anyone else.
@@ -127,7 +127,7 @@ directory and read-only reviewer settings above do not apply to writers.
    untracked work and does not revert, stash, reset, clean or commit it unless assigned.
 6. State: persist the assignment, deadline, enforcement and launch intent before
    dispatch, per [Private resume state](#private-resume-state-and-project-handoff)
-   and the configuration's assignment timing rules.
+   and [assignment timing](configuration.md#assignment-timing).
 7. Report: the writer lists changed files, checks run with results, and checks
    blocked or skipped with the reason. A blocked test is never reported as passing.
 8. Verify: the lead inspects the change against scope and runs targeted checks
@@ -186,10 +186,12 @@ Here, accepted means recorded as defined in the finding contract. Complete an
 open initial pair against its frozen identity before starting that follow-up.
 Before any result is recorded, a packet may be replaced only after reconciling
 or stopping its active invocations; keep their consumed assignment budgets.
-The still-unconsumed initial round may then restart under the revised packet.
-An interrupted dispatch may retry the identical packet within the assignment's
-remaining bound; it does not authorize an extra completed assessment or reset
-the task's limits. Expanded scope needs an explicit scope decision.
+The still-unconsumed initial round may then restart under the revised packet
+(the CLI backend is stricter; see [backend limits](backend.md#conservative-limits)).
+An interrupted dispatch may retry the identical packet as the same assignment
+([retry](configuration.md#assignment-timing)); it does not authorize an extra
+completed assessment or reset the task's limits. Expanded scope needs an
+explicit scope decision.
 
 At most one initial round plus `max_followup_rounds` is allowed per scoped cycle.
 Do not reset the counter by renaming the task or spawning replacement reviewers.
@@ -216,12 +218,13 @@ attach the returned invocation identity promptly, so a handoff cannot silently
 create a second run during the launch/receipt gap.
 
 Before retrying or resuming, reconcile the recorded invocation with the host or
-supervisor and calculate remaining time from the original deadline. Reattach or
-wait for a still-running invocation; do not launch its duplicate. If the deadline
-has passed, stop/reconcile any active invocation and report exhaustion. If its
-identity, state or remaining allowance cannot be established, report uncertainty
-and resolve the affected assignment rather than restarting its clock. Advisory
-timing does not grant automatic extensions or reset the review-round counter.
+supervisor. Reattach or wait for a still-running invocation; do not launch its
+duplicate. Retry only after the earlier invocation is actually absent, keeping
+the assignment ID and original deadline. If its identity or state cannot be
+established, report uncertainty and resolve the affected assignment rather than
+restarting its clock. Expiry handling follows
+[assignment timing](configuration.md#assignment-timing); neither policy resets
+the review-round counter.
 
 Project handoff includes resulting decisions, essential rationale, checked
 behavior, evidence limits and blockers. Keep routine personal model history in

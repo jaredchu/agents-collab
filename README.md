@@ -94,6 +94,10 @@ Read these before relying on it:
   about itself is not evidence.
 - **Fresh context is not isolation.** A fresh reviewer session with a controlled
   packet is not filesystem isolation.
+- **Advisory time is a target.** An advisory overrun is recorded and reported,
+  not a reason to stop work by itself; a required deadline needs a real
+  supervisor, which the record-only CLI cannot provide. See
+  [assignment timing](skills/agents-collab/references/configuration.md#assignment-timing).
 - **The validator checks structure only.** It does not check that a model exists,
   that you can access it, that a reasoning level is supported, permissions, or
   where records actually resolve. A profile made by the setup wizard carries the

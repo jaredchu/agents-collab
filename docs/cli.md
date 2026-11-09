@@ -34,9 +34,11 @@ location is `~/.local/bin/agents-collab`. Separate preferences in
 mode. The profile, shell PATH and project instructions are not rewritten.
 Unrelated existing targets require explicit replacement authorization.
 
-The [backend procedure](../skills/agents-collab/references/backend.md) covers
-setup, frozen packets, host dispatch, result import and completion. Helper
-subcommand help describes its flags. Low-level contracts below remain available.
+The [backend procedure](../skills/agents-collab/references/backend.md) is
+self-contained for installed skills: initial and follow-up command examples,
+observation and retry receipts, review and disposition JSON, conservative CLI
+limits and recovery after a partial helper failure. Helper subcommand help
+describes its flags. Low-level contracts below remain available.
 
 ## Validation status
 
@@ -358,12 +360,25 @@ blocked or terminal state needs an explicit `reconciled: true` receipt to change
 Invocation identity changes require recorded reconciled absence; that declaration
 does not technically establish absence. This CLI never initiates a redispatch.
 
+The skill helper's `observe` sets `reconciled` and `absence_established` only
+from explicit `--reconciled` and `--absence-established` flags, both false by
+default. Either flag needs an explicit `--reason`, absence needs reconciliation,
+and `--process-start` fills the optional field. Contradictory flags fail before
+any record mutation. A retry of the same assignment attaches the new invocation
+with both flags. That happens only after the host establishes the earlier
+invocation's absence and durably saves its own uniquely labelled pending retry
+attempt before relaunch. The CLI records neither the second launch intent nor
+absence. Without such host bookkeeping or supervision, retry stays blocked. See
+the backend procedure's retry section.
+
 The first launch UTC time and absolute advisory deadline persist through every
 observation, interruption and recovery; they never reset. A follow-up is a new
 assignment within the existing cap. Required timing blocks launch because this
 record-only CLI cannot validate a supervisor. `runtime-attestation` likewise
 blocks launch, rather than accepting an imported model assertion as proof.
-Advisory targets are not enforced deadlines. External supervision, monotonic
+Advisory targets are not enforced deadlines; the skill's
+[assignment timing](../skills/agents-collab/references/configuration.md#assignment-timing)
+defines overrun, retry and fix-assignment handling. External supervision, monotonic
 time, clock-discontinuity detection and cancellation are not implemented.
 
 ## Results and findings

@@ -68,7 +68,7 @@ to fall back elsewhere. Avoid personal/account identifiers in project outputs.
 | `review.max_followup_rounds` | Nonnegative integer after one initial round |
 | `effort_check` | `supported-control` or the stronger `runtime-attestation` requirement |
 | `access` | `existing-subscriptions` or `existing-authorized-access`; no new access or fallback |
-| `bounds.enforcement` | `required` for a supervised deadline, or `advisory` for a labeled target; binding task/project limits still apply |
+| `bounds.enforcement` | `required` for a supervised deadline, or `advisory` for a labeled target; binding task/project limits still apply ([timing](#assignment-timing)) |
 | `bounds.writer_minutes` | Positive integer, per delegated writing/implementation assignment |
 | `bounds.reviewer_minutes` | Positive integer, per reviewer assignment |
 | `bounds.review_output_words` | Positive integer, target for concise findings |
@@ -193,23 +193,58 @@ Profile settings do not relax an existing instruction requiring stronger proof.
 
 ## Assignment timing
 
-Minute values are wall-clock allowances from the assignment's first launch,
-including time spent interrupted or awaiting resume. Retries keep the original
-deadline; they do not receive a fresh allowance. A new focused follow-up is a
-separate assignment with its own budget within the existing review-round cap.
+This section is the canonical timing definition; other files link here.
 
-With `bounds.enforcement: required`, establish an available supervisor before
-launch. For example, a parent process can use a subprocess timeout to terminate
-a CLI invocation; it must also account for any surviving worker processes before
-retry. A supported harness deadline is another valid mechanism. A deadline field,
-prompt instruction or periodic manual check alone is not enforcement. If the
-transport cannot meet a required deadline, block that assignment until a compatible
-path or explicit authorized timing change exists. Do not claim that every native
-subagent interface provides this control.
+| Term | Meaning |
+| --- | --- |
+| Assignment | One writer or reviewer job with a stable ID, packet and allowance (`writer_minutes` or `reviewer_minutes`) counted in wall-clock time from its first launch |
+| Invocation | One host session/process running an assignment |
+| Retry | A new invocation of the **same** assignment after the previous invocation is reconciled and actually absent; same ID, same original deadline, no new allowance |
+| Fix assignment | A **new** writer assignment for review-driven changes, started only after every required reviewer finished the current round; it gets its own allowance |
+| Follow-up round | Review of the changed artifact by the fixed reviewer set; consumes one of `max_followup_rounds`; each reviewer gets a new assignment and allowance |
 
-With `advisory`, record and report the target as advisory, monitor where practical,
-and honor any stricter task/project requirement. Do not label such a run time-limited
-by technical enforcement. Persist the effective timing policy and supervisor with
-the invocation state described in the review protocol. The example profiles use
-advisory targets; a task/project hard deadline still requires supervision. A user
-can select required timing in the profile without changing the skill.
+Waiting for reviewers neither starts nor consumes a fix assignment. Interrupted
+or resumed time still counts against the assignment that was running. Retries,
+renamed tasks and replacement reviewers never reset the deadline or review cap.
+
+**Advisory** (`bounds.enforcement: advisory`) is a labeled target, not authority
+to stop work solely because it expired. Monitor where practical. At expiry,
+record the overrun and its reason, report it, and let the invocation continue
+cooperatively unless an explicit binding task/project limit or the user says to
+stop. Never silently convert an advisory target into a hard cutoff, and do not
+describe an advisory run as technically time-limited.
+
+**Required** (`bounds.enforcement: required`) needs a real supervisor before
+launch: for example a parent subprocess timeout that can stop a CLI invocation,
+or a supported harness deadline. A deadline field, prompt or periodic manual
+check is not enforcement, and not every native subagent interface offers one.
+At expiry the supervisor stops the invocation; the lead checks for surviving
+processes, records the outcome and reports exhaustion without retrying. If no
+supervisor is available, block that assignment until a compatible path or an
+explicit authorized timing change exists. The enabled record-only CLI backend
+cannot validate a supervisor: it refuses launch intent under required timing
+(and under `runtime-attestation`), and there is no manual fallback for that task.
+
+Worked example (advisory, `writer_minutes: 18`, `reviewer_minutes: 8`,
+`max_followup_rounds: 1`, two required reviewers):
+
+| Time | Event |
+| --- | --- |
+| 10:00 | Writer assignment `write-1` launches; target 10:18 |
+| 10:07 | Its invocation crashes. The lead confirms the old process is gone, then retries `write-1` at 10:09; target is still 10:18 |
+| 10:18 | `write-1` is still working: record and report the overrun, continue cooperatively |
+| 10:21 | `write-1` completes; the artifact is frozen and the initial review packet sealed |
+| 10:22 | Initial round: `review-a` and `review-b` launch, each targeting 10:30 |
+| 10:26 | `review-a` finishes. Waiting for `review-b` does not start a fix assignment |
+| 10:29 | `review-b` finishes; the initial round is complete |
+| 10:31 | New fix assignment `fix-1` launches for the confirmed findings; target 10:49 |
+| 10:45 | `fix-1` completes; follow-up round 1 assigns `review-c`/`review-d` to the same reviewers, targeting 10:53 |
+
+Round 1 is the last permitted follow-up here; any remaining material issue is
+reported, not reviewed again under a new task. With required timing, the
+supervisor would stop `write-1` at 10:18 and the lead would report exhaustion.
+
+Persist each assignment's ID, first launch, absolute deadline, allowance, policy
+and supervisor with its invocation state (see the review protocol's private
+resume state). The example profiles use advisory targets; a task/project hard
+deadline still requires supervision.
