@@ -1,0 +1,20 @@
+[
+  {
+    "task": "Q4",
+    "provider_response_sha256": "46326488780d53c1bf3098a3b3fc8bd90ef32eacdf341afc277ae4b12ff8df72",
+    "original_parse_status": "missing_or_invalid",
+    "prefix_characters": 48,
+    "prefix": "Analysis complete. Writing the assessment now.",
+    "operation": "Parsed the single complete JSON object after a prose preface; no content changed and no provider retry.",
+    "provider_recalled": false
+  },
+  {
+    "task": "Q5",
+    "provider_response_sha256": "b23c7d80a9ce7be6db4695df1319d582cf34ae114996caecb2ac5f0235485fac",
+    "original_parse_status": "missing_or_invalid",
+    "prefix_characters": 100,
+    "prefix": "All checks pass and the source confirms the implementation. I have enough to write the assessment.",
+    "operation": "Parsed the single complete JSON object after a prose preface; no content changed and no provider retry.",
+    "provider_recalled": false
+  }
+]

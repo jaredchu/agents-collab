@@ -1,0 +1,114 @@
+{
+  "published_before_finishing": true,
+  "captured_at": "2026-11-09T03:00:33.957643+00:00",
+  "drafts": [
+    {
+      "task": "Q1",
+      "stage": "initial",
+      "status": "completed",
+      "provider_error": false,
+      "model_usage_ids": [
+        "claude-opus-5-5"
+      ],
+      "effort_requested": "high",
+      "runtime_effort_attested": false,
+      "frozen_commit": "2138326915fcf3d6c724018d11ba473f38b6e931",
+      "frozen_tree": "96b9cc35a3cd1214ddc5800bb4c78899e105d30e",
+      "patch_sha256": "c6345b40d0aa5e6d5e25c2238369cc283e4d78afd4f7c3851e299fb47abb6459",
+      "source_manifest_sha256": "9bd2674ff2f466c1ada2de0cd6735149b16a6b1ee46722fea75552a8117efb16",
+      "wall_clock_s": 652.186,
+      "participant_history_changed": false,
+      "hidden_checks_run_before_selection": false
+    },
+    {
+      "task": "Q2",
+      "stage": "initial",
+      "status": "completed",
+      "provider_error": false,
+      "model_usage_ids": [
+        "claude-opus-5-5"
+      ],
+      "effort_requested": "high",
+      "runtime_effort_attested": false,
+      "frozen_commit": "caf65ccb97157683caf61986945ee443e75bc07c",
+      "frozen_tree": "86ccc3ed41f0ba3aedb33a6f9293d688cce1fcb1",
+      "patch_sha256": "22fe5dda3367bea8bb78c84ea09701fc96b396035a6602ca383ca9b377c44eec",
+      "source_manifest_sha256": "769342ba43bae5c0d9df3c31d2fdece84f449ef0193b21cffb5a74b599216fd9",
+      "wall_clock_s": 239.322,
+      "participant_history_changed": false,
+      "hidden_checks_run_before_selection": false
+    },
+    {
+      "task": "Q3",
+      "stage": "initial",
+      "status": "completed",
+      "provider_error": false,
+      "model_usage_ids": [
+        "claude-opus-5-5"
+      ],
+      "effort_requested": "high",
+      "runtime_effort_attested": false,
+      "frozen_commit": "93c6269cdf7cb4aefe17dada0f35c5f6573a04ac",
+      "frozen_tree": "8e94a782891e2a6b81ade85bdddee4a6e62114ec",
+      "patch_sha256": "53632ddd119ce3f4176b044f4b77bc78882df48a5a26b36b098f00ae3c2b79b0",
+      "source_manifest_sha256": "767a1a5ec8eadf243c291e928526688be438cce3d944ea99ee58b138d6bd831d",
+      "wall_clock_s": 466.139,
+      "participant_history_changed": false,
+      "hidden_checks_run_before_selection": false
+    },
+    {
+      "task": "Q4",
+      "stage": "initial",
+      "status": "completed",
+      "provider_error": false,
+      "model_usage_ids": [
+        "claude-opus-5-5"
+      ],
+      "effort_requested": "high",
+      "runtime_effort_attested": false,
+      "frozen_commit": "c640d92eed6f1502ba37830b518e1322547ce39e",
+      "frozen_tree": "32d36f73713aa3bf5a403cc330176b3c13e7865d",
+      "patch_sha256": "019ca4a926dae431d9aa59da0a21f23788f1025f35b3ff6b6860c275591cf0d5",
+      "source_manifest_sha256": "293fbf93ed07487e2df7bc9ffd3da56626d91c0424c683f0450c789440cc981f",
+      "wall_clock_s": 342.537,
+      "participant_history_changed": false,
+      "hidden_checks_run_before_selection": false
+    },
+    {
+      "task": "Q5",
+      "stage": "initial",
+      "status": "completed",
+      "provider_error": false,
+      "model_usage_ids": [
+        "claude-opus-5-5"
+      ],
+      "effort_requested": "high",
+      "runtime_effort_attested": false,
+      "frozen_commit": "a2f3db51ddcf8bc3ddcf4372354e52bbcc42e976",
+      "frozen_tree": "7e469bbf588d13408b87417b2b2e8ddcfe3321ea",
+      "patch_sha256": "cad0ece36c8107ef5f4d1c8689199436ef905210dcb3b6613b2b50231d2cf020",
+      "source_manifest_sha256": "2be3b875e130d6953dc61879569e64e07831bb0f3afe1fb079c788f73fd04050",
+      "wall_clock_s": 635.011,
+      "participant_history_changed": false,
+      "hidden_checks_run_before_selection": false
+    },
+    {
+      "task": "Q6",
+      "stage": "initial",
+      "status": "completed",
+      "provider_error": false,
+      "model_usage_ids": [
+        "claude-opus-5-5"
+      ],
+      "effort_requested": "high",
+      "runtime_effort_attested": false,
+      "frozen_commit": "fee79f9752b8e8604dcfef02cb8204f5f6bff6ef",
+      "frozen_tree": "b25576b34a629fc8465c05f836573d558c2fdd39",
+      "patch_sha256": "987a65fa234be7e24c413617091cbb38ae83fd1fb2fbd4850c00c0f5d2eed744",
+      "source_manifest_sha256": "bc79cac3fd32f0908dd0dec47c67854587701adf8deba7178ffc6abc01a05d56",
+      "wall_clock_s": 360.059,
+      "participant_history_changed": false,
+      "hidden_checks_run_before_selection": false
+    }
+  ]
+}

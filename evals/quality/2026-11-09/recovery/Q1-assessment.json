@@ -1,0 +1,69 @@
+{
+  "assessments": [
+    {
+      "artifact_id": "artifact-873c5026c1eafccd",
+      "hidden_groups_confirmed": [],
+      "hidden_check_disputes": [],
+      "group_merges": [],
+      "additional_findings": [
+        {
+          "id": "q1-note-empty-human-message",
+          "file_line": "src/display.rs:160-178 via src/main.rs:733",
+          "severity": "note",
+          "violated_criterion": "none strictly; criterion 4 wording only",
+          "failure_scenario": "Human-mode `list --state failed` with no matching jobs prints the pre-existing empty-table text 'No active jobs.' plus 'Use --all to view finished history.' The message does not mention the filter, so it can read as if no jobs exist at all. Criterion 4 asks for unchanged format restricted to matching jobs, which this satisfies; it is a wording nuance, not a failure.",
+          "source_evidence": "render() chooses the empty message purely from records.is_empty() and `all`; visible_jobs filters before print_table, so a filtered-to-empty list hits the same branch.",
+          "proposed_reproducer": "Seed one exited record; run `proclease --state-dir D list --state failed` (human mode); observe 'No active jobs.'",
+          "support_class": "conclusive_code_analysis"
+        },
+        {
+          "id": "q1-note-test-wallclock-margin",
+          "file_line": "tests/lifecycle.rs (second new test: seeds recent failures at now-100ms, observed_stopped uses template guardian_pid)",
+          "severity": "note",
+          "violated_criterion": "common acceptance: tests deterministic (potential only)",
+          "failure_scenario": "The large filter test seeds finished_at_ms = now-100ms and then performs roughly 35 CLI invocations (each runs prune, scans and probes three active records with a non-existent ctl.sock, which fails immediately). If the whole sequence exceeded 30 s on a very slow host, the five-recent-window assertions would fail. Separately, `observed_stopped` relies on the finished template's guardian pgid having no live members; a reused pgid would flip its displayed state. Both are improbable; the supplied test run passed.",
+          "source_evidence": "select_visible window is `now - time < 30_000` (src/main.rs:374); store.observed_record_until probes ctl.sock then checks group_is_absent(guardian_pid) (src/store.rs:441-456). Existing tests already use the same template/guardian pattern (tests/lifecycle.rs:1661-1686), so this is consistent with repository practice.",
+          "proposed_reproducer": "Run `cargo test list_state_filter_matches_displayed_state` under heavy CPU contention and check for window-related assertion failures; not expected to fail in normal conditions.",
+          "support_class": "unconfirmed"
+        }
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Implementation is minimal and localized: `State` derives clap::ValueEnum with snake_case renaming so the CLI names are the exact JSON spellings by construction, and filtering is one `retain` inserted in the shared visible_jobs helper after store.list() observation and before select_visible, with watch passing an empty slice. Help and README are accurate. Tests are deterministic and seeded, but the second test is a single ~270-line monolith covering criteria 2-6 with a small wall-clock margin, which is why this is not a 4.",
+        "evidence": "src/model.rs:47-59 (ValueEnum + value(rename_all)); src/main.rs:119-127 (arg), 337-353 (visible_jobs), 820 (watch passes &[]); README.md:79, 335-347; tests/lifecycle.rs new tests after line 2967."
+      },
+      "review_items": [
+        {
+          "item": "help text values (7)",
+          "status": "pass",
+          "support": "src/main.rs:119-127 uses value_enum on Vec<State>; clap derive emits '[possible values: starting, running, ...]' from the snake_case-renamed enum (src/model.rs:47-59). The new test asserts the exact nine-name possible-values string in `list --help` output and passed."
+        },
+        {
+          "item": "README (7)",
+          "status": "pass",
+          "support": "README.md:79 adds a usage line; README.md:335-347 lists the nine exact values, states that repetition ORs, that comma lists/aliases/case variants are rejected, that matching is on the displayed state (running with unreachable supervisor shown as unknown), that filtering precedes the recent window, and that it only reads."
+        },
+        {
+          "item": "test coverage of 1-6 (8)",
+          "status": "pass",
+          "support": "tests/lifecycle.rs: `list_state_filter_accepts_exactly_the_json_state_names` covers criterion 1 (nine names accepted, 12 invalid forms rejected nonzero with empty stdout in JSON and human modes) and help text. `list_state_filter_matches_displayed_state_before_the_recent_window_and_only_reads` covers 2 (running->unknown, stopping->stopped observed states), 3 (five newest matching failures shown by default while unfiltered window holds only exited; --all shows all nine), 4 (order, envelope keys, warnings for corrupt record, --resources, human output), 5 (unfiltered list and watch --once unchanged; watch rejects --state), 6 (inode/mtime/content snapshot unchanged after filtered calls; opportunistic 24h collection still runs). All records are seeded; the only process started is the template `/usr/bin/true` run, which is waited to completion and removed."
+        },
+        {
+          "item": "common acceptance",
+          "status": "pass",
+          "support": "Supplied checks: fmt, clippy, test and build all exit 0; 14/14 objective checks pass; cleanup reports no leftover jobs. Patch touches only README.md, src/main.rs, src/model.rs, tests/lifecycle.rs; Cargo.toml/Cargo.lock untouched and clap 4 with derive feature was already a dependency (Cargo.toml:25). Fixture honours PROCLEASE_TEST_ROOT (tests/lifecycle.rs:23-28). Skill, website, release files unchanged."
+        }
+      ],
+      "limits": [
+        "No commands were executed; conclusions rely on the supplied check results plus static reading of the diff and surrounding source.",
+        "Case-sensitive rejection of enum values relies on clap 4 default behaviour (no ignore_case set, none found in src); corroborated by the passing q1.reject check rather than by direct execution.",
+        "The wall-clock and pgid-reuse concerns in the test are theoretical; the supplied test run passed and no flakiness was observed."
+      ]
+    }
+  ],
+  "overall_limits": [
+    "Single artifact in packet; no cross-artifact comparison possible.",
+    "Assessment is static. Hidden-check pass results were taken as supplied and were consistent with the code paths inspected (store.list observes before visible_jobs filters; select_visible runs after the filter; warnings are untouched).",
+    "Review stayed within the packet directory and the artifact source tree; website, scripts and skill files were only checked for absence of changes via the supplied diff."
+  ]
+}

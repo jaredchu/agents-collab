@@ -1,0 +1,26 @@
+{
+  "status": "preflight only; no participant outcomes",
+  "source_commit": "37975b5245fcb5cac7b16fac74efd01269dff5d8",
+  "base_checks": {
+    "fmt": 0,
+    "clippy": 0,
+    "test": 0
+  },
+  "base_tests": 62,
+  "grader_checks_per_full_six_task_calibration": 73,
+  "calibration_repetitions": 2,
+  "expected_status_mismatches": 0,
+  "harness_errors": 0,
+  "offline_recorder_tests": 4,
+  "wrong_exit_oracle": "safe refusal exit2 passes privacy/refusal and fails only minor status/envelope checks",
+  "model_access": {
+    "writer": "Opus5.5High subscription CLI receipt observed",
+    "reviewer": "AstraHigh native review interface accepted",
+    "blind_grader": "Fable5.1High subscription CLI receipt observed",
+    "lead": "Sol6.1High native interface previously accepted"
+  },
+  "runtime_effort_attestation": false,
+  "positive_reference_implementation": "not available; oracle calibrated against base plus targeted error/capture probes",
+  "exact_case_cleanup_scope_probe": "pass; sibling registry untouched",
+  "protocol_review": "one initial and one focused follow-up, original focused deadline preserved after pre-result packet amendment"
+}

@@ -1,0 +1,22 @@
+{
+  "renderer": "marked",
+  "mode": "gfm:false",
+  "rows": [
+    {
+      "artifact_id": "artifact-8ff7b1a669132830",
+      "metadata_paragraph_inside_list_item": true
+    },
+    {
+      "artifact_id": "artifact-0aecaccf6ee1ccb7",
+      "metadata_paragraph_inside_list_item": false
+    },
+    {
+      "artifact_id": "artifact-c6082ee747080ee9",
+      "metadata_paragraph_inside_list_item": true
+    },
+    {
+      "artifact_id": "artifact-cfcb64f2e25e2ca4",
+      "metadata_paragraph_inside_list_item": true
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "assessments": [
+    {
+      "artifact_id": "artifact-84789bf28a93a13b",
+      "hidden_groups_confirmed": [],
+      "hidden_check_disputes": [],
+      "group_merges": [],
+      "additional_findings": [
+        {
+          "id": "q3-readme-readonly-wording",
+          "location": "README.md:344",
+          "severity": "note",
+          "criterion": "7 (README documents the option and ordering rules); 6 (no renewal, signal or record write)",
+          "failure_scenario": "The README sentence says only that sorting 'never renews a lease'; it does not mention that it also never signals or writes records. Ordering rules themselves are documented fully, so this is a wording gap, not a missing requirement.",
+          "evidence": "README.md:343-345 '`list` itself, sorting never renews a lease. `watch` has no `--sort` option.' Criterion 7 only requires option and ordering rules, which are present at README.md:335-344.",
+          "reproducer": "Read README.md lines 335-345 and compare with criterion 6 wording.",
+          "support": "unconfirmed"
+        },
+        {
+          "id": "q3-window-test-wallclock",
+          "location": "tests/lifecycle.rs:479-520",
+          "severity": "note",
+          "criterion": "common acceptance: tests deterministic",
+          "failure_scenario": "The default-window integration test seeds finish times relative to a `now` captured before seeding and expects IDs 1..5 to stay inside the 30 s recent window across six later `list` invocations. If the test process is stalled for about 30 s between seeding and the final list call, the expected window changes and the test fails. This mirrors the approach of the pre-existing recent-window fixture and passed in the supplied run.",
+          "evidence": "tests/lifecycle.rs:479-484 seeds `Some(now - i)`; src/main.rs:396 filters `now - time < 30_000` using the CLI's own clock at list time.",
+          "reproducer": "Insert a 30 s sleep between seeding and the `list --sort` calls; expected IDs 1..5 drop out of the default window.",
+          "support": "unconfirmed"
+        }
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "The change is small and localized: a `ListSort` value enum, a shared `list_group` helper that both the unchanged default ordering and the new `order_jobs` reuse, and a three-line hook in the `List` dispatch applied after selection so the window cannot change. Comparator semantics are total (group, time, ID) and documented. Tests exist at two layers (unit tests on `order_jobs`/`select_visible`/clap parsing, plus CLI integration tests with seeded records, human output, `--resources`, read-only verification and invalid values). Docs are accurate. Held back from 4 by some redundancy between the unit and integration layers, a second `impl Fixture` block inserted mid-file rather than extending the main fixture impl, and the 30 s wall-clock dependence in one integration test.",
+        "evidence": "src/main.rs:348-408 (enum, list_group, order_jobs, select_visible refactor), src/main.rs:738-762 (dispatch), src/main.rs:985-1150 (unit tests), tests/lifecycle.rs:309-550 (fixture helpers and integration tests), README.md:79 and 335-345."
+      },
+      "review_items": [
+        {
+          "item": "README (7)",
+          "status": "pass",
+          "evidence": "README.md:79 adds `proclease list --all --sort finished` to the usage block; README.md:335-345 documents accepted values, that it only reorders and never changes selection, the active/unverified-first rule, creation-ascending vs finish-descending for finished jobs, ID tie-break, read-only behaviour and that `watch` has no `--sort`."
+        },
+        {
+          "item": "test coverage (8)",
+          "status": "pass",
+          "evidence": "Unit tests src/main.rs:1019-1057 cover both orders with creation tie (IDs c/d/e at created 20) and finish tie (e/f at 900), active and unverified groups including an `unknown` job with a recent finish time; src/main.rs:1060-1105 covers the default window with `--sort` via `select_visible` then `order_jobs`; src/main.rs:1107-1127 asserts unchanged order without `--sort`; src/main.rs:1130-1154 covers invalid values and `watch --sort`. Integration tests tests/lifecycle.rs:369-472 (seeded records, live active jobs, both orders, ties a1/a3 and a3/a4, human and JSON order, `--resources`, byte-identical records, no lease renewal) and tests/lifecycle.rs:475-550 (default window with both sorts, `--all` set equality, eight invalid values in JSON and human mode, `watch --once --sort` rejected)."
+        },
+        {
+          "item": "--resources combination (5, code review)",
+          "status": "pass",
+          "evidence": "src/main.rs:743-751 applies `order_jobs` to the selected vector before `resources::Sampler::snapshot(&jobs)` and before `job_view` builds the JSON array from the same vector, so metrics and order are consistent; human path src/main.rs:758 uses the same vector. Verified by tests/lifecycle.rs:444-448 asserting identical ID order and envelope keys with and without `--resources`, and hidden check q3.envelope passes."
+        },
+        {
+          "item": "common acceptance",
+          "status": "pass",
+          "evidence": "Supplied checks: fmt, clippy, test and build all exit 0, no timeouts, fixture cleanup complete with no unresolved IDs. The patch touches only README.md, src/main.rs and tests/lifecycle.rs; Cargo.toml and Cargo.lock are not in the diff and no new crate is imported (clap `ValueEnum` is already a dependency feature). Tests use the existing `Fixture::new` which honours PROCLEASE_TEST_ROOT (tests/lifecycle.rs:23-28), and the existing `Drop` (tests/lifecycle.rs:198-254) stops every listed job and waits for supervisors, covering the two `/bin/sleep 30` jobs started at tests/lifecycle.rs:375-384."
+        }
+      ],
+      "limits": [
+        "No commands were executed; conclusions rest on the supplied check results and static reading of the diff and surrounding source.",
+        "Hidden checks all pass, which does not prove absence of other defects; I found no code path that violates criteria 1-8.",
+        "Whether clap's `ValueEnum` feature was already enabled in Cargo.toml was inferred from the passing build and the unchanged Cargo files, not verified by reading Cargo.toml.",
+        "The wall-clock note on the default-window test is a theoretical brittleness; it passed in the supplied run and follows the pattern of the existing recent-window fixture."
+      ]
+    }
+  ],
+  "overall_limits": [
+    "Single artifact in the packet; no cross-artifact comparison was possible.",
+    "Assessment was limited to the packet directory and the artifact source tree as instructed."
+  ]
+}

@@ -151,15 +151,29 @@ Activation/discovery remains the concrete unresolved product issue; that
 study’s full usefulness comparison remains unperformed. Installation alone still provides
 no dependable automatic-routing guarantee.
 
-## Unfinished study withdrawn (9 November 2026)
+## Quality pilot: withdrawal and completed recovery (9 November 2026)
 
-At the owner's request, the recent unfinished study was removed from the current
-public repository files and website. Required grading was interrupted by an
-access limit; this does not constitute experiment completion or a final result.
-Frozen work and attempt records remain private for possible resumption. Earlier
-experiments remain published. Normal Git history retains the prior publication;
-it was not rewritten. Follow the [interruption policy](../CONTRIBUTING.md#interrupted-experiments):
-keep final results unpublished until required stages are complete.
+The unfinished study was removed from current public files at the owner's
+request after a subscription interruption. An access limit did not constitute
+completion. After access returned, a reviewed recovery amendment allowed only
+the six missing anonymous assessments to resume, with new private labels,
+restricted file tools and prior call time subtracted from grading allowances.
+All source outputs and original criteria stayed frozen. Earlier failed attempts,
+withdrawn operator observations and the recovery are retained in the
+[completed report](../evals/quality/2026-11-09/report.md).
+
+Both review paths fixed a reproduced no-option script regression missed by
+self-check. The frozen primary rule gives B/A and C/A two wins; C/B has one
+minor-test win and does not establish an added skill advantage. A sensitivity
+excluding untargeted existing-test failures leaves only one initially material
+draft, below the frozen floor, so the primary review advantage is not robust.
+Q4's contradictory runtime wording remains disputed; two concrete test weaknesses
+count minor. The final report supersedes earlier certainty about a quarantine
+safety defect, preserves original failures and maintains actual grader ratings.
+
+This does not establish general gains, reliable implicit activation or optimized
+communication. Follow the [interruption policy](../CONTRIBUTING.md#interrupted-experiments)
+for future blocked work: final results wait for all required stages.
 
 ## Progress
 
@@ -183,3 +197,6 @@ keep final results unpublished until required stages are complete.
 - [x] Execute the routing gate and separately labelled explicit diagnostics.
 - [x] Record the failed gate and all 36 comparison runs as not started.
 - [ ] Establish reliable implicit activation before attempting the cancelled usefulness comparison.
+
+- [x] Complete recovered quality grading and evidence reconciliation without participant rerolls.
+- [x] Publish primary criteria, sensitivity, corrected dispositions and interruption limits.

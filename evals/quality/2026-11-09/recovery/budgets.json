@@ -1,0 +1,32 @@
+{
+  "Q1": {
+    "prior_elapsed_s": 38.102561,
+    "remaining_outer_seconds": 681.897439,
+    "remaining_advisory_seconds": 441.897439
+  },
+  "Q2": {
+    "prior_elapsed_s": 46.982497,
+    "remaining_outer_seconds": 673.017503,
+    "remaining_advisory_seconds": 433.017503
+  },
+  "Q3": {
+    "prior_elapsed_s": 39.126702,
+    "remaining_outer_seconds": 680.873298,
+    "remaining_advisory_seconds": 440.873298
+  },
+  "Q4": {
+    "prior_elapsed_s": 2.122582,
+    "remaining_outer_seconds": 717.877418,
+    "remaining_advisory_seconds": 477.877418
+  },
+  "Q5": {
+    "prior_elapsed_s": 1.860954,
+    "remaining_outer_seconds": 718.139046,
+    "remaining_advisory_seconds": 478.139046
+  },
+  "Q6": {
+    "prior_elapsed_s": 1.849496,
+    "remaining_outer_seconds": 718.150504,
+    "remaining_advisory_seconds": 478.150504
+  }
+}

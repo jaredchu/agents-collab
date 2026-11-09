@@ -1,0 +1,505 @@
+diff --git a/README.md b/README.md
+index 80d999b..1e51f04 100644
+--- a/README.md
++++ b/README.md
+@@ -82,6 +82,7 @@ proclease stop JOB_ID
+ proclease stop --all --task preview --dry-run
+ proclease watch
+ proclease prune --dry-run
++proclease prune --keep 10
+ ```
+ 
+ The table shows CPU/RSS usage, compact countdowns, state colors, project/task
+@@ -324,6 +325,17 @@ collect them now. Collection deletes their metadata and logs. Retry keys only
+ deduplicate while their records remain: a purged key can start a new job. Reconcile
+ current jobs before retrying an old request. Interrupted deletions are retried
+ without exposing partial records as launchable jobs.
++`proclease prune --keep N` (N from 0 to 100) applies a smaller count limit for
++that invocation only, for example to tidy a crowded test state directory: of the
++finished jobs normal retention may collect, the newest N by finish time are kept
++and older ones are removed. Jobs that finished 24 hours ago or earlier are still
++removed whatever N is. `--keep` never collects more kinds of jobs: active,
++unverified, timestamp-less and possibly supervised jobs are preserved and do not
++count toward N. During a bulk stop it is deferred and deletes nothing, not even
++interrupted deletions, so its preview then lists no candidates either. Combine it
++with `--dry-run` to preview the same candidates; `prune --json` reports the limit
++used as `max_finished`. The setting is not saved; later collection uses the
++normal limits. Other values are rejected before anything is deleted.
+ Normal `list` and `watch` show active and unverified jobs, plus up to **five newest
+ finished jobs for 30 seconds** after completion. Then they leave the everyday
+ view. Records without verified completion timestamps remain visible. Use
+diff --git a/src/main.rs b/src/main.rs
+index becc88b..091fe5c 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -121,6 +121,15 @@ enum Commands {
+     Prune {
+         #[arg(long, help = "Show what would be removed without deleting anything")]
+         dry_run: bool,
++        #[arg(
++            long,
++            value_name = "N",
++            value_parser = clap::value_parser!(u8).range(0..=100),
++            help = "For this invocation only, keep the newest N (0-100) collectable finished \
++                    jobs instead of 100; the 24h limit still applies and protected jobs are \
++                    never collected"
++        )]
++        keep: Option<u8>,
+     },
+     /// Print bounded, terminal-safe output.
+     Logs {
+@@ -665,13 +674,20 @@ fn dispatch(cli: &Cli) -> Result<i32> {
+             };
+             return print_readiness(&store, record, reused, &spec, cli.json, cli.color);
+         }
+-        Commands::Prune { dry_run } => {
+-            let report = store.prune(*dry_run, None)?;
++        Commands::Prune { dry_run, keep } => {
++            // Range-checked by the parser before the state directory is opened.
++            // Any explicit value, 100 included, uses override semantics; the
++            // absent flag keeps default collection unchanged.
++            let max_finished = keep.map_or(store::HISTORY_MAX_FINISHED, usize::from);
++            let report = match keep {
++                Some(_) => store.prune_explicit(*dry_run, max_finished)?,
++                None => store.prune(*dry_run, None)?,
++            };
+             if cli.json {
+                 println!(
+                     "{}",
+                     json!({"schema_version": SCHEMA_VERSION, "dry_run": dry_run,
+-                    "max_age_hours": 24, "max_finished": store::HISTORY_MAX_FINISHED,
++                    "max_age_hours": 24, "max_finished": max_finished,
+                     "deferred": report.deferred, "candidates": report.candidates,
+                     "removed": report.removed, "warnings": report.warnings})
+                 );
+diff --git a/src/store.rs b/src/store.rs
+index ebebb32..17e9edd 100644
+--- a/src/store.rs
++++ b/src/store.rs
+@@ -246,6 +246,33 @@ impl Store {
+     /// collected while no bulk stop holds retention protection; otherwise the
+     /// report is marked deferred and a later prune collects them.
+     pub fn prune_locked(&self, dry_run: bool, completed_id: Option<&str>) -> Result<PruneReport> {
++        self.prune_locked_with(dry_run, completed_id, None)
++    }
++
++    /// An explicit `prune --keep N`: the count limit is `max_finished` (at
++    /// most `HISTORY_MAX_FINISHED`) for this call only; nothing is persisted.
++    /// Unlike default collection, an explicit override deletes nothing at all,
++    /// quarantine retries included, while a bulk stop holds retention
++    /// protection, and its dry run then reports the same empty candidates.
++    pub fn prune_explicit(&self, dry_run: bool, max_finished: usize) -> Result<PruneReport> {
++        if max_finished > HISTORY_MAX_FINISHED {
++            bail!("history count limit cannot exceed {HISTORY_MAX_FINISHED}");
++        }
++        let _lock = self.lock()?;
++        self.prune_locked_with(dry_run, None, Some(max_finished))
++    }
++
++    /// Of the collectable finished jobs, the newest `max_finished` (default
++    /// `HISTORY_MAX_FINISHED`) younger than the age limit are kept; protected
++    /// jobs are never counted or collected. `explicit_keep` is set only by an
++    /// explicit override and also gates quarantine retries on permission.
++    fn prune_locked_with(
++        &self,
++        dry_run: bool,
++        completed_id: Option<&str>,
++        explicit_keep: Option<usize>,
++    ) -> Result<PruneReport> {
++        let max_finished = explicit_keep.unwrap_or(HISTORY_MAX_FINISHED);
+         let mut report = PruneReport::default();
+         // Held until return. Protection is acquired only under the root lock,
+         // which this caller holds, so it cannot begin during collection.
+@@ -263,6 +290,10 @@ impl Store {
+                 None
+             }
+         };
++        if report.deferred && explicit_keep.is_some() {
++            // Previews and real runs alike: no candidates, nothing deleted.
++            return Ok(report);
++        }
+         let mut finished = Vec::new();
+         for entry in fs::read_dir(&self.root)? {
+             let entry = entry?;
+@@ -336,7 +367,7 @@ impl Store {
+         if report.deferred && !dry_run {
+             return Ok(report);
+         }
+-        let excess = finished.len().saturating_sub(HISTORY_MAX_FINISHED);
++        let excess = finished.len().saturating_sub(max_finished);
+         let now = crate::model::now_ms();
+         for (index, (time, id)) in finished.into_iter().enumerate() {
+             if index >= excess && now.saturating_sub(time) < HISTORY_MAX_AGE_MS {
+diff --git a/tests/lifecycle.rs b/tests/lifecycle.rs
+index 5695eac..79280fd 100644
+--- a/tests/lifecycle.rs
++++ b/tests/lifecycle.rs
+@@ -2474,6 +2474,368 @@ fn retention_protection_is_crash_released_and_never_blocks_launches() {
+     assert_eq!(job["state"], "stopped");
+ }
+ 
++// One-off retention count (`prune --keep N`). Seeded records are launches that
++// never had a supervisor, so collection needs no process verification.
++
++const DAY_MS: u64 = 24 * 60 * 60 * 1000;
++
++/// A failed launch whose keeper was never spawned (no keeper, guardian or
++/// command PID), finished at `finished`.
++fn unsupervised_failure(id: &str, finished: Option<u64>) -> (Value, Value) {
++    let created = finished.unwrap_or_else(now_ms).saturating_sub(1_000);
++    let record = serde_json::json!({
++        "schema_version": 1, "id": id, "argv": ["/proclease-does-not-exist"],
++        "cwd": "/", "owner": "test", "task": null, "name": null, "url": null,
++        "created_at_ms": created, "expires_at_ms": created + 60_000,
++        "state": "failed", "reason": "launch_failed", "keeper_pid": 0,
++        "guardian_pid": null, "command_pid": null, "exit_code": null,
++        "finished_at_ms": finished, "log_limit_bytes": 1_048_576,
++        "logs_truncated": false, "error": "cannot start supervisor: seeded",
++    });
++    let launch = serde_json::json!({
++        "id": id, "argv": ["/proclease-does-not-exist"], "cwd": "/",
++        "owner": "test", "task": null, "name": null, "url": null, "key": null,
++        "fingerprint": "v2:seeded", "created_at_ms": created,
++        "expires_at_ms": created + 60_000, "grace_ms": 100,
++        "log_limit_bytes": 1_048_576,
++    });
++    (record, launch)
++}
++
++impl Fixture {
++    fn seed_record(&self, record: &Value, launch: &Value) {
++        use std::os::unix::fs::DirBuilderExt;
++        if !self.state.exists() {
++            fs::DirBuilder::new()
++                .recursive(true)
++                .mode(0o700)
++                .create(&self.state)
++                .unwrap();
++        }
++        self.seed_files(
++            record["id"].as_str().unwrap(),
++            &[
++                ("record.json", serde_json::to_vec(record).unwrap()),
++                ("launch.json", serde_json::to_vec(launch).unwrap()),
++                ("output.log", b"retained test output".to_vec()),
++            ],
++        );
++    }
++    fn seed_collectable(&self, id: &str, finished: u64) {
++        let (record, launch) = unsupervised_failure(id, Some(finished));
++        self.seed_record(&record, &launch);
++    }
++    fn present(&self, id: &str) -> bool {
++        self.state.join(id).exists()
++    }
++}
++
++fn ids(value: &Value) -> Vec<String> {
++    value
++        .as_array()
++        .unwrap()
++        .iter()
++        .map(|id| id.as_str().unwrap().to_owned())
++        .collect()
++}
++
++#[test]
++fn prune_keep_replaces_the_count_limit_for_one_invocation_only() {
++    let fixture = Fixture::new();
++    let now = now_ms();
++    // Exactly 24h old when seeded, so at least 24h old when collected.
++    fixture.seed_collectable("b00000000001", now - DAY_MS);
++    // a3 and a4 tie on finish time; the lower ID is older, as for default
++    // retention.
++    for (id, age) in [
++        ("a00000000001", 1_000),
++        ("a00000000002", 2_000),
++        ("a00000000003", 3_000),
++        ("a00000000004", 3_000),
++        ("a00000000005", 5_000),
++    ] {
++        fixture.seed_collectable(id, now - age);
++    }
++    let oldest_first = [
++        "b00000000001",
++        "a00000000005",
++        "a00000000003",
++        "a00000000004",
++        "a00000000002",
++        "a00000000001",
++    ];
++
++    // At or above the collectable count only the 24h rule applies.
++    for keep in ["100", "6", "5"] {
++        let preview = fixture.call(&["prune", "--dry-run", "--keep", keep]);
++        assert_eq!(ids(&preview["candidates"]), ["b00000000001"], "{keep}");
++        assert_eq!(preview["max_finished"], keep.parse::<u64>().unwrap());
++        assert_eq!(preview["max_age_hours"], 24);
++        assert_eq!(preview["dry_run"], true);
++        assert_eq!(preview["deferred"], false);
++        assert_eq!(preview["removed"], serde_json::json!([]));
++    }
++    let preview = fixture.call(&["prune", "--dry-run", "--keep", "3"]);
++    assert_eq!(ids(&preview["candidates"]), &oldest_first[..3]);
++    let preview = fixture.call(&["prune", "--dry-run", "--keep", "0"]);
++    assert_eq!(ids(&preview["candidates"]), oldest_first);
++    assert!(oldest_first.iter().all(|id| fixture.present(id)));
++
++    // Human output keeps its form.
++    let output = fixture
++        .human(&["prune", "--dry-run", "--keep", "3"])
++        .output()
++        .unwrap();
++    assert!(output.status.success());
++    assert_eq!(
++        String::from_utf8_lossy(&output.stdout),
++        "Would remove 3 finished jobs.\nb00000000001\na00000000005\na00000000003\n"
++    );
++    assert!(oldest_first.iter().all(|id| fixture.present(id)));
++
++    // The dry run reports exactly what the real run removes.
++    let preview = fixture.call(&["prune", "--dry-run", "--keep", "3"]);
++    let report = fixture.call(&["prune", "--keep", "3"]);
++    assert_eq!(report["dry_run"], false);
++    assert_eq!(report["max_finished"], 3);
++    assert_eq!(report["candidates"], preview["candidates"]);
++    assert_eq!(report["removed"], preview["candidates"]);
++    for (index, id) in oldest_first.iter().enumerate() {
++        assert_eq!(fixture.present(id), index >= 3, "{id}");
++    }
++
++    // Nothing persists: every later collection uses the normal limits.
++    let report = fixture.call(&["prune"]);
++    assert_eq!(report["max_finished"], 100);
++    assert_eq!(report["removed"], serde_json::json!([]));
++    fixture.call(&["list"]);
++    fixture.call(&["list", "--all"]);
++    fixture.call(&["watch", "--once", "--all"]);
++    let run = fixture.call(&["run", "--grace", "100ms", "--", "/usr/bin/true"]);
++    let id = run["job"]["id"].as_str().unwrap().to_owned();
++    let done = fixture.terminal(&id);
++    // The keeper collects history after recording completion; wait for it.
++    let keeper = done["keeper_pid"].as_u64().unwrap() as i32;
++    wait(|| {
++        (unsafe { libc::kill(keeper, 0) } == -1
++            && std::io::Error::last_os_error().raw_os_error() == Some(libc::ESRCH))
++        .then_some(())
++    });
++    for id in &oldest_first[3..] {
++        assert!(fixture.present(id), "{id} collected after --keep ended");
++    }
++    assert!(fixture.present(&id));
++}
++
++#[test]
++fn prune_keep_100_matches_default_retention_beyond_the_count() {
++    let fixture = Fixture::new();
++    let now = now_ms();
++    fixture.seed_collectable("b00000000001", now - DAY_MS);
++    let recent: Vec<String> = (1..=102).map(|i| format!("{i:012x}")).collect();
++    for (index, id) in recent.iter().enumerate() {
++        fixture.seed_collectable(id, now - 1_000 - index as u64);
++    }
++    let mut expected = vec!["b00000000001".to_owned()];
++    expected.extend([recent[101].clone(), recent[100].clone()]);
++    let default = fixture.call(&["prune", "--dry-run"]);
++    let keep = fixture.call(&["prune", "--dry-run", "--keep", "100"]);
++    assert_eq!(ids(&default["candidates"]), expected);
++    assert_eq!(keep["candidates"], default["candidates"]);
++    assert_eq!(keep["max_finished"], 100);
++    assert_eq!(default["max_finished"], 100);
++    let report = fixture.call(&["prune", "--keep", "100"]);
++    assert_eq!(ids(&report["removed"]), expected);
++    for id in &recent[..100] {
++        assert!(fixture.present(id), "{id}");
++    }
++    assert!(!fixture.present(&recent[100]) && !fixture.present(&recent[101]));
++}
++
++#[test]
++fn prune_keep_never_collects_or_counts_protected_jobs() {
++    let fixture = Fixture::new();
++    let now = now_ms();
++    fixture.seed_collectable("c00000000001", now - 1_000);
++    fixture.seed_collectable("c00000000002", now - 2_000);
++
++    let (base, launch) = unsupervised_failure("000000000000", Some(1));
++    let mut classes: Vec<(&str, Value)> = Vec::new();
++    for state in ["starting", "running", "stopping", "unknown"] {
++        let mut record = base.clone();
++        record["state"] = state.into();
++        record["reason"] = Value::Null;
++        classes.push((state, record));
++    }
++    // Finished, but a supervisor process or group is observably alive.
++    let mut live_keeper = base.clone();
++    live_keeper["reason"] = "command_exit".into();
++    live_keeper["exit_code"] = 1.into();
++    live_keeper["keeper_pid"] = std::process::id().into();
++    classes.push(("live keeper", live_keeper));
++    let mut live_group = base.clone();
++    live_group["guardian_pid"] = unsafe { libc::getpgrp() }.into();
++    classes.push(("live guardian group", live_group));
++    // Each protected class is seeded once aged past 24h and once as the
++    // newest history, so it can neither be collected nor fill the count.
++    let mut protected = Vec::new();
++    for (index, (class, seeded)) in classes.iter().enumerate() {
++        for (prefix, finished) in [("e", 1), ("f", now)] {
++            let id = format!("{prefix}{index:011x}");
++            let mut record = seeded.clone();
++            record["id"] = id.clone().into();
++            record["finished_at_ms"] = finished.into();
++            let mut launch = launch.clone();
++            launch["id"] = id.clone().into();
++            fixture.seed_record(&record, &launch);
++            protected.push((id, *class));
++        }
++    }
++    let (missing, launch) = unsupervised_failure("d00000000001", None);
++    fixture.seed_record(&missing, &launch);
++    protected.push(("d00000000001".into(), "no finish time"));
++
++    let preview = fixture.call(&["prune", "--dry-run", "--keep", "1"]);
++    assert_eq!(ids(&preview["candidates"]), ["c00000000002"], "{preview}");
++    let preview = fixture.call(&["prune", "--dry-run", "--keep", "0"]);
++    assert_eq!(
++        ids(&preview["candidates"]),
++        ["c00000000002", "c00000000001"],
++        "{preview}"
++    );
++    let report = fixture.call(&["prune", "--keep", "0"]);
++    assert_eq!(report["removed"], preview["candidates"]);
++    assert_eq!(report["warnings"], serde_json::json!([]));
++    for (id, class) in &protected {
++        assert!(fixture.present(id), "{class} job {id} was collected");
++    }
++    let report = fixture.call(&["prune", "--keep", "0"]);
++    assert_eq!(report["candidates"], serde_json::json!([]));
++}
++
++#[test]
++fn prune_keep_is_deferred_while_retention_is_protected() {
++    use std::os::unix::fs::OpenOptionsExt;
++    let fixture = Fixture::new();
++    let now = now_ms();
++    let history = ["a00000000001", "a00000000002", "b00000000001"];
++    fixture.seed_collectable(history[0], now - 1_000);
++    fixture.seed_collectable(history[1], now - 2_000);
++    fixture.seed_collectable(history[2], now - DAY_MS);
++    // Hold the same shared protection a bulk stop takes.
++    let guard = fs::OpenOptions::new()
++        .create(true)
++        .truncate(false)
++        .read(true)
++        .write(true)
++        .mode(0o600)
++        .open(fixture.state.join(".retention"))
++        .unwrap();
++    fs2::FileExt::try_lock_shared(&guard).unwrap();
++    // An interrupted cleanup left private quarantine data behind.
++    let quarantine = |uuid: &str| {
++        use std::os::unix::fs::PermissionsExt;
++        let path = fixture.state.join(format!(".prune-a00000000009-{uuid}"));
++        fs::create_dir(&path).unwrap();
++        fs::set_permissions(&path, fs::Permissions::from_mode(0o700)).unwrap();
++        fs::write(path.join("partial"), b"interrupted cleanup").unwrap();
++        path
++    };
++    let pending = quarantine("0123456789abcdef0123456789abcdef");
++    let empty = serde_json::json!([]);
++
++    // An explicit limit, 100 included, deletes nothing while protected, and
++    // its preview reports exactly the (empty) candidates of the real run.
++    for keep in ["0", "3", "100"] {
++        let preview = fixture.call(&["prune", "--dry-run", "--keep", keep]);
++        assert_eq!(preview["deferred"], true, "{keep}: {preview}");
++        assert_eq!(preview["candidates"], empty, "{keep}: {preview}");
++        assert_eq!(preview["removed"], empty, "{keep}: {preview}");
++        let report = fixture.call(&["prune", "--keep", keep]);
++        assert_eq!(report["deferred"], true, "{keep}: {report}");
++        assert_eq!(report["max_finished"], keep.parse::<u64>().unwrap());
++        assert_eq!(report["candidates"], preview["candidates"], "{keep}");
++        assert_eq!(report["removed"], empty, "{keep}: {report}");
++        assert_eq!(report["warnings"], empty, "{keep}: {report}");
++        assert!(history.iter().all(|id| fixture.present(id)), "{keep}");
++        assert!(pending.join("partial").exists(), "{keep}");
++    }
++    let output = fixture
++        .human(&["prune", "--dry-run", "--keep", "0"])
++        .output()
++        .unwrap();
++    assert!(output.status.success());
++    assert_eq!(
++        String::from_utf8_lossy(&output.stdout),
++        "Would remove 0 finished jobs.\n"
++    );
++    assert!(pending.exists());
++
++    // Without --keep, deferred collection is unchanged: the preview exposes
++    // candidates and quarantine data is still retried.
++    let preview = fixture.call(&["prune", "--dry-run"]);
++    assert_eq!(preview["deferred"], true, "{preview}");
++    assert_eq!(
++        ids(&preview["candidates"]),
++        ["a00000000009", "b00000000001"],
++        "{preview}"
++    );
++    assert!(pending.exists());
++    let report = fixture.call(&["prune"]);
++    assert_eq!(report["deferred"], true, "{report}");
++    assert_eq!(ids(&report["removed"]), ["a00000000009"], "{report}");
++    assert!(!pending.exists());
++    assert!(history.iter().all(|id| fixture.present(id)));
++
++    drop(guard);
++    let pending = quarantine("fedcba9876543210fedcba9876543210");
++    let preview = fixture.call(&["prune", "--dry-run", "--keep", "0"]);
++    let report = fixture.call(&["prune", "--keep", "0"]);
++    assert_eq!(report["deferred"], false, "{report}");
++    let expected = [
++        "a00000000009",
++        "b00000000001",
++        "a00000000002",
++        "a00000000001",
++    ];
++    assert_eq!(ids(&preview["candidates"]), expected, "{preview}");
++    assert_eq!(report["candidates"], preview["candidates"]);
++    assert_eq!(ids(&report["removed"]), expected, "{report}");
++    assert!(!pending.exists());
++    assert!(history.iter().all(|id| !fixture.present(id)));
++}
++
++#[test]
++fn prune_keep_rejects_invalid_values_before_deleting_anything() {
++    let fixture = Fixture::new();
++    let now = now_ms();
++    let history = ["a00000000001", "a00000000002", "b00000000001"];
++    fixture.seed_collectable(history[0], now - 1_000);
++    fixture.seed_collectable(history[1], now - 2_000);
++    fixture.seed_collectable(history[2], now - DAY_MS);
++    let invalid: [&[&str]; 10] = [
++        &["--keep", "101"],
++        &["--keep", "256"],
++        &["--keep", "1000"],
++        &["--keep=-1"],
++        &["--keep", "-1"],
++        &["--keep", "abc"],
++        &["--keep", "1.5"],
++        &["--keep", ""],
++        &["--keep"],
++        &["--dry-run", "--keep", "101"],
++    ];
++    for args in invalid {
++        let mut full = vec!["prune"];
++        full.extend_from_slice(args);
++        for mut command in [fixture.command(&full), fixture.human(&full)] {
++            let output = command.output().unwrap();
++            assert!(!output.status.success(), "{full:?} was accepted");
++            assert!(history.iter().all(|id| fixture.present(id)), "{full:?}");
++        }
++    }
++}
++
+ // Readiness observation (`run --wait-for-port/--wait-for-log`).
+ 
+ /// A loopback port with no listener at the time of the call.

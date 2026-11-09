@@ -1,0 +1,530 @@
+{
+  "status": "incomplete; operator corroboration and deterministic observations only",
+  "issues": [
+    {
+      "id": "Q4-preview",
+      "task": "Q4",
+      "severity": "major",
+      "criterion": "4",
+      "scenario": "With retention protection held, explicit --keep preview lists ordinary candidates although the real call removes none.",
+      "present": [
+        "initial",
+        "A"
+      ],
+      "absent": [
+        "B",
+        "C"
+      ],
+      "evidence": "supplementary-probes.json; initial src/store.rs:361; corrected explicit preview path in B/C",
+      "source": "operator corroboration of reviewer finding; frozen report check invalid",
+      "independent_blind_confirmation": null
+    },
+    {
+      "id": "Q4-quarantine",
+      "task": "Q4",
+      "severity": "blocker",
+      "criterion": "3",
+      "scenario": "An interrupted cleanup leaves a private .prune-ID-UUID directory. With retention protection held, explicit --keep still deletes that history while reporting deferred=true.",
+      "present": [
+        "initial",
+        "A",
+        "C"
+      ],
+      "absent": [
+        "B"
+      ],
+      "evidence": "supplementary-probes.json; initial src/store.rs:295-318; C retains same deletion-before-deferral path; B returns before scan",
+      "source": "operator reproduction of B finding; independent blind assessment unavailable",
+      "preexisting_at_base": true,
+      "independent_blind_confirmation": null
+    },
+    {
+      "id": "Q6-script-name",
+      "task": "Q6",
+      "severity": "major",
+      "criterion": "6",
+      "scenario": "Without --cwd, run -- ./probe with an executable shebang script printing $0 exposes an absolute filename rather than the prior ./probe.",
+      "present": [
+        "initial",
+        "A"
+      ],
+      "absent": [
+        "B",
+        "C"
+      ],
+      "evidence": "supplementary-probes.json; initial src/lifecycle.rs:474-475,507-511; pinned base prints ./probe",
+      "source": "operator reproduction of B/C findings",
+      "independent_blind_confirmation": null
+    },
+    {
+      "id": "Q4-guardian-test",
+      "task": "Q4",
+      "severity": "minor",
+      "criterion": "8",
+      "scenario": "Live-guardian fixture inherits keeper_pid=0. Keeper absence rejects it before guardian safeguard; removing guardian filtering would not fail this fixture.",
+      "present": [
+        "initial",
+        "A",
+        "B"
+      ],
+      "absent": [
+        "C"
+      ],
+      "evidence": "initial tests/lifecycle.rs:2676 and src/store.rs:338; C seeds absent keeper and asserts ESRCH",
+      "source": "operator conclusive code analysis of C finding; not a reproduced runtime safety defect",
+      "independent_blind_confirmation": null
+    },
+    {
+      "id": "Q6-readme-inheritance",
+      "task": "Q6",
+      "severity": "minor",
+      "criterion": "7",
+      "scenario": "Opening run description unconditionally says launched command inherits caller directory, despite later documentation of --cwd.",
+      "present": [
+        "initial",
+        "B",
+        "C"
+      ],
+      "absent": [
+        "A"
+      ],
+      "evidence": "README.md:104 in initial/B/C; A qualifies inheritance with unless --cwd is given",
+      "source": "operator conclusive text comparison of A finding; documentation only",
+      "independent_blind_confirmation": null
+    }
+  ],
+  "common_acceptance_observations": [
+    {
+      "id": "Q4-suite",
+      "task": "Q4",
+      "severity": "major",
+      "present": [
+        "initial",
+        "A"
+      ],
+      "absent": [
+        "B",
+        "C"
+      ],
+      "source": "common_acceptance",
+      "criterion": "full cargo test",
+      "evidence": "grading/Q4-artifact-70b844df47/test.log",
+      "cause": "Observed ConnectionRefused and expiry before command startup in existing 700 ms lease test. Race/load attribution is a hypothesis, not established causation; test unchanged. No source/workflow causation demonstrated."
+    },
+    {
+      "id": "Q6-suite",
+      "task": "Q6",
+      "severity": "major",
+      "present": [
+        "A"
+      ],
+      "absent": [
+        "initial",
+        "B",
+        "C"
+      ],
+      "source": "common_acceptance",
+      "criterion": "full cargo test",
+      "evidence": "grading/Q6-artifact-b73a53106e/test.log",
+      "cause": "Observed ConnectionRefused and expiry before command startup in existing 700 ms lease test. Race/load attribution is a hypothesis, not established causation; test unchanged. No source/workflow causation demonstrated."
+    }
+  ],
+  "states": [
+    {
+      "task": "Q1",
+      "state": "initial",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q1",
+      "state": "A",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q1",
+      "state": "B",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q1",
+      "state": "C",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q2",
+      "state": "initial",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q2",
+      "state": "A",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q2",
+      "state": "B",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q2",
+      "state": "C",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q3",
+      "state": "initial",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q3",
+      "state": "A",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q3",
+      "state": "B",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q3",
+      "state": "C",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q4",
+      "state": "initial",
+      "confirmed_or_observed_issues": [
+        "Q4-preview",
+        "Q4-quarantine",
+        "Q4-guardian-test",
+        "Q4-suite"
+      ],
+      "partial_tuple": [
+        1,
+        2,
+        1
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q4",
+      "state": "A",
+      "confirmed_or_observed_issues": [
+        "Q4-preview",
+        "Q4-quarantine",
+        "Q4-guardian-test",
+        "Q4-suite"
+      ],
+      "partial_tuple": [
+        1,
+        2,
+        1
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q4",
+      "state": "B",
+      "confirmed_or_observed_issues": [
+        "Q4-guardian-test"
+      ],
+      "partial_tuple": [
+        0,
+        0,
+        1
+      ],
+      "validated_corrections": [
+        "Q4-preview",
+        "Q4-quarantine"
+      ],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q4",
+      "state": "C",
+      "confirmed_or_observed_issues": [
+        "Q4-quarantine"
+      ],
+      "partial_tuple": [
+        1,
+        0,
+        0
+      ],
+      "validated_corrections": [
+        "Q4-preview",
+        "Q4-guardian-test"
+      ],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q5",
+      "state": "initial",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q5",
+      "state": "A",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q5",
+      "state": "B",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q5",
+      "state": "C",
+      "confirmed_or_observed_issues": [],
+      "partial_tuple": [
+        0,
+        0,
+        0
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q6",
+      "state": "initial",
+      "confirmed_or_observed_issues": [
+        "Q6-script-name",
+        "Q6-readme-inheritance"
+      ],
+      "partial_tuple": [
+        0,
+        1,
+        1
+      ],
+      "validated_corrections": [],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q6",
+      "state": "A",
+      "confirmed_or_observed_issues": [
+        "Q6-script-name",
+        "Q6-suite"
+      ],
+      "partial_tuple": [
+        0,
+        2,
+        0
+      ],
+      "validated_corrections": [
+        "Q6-readme-inheritance"
+      ],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q6",
+      "state": "B",
+      "confirmed_or_observed_issues": [
+        "Q6-readme-inheritance"
+      ],
+      "partial_tuple": [
+        0,
+        0,
+        1
+      ],
+      "validated_corrections": [
+        "Q6-script-name"
+      ],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    },
+    {
+      "task": "Q6",
+      "state": "C",
+      "confirmed_or_observed_issues": [
+        "Q6-readme-inheritance"
+      ],
+      "partial_tuple": [
+        0,
+        0,
+        1
+      ],
+      "validated_corrections": [
+        "Q6-script-name"
+      ],
+      "source_regressions_confirmed": [],
+      "maintainability": null,
+      "registered_complete_score": null,
+      "grading_status": "incomplete: blind assessment unavailable"
+    }
+  ]
+}

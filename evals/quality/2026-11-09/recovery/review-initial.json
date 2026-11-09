@@ -1,0 +1,22 @@
+{
+  "findings": [
+    {
+      "id": "R1",
+      "issue": "Measured elapsed times remain in logs",
+      "fix": "Redacted runtime/compiler/test elapsed time and dynamic record timestamps from supplied logs; originals unchanged."
+    },
+    {
+      "id": "R2",
+      "issue": "Complete committed identity and budget not enforced",
+      "fix": "Mode-aware full packet inventory with symlink targets, exact paths and bound budget; verify reviewed commitment before each dispatch."
+    },
+    {
+      "id": "R3",
+      "issue": "Cumulative advisory target not supplied and setup may extend timeout",
+      "fix": "Explicit remaining advisory/outer allowances in each assignment; monotonic absolute deadline includes setup."
+    }
+  ],
+  "reviewer": "gpt-6-astra",
+  "effort": "high",
+  "scope": "Recovery method only; no participant grading"
+}

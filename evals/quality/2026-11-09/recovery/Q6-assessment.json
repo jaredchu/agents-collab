@@ -1,0 +1,264 @@
+{
+  "assessments": [
+    {
+      "artifact_id": "artifact-8ff7b1a669132830",
+      "hidden_groups_confirmed": [],
+      "hidden_check_disputes": [],
+      "group_merges": [],
+      "additional_findings": [
+        {
+          "id": "readme-lazy-continuation",
+          "location": "README.md:129-131",
+          "severity": "minor",
+          "criterion": "7 (README documents --cwd) / 6 (unchanged docs for existing text)",
+          "failure_scenario": "The new bullet list ends at line 130 and the pre-existing paragraph '`--owner`, `--task`, `--name` and `--url` are declared metadata...' follows on line 131 with no blank line. Under CommonMark lazy continuation that paragraph renders as part of the last --cwd bullet, so the metadata paragraph is swallowed into the 'ProcLease itself does not change directory' item.",
+          "evidence": "README.md:129-131 shows '- ProcLease itself does not change directory; ...\\n  in PATH. Without `--cwd`, behavior and output are unchanged.\\n`--owner`, `--task`, ...' with no separating blank line; the inserted block at 107-130 begins and ends without the blank line the surrounding sections use.",
+          "reproducer": "Render README.md with any CommonMark renderer and inspect the list item following 'ProcLease itself does not change directory'.",
+          "support": "conclusive_code_analysis"
+        },
+        {
+          "id": "std-relative-program-coupling",
+          "location": "src/lifecycle.rs:493-514",
+          "severity": "note",
+          "criterion": "4 (relative command resolved against launch directory)",
+          "failure_scenario": "Resolution of './bin/tool' against the launch directory relies on std's fork+chdir+execvp ordering, which std documents as platform-specific. It currently holds because the pre_exec closure at 508 disables the posix_spawn path, and the comment records that coupling. No failure today; hidden check q6.relative_command passes.",
+          "evidence": "lifecycle.rs:498 Command::new(&launch.argv[0]); :501 .current_dir(&launch.cwd); :508 command.pre_exec(...). No explicit path join.",
+          "reproducer": "None; informational.",
+          "support": "unconfirmed"
+        }
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Localized change: one new launch_dir helper in main.rs (470-495) called at 647 before the store lock (654) and reservation (678); lifecycle.rs changes only a comment; help text and README cover canonicalization and retry identity. Five deterministic integration tests use /bin/pwd, /usr/bin/true, /usr/bin/false and tiny #!/bin/sh scripts, wait for terminal state, and share a CwdLayout helper and run_from with env_clear so fingerprints are stable. Deductions: README lazy-continuation defect; clippy::large_enum_variant suppressed rather than addressed; the empty --cwd bail at main.rs:476-478 is unreachable because clap's PathBuf parser already rejects empty values (hidden check shows exit 2).",
+        "evidence": "src/main.rs:470-495, 646-647, 654, 678; src/lifecycle.rs:493-514; tests/lifecycle.rs:2968-3332; README.md:107-130."
+      },
+      "review_items": [
+        {
+          "item": "help/README (7)",
+          "status": "pass",
+          "support": "src/main.rs:80-90 help text; README.md:107-130 and 229-230 document canonicalization and retry identity. Formatting defect noted as minor finding."
+        },
+        {
+          "item": "test coverage and cleanup (8)",
+          "status": "pass",
+          "support": "tests/lifecycle.rs: cwd_flag_starts_the_command_in_the_canonical_directory (absolute, relative, symlink), invalid_cwd_fails_before_any_job_is_created (fixture.no_jobs), retry_identity_uses_the_canonical_launch_directory (equivalence and mismatch), relative_command_paths_resolve_against_the_launch_directory; all commands short-lived and awaited via fixture.terminal; Fixture honours PROCLEASE_TEST_ROOT (tests/lifecycle.rs:23)."
+        },
+        {
+          "item": "validation ordering before lock/reservation (2, code review)",
+          "status": "pass",
+          "support": "src/main.rs:647 launch_dir() runs before store.lock() at 654 and store.reserve() at 678; hidden check q6.validate reports no new dirs."
+        },
+        {
+          "item": "common acceptance",
+          "status": "pass",
+          "support": "checks.json common: fmt 0, clippy 0, test 0, build 0; patch touches only README.md, src/lifecycle.rs, src/main.rs, tests/lifecycle.rs."
+        },
+        {
+          "item": "no process-wide working-directory change (5; code review, not a token grep)",
+          "status": "pass",
+          "support": "launch_dir (main.rs:470-495) only computes a path; the only directory change is the child's via Command::current_dir at lifecycle.rs:501, executed in the forked child before exec; no set_current_dir anywhere in src/."
+        }
+      ],
+      "limits": [
+        "No execution performed; relied on supplied checks plus code reading.",
+        "Hidden checks cover only the grader's scenarios; interpreter-script and Clap edge behaviour inferred from code."
+      ]
+    },
+    {
+      "artifact_id": "artifact-0aecaccf6ee1ccb7",
+      "hidden_groups_confirmed": [],
+      "hidden_check_disputes": [],
+      "group_merges": [],
+      "additional_findings": [
+        {
+          "id": "cargo-test-failed",
+          "location": "checks.json common.test exit_code 101; suspect tests/lifecycle.rs:3140-3154",
+          "severity": "major",
+          "criterion": "common acceptance: cargo test passes (full suite)",
+          "failure_scenario": "The grader's full cargo test run exited 101 while fmt, clippy and build passed and all eight objective checks passed. The failing test is not identified in the supplied results. This tree's src/ is byte-identical to artifact-cfcb64f2e25e2ca4 (same blob ed5084d for lifecycle.rs and 9c84939 for main.rs), whose suite passed; the only test-file delta is the added block at tests/lifecycle.rs:3140-3154 asserting that `run --cwd -- /usr/bin/true` exits 2 with empty stdout. That block depends on clap 4.6.7's handling of a pending option value followed by `--`, which the code does not control, so it is the most likely culprit, but an unrelated flaky test cannot be excluded.",
+          "evidence": "artifact-0aecaccf6ee1ccb7.checks.json common.test.exit_code = 101; patch headers show identical src blobs to cfcb64f2; tests/lifecycle.rs:3144-3151 assert_eq!(output.status.code(), Some(2)) and assert!(output.stdout.is_empty()).",
+          "reproducer": "cargo test --test lifecycle invalid_cwd_fails_before_any_job_is_created with CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT set outside the repo; capture output to identify the failing assertion.",
+          "support": "existing_check"
+        },
+        {
+          "id": "shebang-dollar0-changed",
+          "location": "src/lifecycle.rs:472-480, 507-509",
+          "severity": "minor",
+          "criterion": "6 (without --cwd, behavior unchanged)",
+          "failure_scenario": "program_path rewrites any relative program containing '/' to an absolute path under the launch directory, and arg0 restores argv[0] for the binary. For a #! script the kernel passes the exec pathname, not argv[0], to the interpreter, so a script started as `proclease run -- ./bin/server` now sees `$0` as `/abs/dir/./bin/server` instead of `./bin/server`, even without --cwd. Scripts that derive locations or messages from `$0` observe a change.",
+          "evidence": "lifecycle.rs:472-480 program_path joins cwd when program.contains('/') && path.is_relative(); :507 Command::new(program_path(...)); :509 .arg0(&launch.argv[0]). Unit test at :1000-1012 asserts the rewritten path '/work/site/./bin/server'.",
+          "reproducer": "In a directory with bin/show containing '#!/bin/sh\\necho \"$0\"', run `proclease run -- ./bin/show` without --cwd and compare output.log before and after the change.",
+          "support": "conclusive_code_analysis"
+        }
+      ],
+      "maintainability": {
+        "score": 2,
+        "reason": "Shares the clean launch_dir helper and validation ordering with the other trees, adds a small program_path helper with a unit test, and the README is correctly formatted (blank line before the following paragraph). However the full suite failed in the grader run with the only test delta being an assertion about clap's parsing of `--cwd --`, which the code under test does not control, pointing to a brittle test; and the exec-path rewrite silently changes shebang `$0` for existing relative-script invocations. clippy::large_enum_variant is suppressed rather than addressed.",
+        "evidence": "src/main.rs:470-495, 647; src/lifecycle.rs:472-480, 507-511, 1000-1012; tests/lifecycle.rs:3140-3154; README.md:107-131; checks.json common.test.exit_code 101."
+      },
+      "review_items": [
+        {
+          "item": "help/README (7)",
+          "status": "pass",
+          "support": "src/main.rs:80-90; README.md:107-131 (correct blank line before following paragraph) and 229-230."
+        },
+        {
+          "item": "test coverage and cleanup (8)",
+          "status": "uncertain",
+          "support": "Coverage present for absolute/relative/symlink, validation with fixture.no_jobs, retry equivalence/mismatch and relative command (tests/lifecycle.rs:2968-3299), all short-lived and awaited; but the grader's cargo test exited 101 and the failing test is not identified."
+        },
+        {
+          "item": "validation ordering before lock/reservation (2, code review)",
+          "status": "pass",
+          "support": "src/main.rs:647 before lock at 654 and reserve at 678."
+        },
+        {
+          "item": "common acceptance",
+          "status": "fail",
+          "support": "checks.json common.test.exit_code = 101; fmt, clippy, build pass; scope limited to allowed paths."
+        },
+        {
+          "item": "no process-wide working-directory change (5; code review, not a token grep)",
+          "status": "pass",
+          "support": "program_path is a pure path join; the only directory change is Command::current_dir at lifecycle.rs:511 in the child; no set_current_dir in src/."
+        }
+      ],
+      "limits": [
+        "Test output for the exit-101 run was not supplied; the failing test is inferred, not confirmed.",
+        "Clap 4.6.7 behaviour for `--cwd -- value` was reasoned from memory, not executed."
+      ]
+    },
+    {
+      "artifact_id": "artifact-c6082ee747080ee9",
+      "hidden_groups_confirmed": [],
+      "hidden_check_disputes": [],
+      "group_merges": [],
+      "additional_findings": [
+        {
+          "id": "readme-lazy-continuation",
+          "location": "README.md:129-131",
+          "severity": "minor",
+          "criterion": "7 (README documents --cwd) / 6 (unchanged docs for existing text)",
+          "failure_scenario": "Same as in artifact-8ff7b1a669132830: the new bullet list is immediately followed by the pre-existing '`--owner`, `--task`...' paragraph with no blank line, so that paragraph renders as a lazy continuation of the last bullet.",
+          "evidence": "Patch lines 32-34: '+  in PATH. Without `--cwd`, behavior and output are unchanged.' directly followed by the unchanged context line '`--owner`, `--task`, `--name` and `--url` are declared metadata.'",
+          "reproducer": "Render README.md and inspect the final --cwd bullet.",
+          "support": "conclusive_code_analysis"
+        },
+        {
+          "id": "std-relative-program-coupling",
+          "location": "src/lifecycle.rs:493-515",
+          "severity": "note",
+          "criterion": "4",
+          "failure_scenario": "As in artifact-8ff7b1a669132830: relative-program resolution relies on std's fork path chdir-before-execvp, kept active by the pre_exec hook; documented in the comment, no failure today.",
+          "evidence": "lifecycle.rs:499 Command::new(&launch.argv[0]); current_dir and pre_exec unchanged.",
+          "reproducer": "None; informational.",
+          "support": "unconfirmed"
+        }
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Identical src/main.rs to the other trees (launch_dir helper, validation before lock); lifecycle.rs changes only a comment explaining why the program path is not rewritten; five deterministic integration tests including a `$0` preservation test that also proves the caller's copy of a same-named script never runs. Deductions: README lazy-continuation defect, suppressed large_enum_variant lint, unreachable empty --cwd bail.",
+        "evidence": "src/main.rs:470-495, 647-678; src/lifecycle.rs:493-515; tests/lifecycle.rs:2968-3332; README.md:107-130."
+      },
+      "review_items": [
+        {
+          "item": "help/README (7)",
+          "status": "pass",
+          "support": "src/main.rs:80-90; README.md:107-130, 229-230. Formatting defect noted as minor finding."
+        },
+        {
+          "item": "test coverage and cleanup (8)",
+          "status": "pass",
+          "support": "tests/lifecycle.rs: four --cwd tests plus relative_scripts_keep_their_invocation_name; all commands exit immediately and are awaited via fixture.terminal; Fixture honours PROCLEASE_TEST_ROOT."
+        },
+        {
+          "item": "validation ordering before lock/reservation (2, code review)",
+          "status": "pass",
+          "support": "src/main.rs:647 before store.lock() at 654 and store.reserve() at 678."
+        },
+        {
+          "item": "common acceptance",
+          "status": "pass",
+          "support": "checks.json common: fmt 0, clippy 0, test 0, build 0; patch limited to README.md, src/, tests/."
+        },
+        {
+          "item": "no process-wide working-directory change (5; code review, not a token grep)",
+          "status": "pass",
+          "support": "Only Command::current_dir on the child at lifecycle.rs:502; launch_dir computes paths only; no set_current_dir in src/."
+        }
+      ],
+      "limits": [
+        "No execution performed; relied on supplied checks plus code reading."
+      ]
+    },
+    {
+      "artifact_id": "artifact-cfcb64f2e25e2ca4",
+      "hidden_groups_confirmed": [],
+      "hidden_check_disputes": [],
+      "group_merges": [],
+      "additional_findings": [
+        {
+          "id": "shebang-dollar0-changed",
+          "location": "src/lifecycle.rs:472-480, 507-509",
+          "severity": "minor",
+          "criterion": "6 (without --cwd, behavior unchanged)",
+          "failure_scenario": "Same mechanism as in artifact-0aecaccf6ee1ccb7 (identical src blob ed5084d): relative programs containing '/' are rewritten to absolute paths before exec, so #! scripts invoked as ./bin/x see an absolute `$0` even when --cwd is not given.",
+          "evidence": "lifecycle.rs:472-480 program_path; :507 Command::new(program_path(...)); :509 .arg0(&launch.argv[0]); unit test :1000-1012 asserts '/work/site/./bin/server'.",
+          "reproducer": "Run `proclease run -- ./bin/show` where bin/show is '#!/bin/sh\\necho \"$0\"' and compare output.log with the pre-change binary.",
+          "support": "conclusive_code_analysis"
+        },
+        {
+          "id": "readme-lazy-continuation",
+          "location": "README.md:128-130",
+          "severity": "minor",
+          "criterion": "7 / 6",
+          "failure_scenario": "The new bullet list is followed directly by the pre-existing '`--owner`, `--task`...' paragraph with no blank line, so that paragraph renders as part of the last bullet.",
+          "evidence": "Patch lines 31-33: '+  in PATH. Without `--cwd`, behavior and output are unchanged.' immediately followed by the unchanged '`--owner`, `--task`, `--name` and `--url` are declared metadata.' line.",
+          "reproducer": "Render README.md and inspect the final --cwd bullet.",
+          "support": "conclusive_code_analysis"
+        }
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Same launch_dir helper and validation ordering; explicit program_path helper with a focused unit test makes the relative-command rule independent of std's unstable behaviour, at the cost of changing shebang `$0`. Four deterministic integration tests with shared helpers cover every criterion-8 scenario and await termination. Deductions: README lazy-continuation defect, suppressed large_enum_variant lint, unreachable empty --cwd bail, `$0` behaviour change undocumented (README claims only argv and argv[0] stay as given, which is accurate but silent on `$0`).",
+        "evidence": "src/main.rs:470-495, 647-678; src/lifecycle.rs:472-480, 507-511, 1000-1012; tests/lifecycle.rs:2968-3287; README.md:107-129."
+      },
+      "review_items": [
+        {
+          "item": "help/README (7)",
+          "status": "pass",
+          "support": "src/main.rs:80-90; README.md:107-129, 228-229. Formatting defect noted as minor finding."
+        },
+        {
+          "item": "test coverage and cleanup (8)",
+          "status": "pass",
+          "support": "tests/lifecycle.rs: cwd_flag_starts_the_command_in_the_canonical_directory, invalid_cwd_fails_before_any_job_is_created, retry_identity_uses_the_canonical_launch_directory, relative_command_paths_resolve_against_the_launch_directory; short-lived commands awaited via fixture.terminal; Fixture honours PROCLEASE_TEST_ROOT."
+        },
+        {
+          "item": "validation ordering before lock/reservation (2, code review)",
+          "status": "pass",
+          "support": "src/main.rs:647 before lock at 654 and reserve at 678."
+        },
+        {
+          "item": "common acceptance",
+          "status": "pass",
+          "support": "checks.json common: fmt 0, clippy 0, test 0, build 0; patch limited to README.md, src/, tests/."
+        },
+        {
+          "item": "no process-wide working-directory change (5; code review, not a token grep)",
+          "status": "pass",
+          "support": "program_path is a pure join; only Command::current_dir on the child at lifecycle.rs:511; no set_current_dir in src/."
+        }
+      ],
+      "limits": [
+        "No execution performed; relied on supplied checks plus code reading."
+      ]
+    }
+  ],
+  "overall_limits": [
+    "All four trees share a byte-identical src/main.rs; two pairs share lifecycle.rs blobs (8ff7/c608 comment-only; 0aec/cfcb program_path). Differences are confined to tests and README.",
+    "Supplied check results report exit codes only; the failing test behind artifact-0aecaccf6ee1ccb7's cargo test exit 101 could not be identified and should be re-run with captured output.",
+    "Shebang `$0` and CommonMark lazy-continuation findings are derived from well-known kernel and Markdown semantics, not from execution in this session.",
+    "Working-tree scope was checked against the supplied patches; untracked files outside the patch could not be detected without a base tree."
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "assessments": [
+    {
+      "artifact_id": "artifact-a742c71054b736ff",
+      "hidden_groups_confirmed": [],
+      "hidden_check_disputes": [],
+      "group_merges": [],
+      "additional_findings": [
+        {
+          "id": "q5a-test-lease-headroom",
+          "location": "tests/lifecycle.rs:273-502 (list_summary_counts_selected_and_retained_jobs_without_job_data)",
+          "severity": "note",
+          "criterion": "common acceptance: tests are deterministic",
+          "failure_scenario": "The live job is `sleep 30` with `--ttl 30s`, and the `recent` record is seeded at now-1000ms for the default 30s window (src/main.rs:426). Roughly 30 CLI invocations must complete before the final `active 1` assertions at lines 453-476; on a heavily loaded machine exceeding ~30s the job would expire and the count assertions would fail. Ordinary runs finish in a few seconds, so this is headroom-dependent rather than a demonstrated failure.",
+          "evidence": "tests/lifecycle.rs:277-297 (ttl 30s, sleep 30); tests/lifecycle.rs:318,326 (recent = now - 1_000); src/main.rs:421-431 (30_000ms window); supplied test check exit 0.",
+          "reproducer": "Run the test under heavy CPU contention so wall time between `run` and the final `list --all --summary` exceeds 30s; observe `active 0` in the human line.",
+          "support": "unconfirmed"
+        },
+        {
+          "id": "q5a-select-visible-rank-dup",
+          "location": "src/main.rs:407-438 (select_visible)",
+          "severity": "note",
+          "criterion": "review item: no duplicated category logic (2)",
+          "failure_scenario": "Pre-existing, unchanged code: the sort rank and retain filter in select_visible restate the active/unknown/no-finish-time rule inline rather than calling the new Record::category(). The two currently agree, so there is no behavioral defect; it is a remaining duplication site that could drift later. The table summary (display.rs) and the new Counts both use category(), so the review item itself is satisfied.",
+          "evidence": "src/main.rs:409-415 and 432-436 versus src/model.rs:148-156.",
+          "reproducer": "None; no execution path yields a wrong result today.",
+          "support": "conclusive_code_analysis"
+        }
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Localized and idiomatic. A single Category enum plus Record::category() (src/model.rs:64-74, 148-156) is the one source of truth, and display.rs:143-150 was refactored to use it, so the summary and the table heading cannot diverge. Counts is a small Copy struct with total/json/line helpers; retained_jobs was factored out of visible_jobs so both list and summary share the same prune+scan path (src/main.rs:343-351, 396-402). Dispatch uses a `summary: true` match arm that relies on clap's conflicts_with, which is clear. Help long_help and README state the exact category definitions and output shape. The test is deterministic via seeded records and covers every seeded case the ticket asks for, the warning path, both output modes, --all, the --resources conflict in both argument orders, the watch no-op, byte-identical records, bounded stdout with 25 jobs, and help text. Held back from 4 by a single ~230-line monolithic test, by `model::Category::` being fully qualified in main.rs while display.rs imports it, and by leaving select_visible's inline rank logic untouched.",
+        "evidence": "src/model.rs:64-74,148-156; src/display.rs:143-150; src/main.rs:343-402, 768-787; tests/lifecycle.rs:255-502; README.md:338-367."
+      },
+      "review_items": [
+        {
+          "item": "help/README (7)",
+          "status": "pass",
+          "evidence": "src/main.rs:119-131 long_help names the option and all three category definitions and the --resources conflict; README.md:338-367 documents categories, selected/retained semantics, both output shapes, exit status and the --all/--resources rules; README.md:79 adds the command to the quick list. Test asserts `list --help` contains the category phrases (tests/lifecycle.rs:478-492). Short `-h` shows only the one-line help, which is normal clap behavior."
+        },
+        {
+          "item": "test coverage (8)",
+          "status": "pass",
+          "evidence": "tests/lifecycle.rs:273-502 seeds a running job, an unknown record, a recent finished record, an old finished record, a finished record with null finished_at_ms, and a non-JSON record.json; asserts JSON keys and counts (lines 380-394), human two-line stdout and Warning stderr (396-405), --all (407-434), warnings equal to plain list (393, 425), --resources conflict in both orders and both modes plus watch (436-450), no record rewrite or lease renewal (452-457), bounded output at 25 jobs (459-476), stops the live job and removes seeded directories (494-501). Honours PROCLEASE_TEST_ROOT via Fixture::new (lines 20-31)."
+        },
+        {
+          "item": "no duplicated category logic diverging from the table summary (2, code review)",
+          "status": "pass",
+          "evidence": "Record::category() at src/model.rs:148-156 is used by both display::render (src/display.rs:143-150) and Counts::of (src/main.rs:372-382). The old inline predicates in display.rs were removed by the patch. Only the pre-existing select_visible rank code (src/main.rs:409-415) still inlines an equivalent rule; see note above."
+        },
+        {
+          "item": "common acceptance",
+          "status": "pass",
+          "evidence": "Supplied checks: fmt, clippy, test and build all exit 0 with no timeout and no leftover process groups; cleanup inventory empty. Patch touches only README.md, src/display.rs, src/main.rs, src/model.rs and tests/lifecycle.rs; Cargo.toml and Cargo.lock untouched; no skill, website, release or packaging changes."
+        }
+      ],
+      "limits": [
+        "I could not execute cargo or the binary; fmt, clippy, test and build results are taken from the supplied checks file.",
+        "The 11 hidden checks all pass; passing checks do not prove absence of other bugs. I read the diff and the surrounding list, watch, select_visible, Store::list, clean and fixture code, but did not audit the whole crate.",
+        "The timing note on the test is a headroom observation, not a demonstrated failure; the supplied run passed."
+      ]
+    }
+  ],
+  "overall_limits": [
+    "Single artifact in the packet; no cross-artifact comparison possible.",
+    "Assessment is static analysis plus the supplied check results; no commands were run."
+  ]
+}

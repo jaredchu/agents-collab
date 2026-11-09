@@ -1,0 +1,205 @@
+{
+  "states": [
+    {
+      "id": "Q1-A",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": [
+        "Retained denied writer report from stdout",
+        "Ran exact authorized final verification helper after writer helper denial"
+      ]
+    },
+    {
+      "id": "Q1-B",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q1-C",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q2-A",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q2-B",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q2-C",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q3-A",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": [
+        "Retained writer output after denied report write; proposed spacing edit remained unapplied"
+      ]
+    },
+    {
+      "id": "Q3-B",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q3-C",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q4-A",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": [
+        "Retained writer reports from stdout after denied scratch writes"
+      ]
+    },
+    {
+      "id": "Q4-B",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q4-C",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q5-A",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q5-B",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q5-C",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q6-A",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q6-B",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    },
+    {
+      "id": "Q6-C",
+      "same_initial_commit_and_tree": true,
+      "source_scope_violations": [],
+      "history_changed": false,
+      "actor_reported_status": "completed",
+      "owned_group": "absent",
+      "root_operator_interventions": 0,
+      "coordinator_handling": []
+    }
+  ],
+  "owner_configuration_checks": [
+    {
+      "artifact": "personal profile",
+      "hash_unchanged": true,
+      "mtime_unchanged": true
+    },
+    {
+      "artifact": "global instructions",
+      "hash_unchanged": true,
+      "mtime_unchanged": true
+    }
+  ],
+  "active_target_status": "",
+  "active_target_commit": "bbbb4d49b6d25ddb308c4e6554a69e01aceef9eb"
+}

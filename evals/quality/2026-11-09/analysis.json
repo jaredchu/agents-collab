@@ -1,0 +1,191 @@
+{
+  "study_status": "completed recovered grading and evidence reconciliation",
+  "completion_status": "experimental work complete; final publication checks passed",
+  "comparisons": {
+    "B_vs_A": {
+      "wins": [
+        "Q4",
+        "Q6"
+      ],
+      "losses": [],
+      "ties": [
+        "Q1",
+        "Q2",
+        "Q3",
+        "Q5"
+      ],
+      "checks": {
+        "at_least_two_wins": true,
+        "more_wins_than_losses": true,
+        "material_correction_in_winning_task": true,
+        "no_new_blocker": true,
+        "majors_not_increased": true,
+        "all_states_complete_and_gradable": true,
+        "at_least_two_initial_material_drafts": true
+      },
+      "meets_registered_rule": true,
+      "result": "quality advantage under frozen observed-acceptance rule"
+    },
+    "C_vs_A": {
+      "wins": [
+        "Q4",
+        "Q6"
+      ],
+      "losses": [],
+      "ties": [
+        "Q1",
+        "Q2",
+        "Q3",
+        "Q5"
+      ],
+      "checks": {
+        "at_least_two_wins": true,
+        "more_wins_than_losses": true,
+        "material_correction_in_winning_task": true,
+        "no_new_blocker": true,
+        "majors_not_increased": true,
+        "all_states_complete_and_gradable": true,
+        "at_least_two_initial_material_drafts": true
+      },
+      "meets_registered_rule": true,
+      "result": "quality advantage under frozen observed-acceptance rule"
+    },
+    "C_vs_B": {
+      "wins": [
+        "Q4"
+      ],
+      "losses": [],
+      "ties": [
+        "Q1",
+        "Q2",
+        "Q3",
+        "Q5",
+        "Q6"
+      ],
+      "checks": {
+        "at_least_two_wins": false,
+        "more_wins_than_losses": true,
+        "material_correction_in_winning_task": false,
+        "no_new_blocker": true,
+        "majors_not_increased": true,
+        "all_states_complete_and_gradable": true,
+        "at_least_two_initial_material_drafts": true
+      },
+      "meets_registered_rule": false,
+      "result": "no quality advantage established"
+    }
+  },
+  "initial_material_drafts_in_primary": 2,
+  "secondary": {
+    "A": {
+      "runs": 6,
+      "sum_branch_wall_clock_s": 1807.253,
+      "median_branch_wall_clock_s": 313.189,
+      "range_s": [
+        235.129,
+        332.65
+      ],
+      "note": "Branch runs overlapped; sum is not elapsed study time or human time; no speed claim."
+    },
+    "B": {
+      "runs": 6,
+      "sum_branch_wall_clock_s": 1411.214,
+      "median_branch_wall_clock_s": 181.132,
+      "range_s": [
+        146.469,
+        369.003
+      ],
+      "note": "Branch runs overlapped; sum is not elapsed study time or human time; no speed claim."
+    },
+    "C": {
+      "runs": 6,
+      "sum_branch_wall_clock_s": 1872.081,
+      "median_branch_wall_clock_s": 241.032,
+      "range_s": [
+        167.101,
+        540.261
+      ],
+      "note": "Branch runs overlapped; sum is not elapsed study time or human time; no speed claim."
+    }
+  },
+  "sensitivity_excluding_untargeted_existing_test_failures": {
+    "post_hoc": true,
+    "rule": "Retain original failures in primary; remove only Q4-suite/Q6-suite from this sensitivity. No actor/check rerun.",
+    "initial_material_drafts": 1,
+    "comparisons": {
+      "B_vs_A": {
+        "wins": [
+          "Q4",
+          "Q6"
+        ],
+        "losses": [],
+        "ties": [
+          "Q1",
+          "Q2",
+          "Q3",
+          "Q5"
+        ],
+        "checks": {
+          "at_least_two_wins": true,
+          "more_wins_than_losses": true,
+          "material_correction_in_winning_task": true,
+          "no_new_blocker": true,
+          "majors_not_increased": true,
+          "all_states_complete_and_gradable": true,
+          "at_least_two_initial_material_drafts": false
+        },
+        "meets_registered_rule": false,
+        "result": "no quality advantage established (inconclusive: too few initial defects)"
+      },
+      "C_vs_A": {
+        "wins": [
+          "Q4",
+          "Q6"
+        ],
+        "losses": [],
+        "ties": [
+          "Q1",
+          "Q2",
+          "Q3",
+          "Q5"
+        ],
+        "checks": {
+          "at_least_two_wins": true,
+          "more_wins_than_losses": true,
+          "material_correction_in_winning_task": true,
+          "no_new_blocker": true,
+          "majors_not_increased": true,
+          "all_states_complete_and_gradable": true,
+          "at_least_two_initial_material_drafts": false
+        },
+        "meets_registered_rule": false,
+        "result": "no quality advantage established (inconclusive: too few initial defects)"
+      },
+      "C_vs_B": {
+        "wins": [
+          "Q4"
+        ],
+        "losses": [],
+        "ties": [
+          "Q1",
+          "Q2",
+          "Q3",
+          "Q5",
+          "Q6"
+        ],
+        "checks": {
+          "at_least_two_wins": false,
+          "more_wins_than_losses": true,
+          "material_correction_in_winning_task": false,
+          "no_new_blocker": true,
+          "majors_not_increased": true,
+          "all_states_complete_and_gradable": true,
+          "at_least_two_initial_material_drafts": false
+        },
+        "meets_registered_rule": false,
+        "result": "no quality advantage established (inconclusive: too few initial defects)"
+      }
+    }
+  },
+  "interpretation": "No skill-specific advantage established: C has one minor-test task win over B, below threshold. B/C each have two wins over A in primary and sensitivity, but excluding untargeted existing test failures leaves only one initially material draft, below frozen floor. No robust/general quality, speed, cost or equivalence claim."
+}

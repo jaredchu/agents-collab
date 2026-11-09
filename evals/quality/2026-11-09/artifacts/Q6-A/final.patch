@@ -1,0 +1,46 @@
+diff --git a/README.md b/README.md
+index 5756c1d..821cdc2 100644
+--- a/README.md
++++ b/README.md
+@@ -101,8 +101,8 @@ code and an `error` field when `--json` was supplied. Argument-parser errors use
+ Clap's standard stderr output and exit code 2.
+ 
+ Commands are argument vectors after `--`, without implicit shell evaluation.
+-The service inherits the launching caller's directory, environment and execution
+-restrictions. Standard input is closed; interactive programs are not supported.
++The service inherits the launching caller's directory (unless `--cwd` is given),
++environment and execution restrictions. Standard input is closed; interactive programs are not supported.
+ 
+ `run --cwd PATH` starts the command in PATH instead of the caller's directory,
+ for callers that cannot change directory between commands:
+@@ -127,6 +127,7 @@ proclease run --cwd ../site -- ./bin/server --port 4000
+   recorded argv and the command's `argv[0]` stay as given.
+ - ProcLease itself does not change directory; only the launched command starts
+   in PATH. Without `--cwd`, behavior and output are unchanged.
++
+ `--owner`, `--task`, `--name` and `--url` are declared metadata. A `running` state
+ means the program spawned, not that a web endpoint is ready.
+ 
+diff --git a/tests/lifecycle.rs b/tests/lifecycle.rs
+index 205e0ec..9c4f89a 100644
+--- a/tests/lifecycle.rs
++++ b/tests/lifecycle.rs
+@@ -3137,6 +3137,18 @@ fn invalid_cwd_fails_before_any_job_is_created() {
+     assert_eq!(output.status.code(), Some(1));
+     assert!(String::from_utf8_lossy(&output.stderr).contains("--cwd"));
+     assert!(fixture.no_jobs());
++
++    // A flag without a value is an argument-parser error (Clap's exit 2, no
++    // JSON envelope), distinct from a nonexistent path; it never launches in
++    // the caller's directory or takes the command as the path.
++    let output = run_from(
++        &fixture,
++        &layout.root,
++        &["run", "--cwd", "--", "/usr/bin/true"],
++    );
++    assert_eq!(output.status.code(), Some(2), "{}", describe(&output));
++    assert!(output.stdout.is_empty(), "{}", describe(&output));
++    assert!(fixture.no_jobs());
+ }
+ 
+ #[test]

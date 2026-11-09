@@ -1,0 +1,214 @@
+{
+  "repository_tests": {
+    "passed": true,
+    "count": 90,
+    "maintainer_private_terms_scan_enabled": true
+  },
+  "offline_harness_regressions": {
+    "passed": true,
+    "count": 4
+  },
+  "website_build": {
+    "passed": true,
+    "internal_links_checked": true,
+    "package_sha256": "d7064c15da522e44b95eaf82d84ee286f8ebe1ab32856459638ec484f52350f4"
+  },
+  "local_browser": [
+    {
+      "route": "/",
+      "width": 1440,
+      "javascript": true,
+      "status": 200,
+      "correct_results_visible": true,
+      "earlier_evidence_preserved": true,
+      "keyboard_skip_passed": true,
+      "overflow": false,
+      "errors": []
+    },
+    {
+      "route": "/experiments/",
+      "width": 1440,
+      "javascript": true,
+      "status": 200,
+      "correct_results_visible": true,
+      "earlier_evidence_preserved": true,
+      "keyboard_skip_passed": true,
+      "overflow": false,
+      "errors": []
+    },
+    {
+      "route": "/",
+      "width": 1440,
+      "javascript": false,
+      "status": 200,
+      "correct_results_visible": true,
+      "earlier_evidence_preserved": true,
+      "keyboard_skip_passed": true,
+      "overflow": false,
+      "errors": []
+    },
+    {
+      "route": "/experiments/",
+      "width": 1440,
+      "javascript": false,
+      "status": 200,
+      "correct_results_visible": true,
+      "earlier_evidence_preserved": true,
+      "keyboard_skip_passed": true,
+      "overflow": false,
+      "errors": []
+    },
+    {
+      "route": "/",
+      "width": 390,
+      "javascript": true,
+      "status": 200,
+      "correct_results_visible": true,
+      "earlier_evidence_preserved": true,
+      "keyboard_skip_passed": true,
+      "overflow": false,
+      "errors": []
+    },
+    {
+      "route": "/experiments/",
+      "width": 390,
+      "javascript": true,
+      "status": 200,
+      "correct_results_visible": true,
+      "earlier_evidence_preserved": true,
+      "keyboard_skip_passed": true,
+      "overflow": false,
+      "errors": []
+    },
+    {
+      "route": "/",
+      "width": 390,
+      "javascript": false,
+      "status": 200,
+      "correct_results_visible": true,
+      "earlier_evidence_preserved": true,
+      "keyboard_skip_passed": true,
+      "overflow": false,
+      "errors": []
+    },
+    {
+      "route": "/experiments/",
+      "width": 390,
+      "javascript": false,
+      "status": 200,
+      "correct_results_visible": true,
+      "earlier_evidence_preserved": true,
+      "keyboard_skip_passed": true,
+      "overflow": false,
+      "errors": []
+    }
+  ],
+  "study_privacy_scan": {
+    "private_marker_hits": 0,
+    "maintainer_excluded_identifier_hits": 0,
+    "exception": "Frozen source synthetic invalid-domain Git identity, no personal account"
+  },
+  "frozen_inputs_unchanged": true,
+  "owner_configuration_hashes_and_mtimes_unchanged": true,
+  "installed_skill_hashes_unchanged": true,
+  "final_grading_audit": [
+    {
+      "task": "Q1",
+      "state": "completed",
+      "assessment_complete": true,
+      "artifact_count": 1,
+      "model_ids": [
+        "claude-fable-5-1"
+      ],
+      "effort_requested": "high",
+      "runtime_effort_attested": false,
+      "source_packet_unchanged": true,
+      "tool_calls": 19,
+      "unexpected_or_external_path_attempts": [],
+      "assessment_sha256": "f1e0dee6843afcdd6103a1ff69085e67f88ae3c906c1f507e43f10e47e0a79eb",
+      "reviewed_commitment": "f1c60ba37df688e2ef0b30c71610c8fe97d803f527c147a9f040ade489167242"
+    },
+    {
+      "task": "Q2",
+      "state": "completed",
+      "assessment_complete": true,
+      "artifact_count": 2,
+      "model_ids": [
+        "claude-fable-5-1"
+      ],
+      "effort_requested": "high",
+      "runtime_effort_attested": false,
+      "source_packet_unchanged": true,
+      "tool_calls": 16,
+      "unexpected_or_external_path_attempts": [],
+      "assessment_sha256": "d0c840327c22b7d4f44fd43d709d860d99319f69632f8c45260655862071c6fd",
+      "reviewed_commitment": "f1c60ba37df688e2ef0b30c71610c8fe97d803f527c147a9f040ade489167242"
+    },
+    {
+      "task": "Q3",
+      "state": "completed",
+      "assessment_complete": true,
+      "artifact_count": 1,
+      "model_ids": [
+        "claude-fable-5-1"
+      ],
+      "effort_requested": "high",
+      "runtime_effort_attested": false,
+      "source_packet_unchanged": true,
+      "tool_calls": 13,
+      "unexpected_or_external_path_attempts": [],
+      "assessment_sha256": "5799754f7439b271fc37047acdc6be303b4ce7a26d6cf8c6dba97d6adac06f0d",
+      "reviewed_commitment": "f1c60ba37df688e2ef0b30c71610c8fe97d803f527c147a9f040ade489167242"
+    },
+    {
+      "task": "Q4",
+      "state": "completed",
+      "assessment_complete": true,
+      "artifact_count": 3,
+      "model_ids": [
+        "claude-fable-5-1"
+      ],
+      "effort_requested": "high",
+      "runtime_effort_attested": false,
+      "source_packet_unchanged": true,
+      "tool_calls": 18,
+      "unexpected_or_external_path_attempts": [],
+      "assessment_sha256": "e77076e6804cc8ad4e1c9e9707cab1d921c6dcc02b63d53c6b01bffef0e2236a",
+      "reviewed_commitment": "f1c60ba37df688e2ef0b30c71610c8fe97d803f527c147a9f040ade489167242"
+    },
+    {
+      "task": "Q5",
+      "state": "completed",
+      "assessment_complete": true,
+      "artifact_count": 1,
+      "model_ids": [
+        "claude-fable-5-1"
+      ],
+      "effort_requested": "high",
+      "runtime_effort_attested": false,
+      "source_packet_unchanged": true,
+      "tool_calls": 15,
+      "unexpected_or_external_path_attempts": [],
+      "assessment_sha256": "f157868274e2221af5527ef323a47d4feebf9e682ea6b6d7ef5d2c598ef9a317",
+      "reviewed_commitment": "f1c60ba37df688e2ef0b30c71610c8fe97d803f527c147a9f040ade489167242"
+    },
+    {
+      "task": "Q6",
+      "state": "completed",
+      "assessment_complete": true,
+      "artifact_count": 4,
+      "model_ids": [
+        "claude-fable-5-1"
+      ],
+      "effort_requested": "high",
+      "runtime_effort_attested": false,
+      "source_packet_unchanged": true,
+      "tool_calls": 21,
+      "unexpected_or_external_path_attempts": [],
+      "assessment_sha256": "247ec3493b68df223bae21a2ff58114d798acf87c64533ad32522ae645a40344",
+      "reviewed_commitment": "f1c60ba37df688e2ef0b30c71610c8fe97d803f527c147a9f040ade489167242"
+    }
+  ],
+  "target_checkout_edited_by_study": false,
+  "publication_accuracy_review": "Initial+single focused review, all scoring issues resolved; final mechanical wording corrected by lead."
+}

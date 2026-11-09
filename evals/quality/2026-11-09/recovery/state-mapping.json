@@ -1,0 +1,170 @@
+[
+  {
+    "task": "Q2",
+    "state": "A",
+    "original_id": "artifact-e69ddfffab",
+    "canonical_original": "artifact-e69ddfffab",
+    "recovery_id": "artifact-f478605e76c22a84"
+  },
+  {
+    "task": "Q2",
+    "state": "initial",
+    "original_id": "artifact-b20fd33cfb",
+    "canonical_original": "artifact-b20fd33cfb",
+    "recovery_id": "artifact-dab7a4294aaf56f8"
+  },
+  {
+    "task": "Q2",
+    "state": "B",
+    "original_id": "artifact-dd3aa27d1e",
+    "canonical_original": "artifact-b20fd33cfb",
+    "recovery_id": "artifact-dab7a4294aaf56f8"
+  },
+  {
+    "task": "Q2",
+    "state": "C",
+    "original_id": "artifact-3de59d5bf2",
+    "canonical_original": "artifact-b20fd33cfb",
+    "recovery_id": "artifact-dab7a4294aaf56f8"
+  },
+  {
+    "task": "Q4",
+    "state": "B",
+    "original_id": "artifact-3b2dc1d896",
+    "canonical_original": "artifact-3b2dc1d896",
+    "recovery_id": "artifact-91bd28c1a5c18667"
+  },
+  {
+    "task": "Q4",
+    "state": "C",
+    "original_id": "artifact-a6dcc1b90e",
+    "canonical_original": "artifact-a6dcc1b90e",
+    "recovery_id": "artifact-f9b52cde130ecb34"
+  },
+  {
+    "task": "Q4",
+    "state": "A",
+    "original_id": "artifact-70b844df47",
+    "canonical_original": "artifact-70b844df47",
+    "recovery_id": "artifact-7d2c3ee339dc0581"
+  },
+  {
+    "task": "Q4",
+    "state": "initial",
+    "original_id": "artifact-e9165ed288",
+    "canonical_original": "artifact-70b844df47",
+    "recovery_id": "artifact-7d2c3ee339dc0581"
+  },
+  {
+    "task": "Q1",
+    "state": "A",
+    "original_id": "artifact-5cc3857931",
+    "canonical_original": "artifact-5cc3857931",
+    "recovery_id": "artifact-873c5026c1eafccd"
+  },
+  {
+    "task": "Q1",
+    "state": "C",
+    "original_id": "artifact-4c14f8ed83",
+    "canonical_original": "artifact-5cc3857931",
+    "recovery_id": "artifact-873c5026c1eafccd"
+  },
+  {
+    "task": "Q1",
+    "state": "initial",
+    "original_id": "artifact-bcff87285b",
+    "canonical_original": "artifact-5cc3857931",
+    "recovery_id": "artifact-873c5026c1eafccd"
+  },
+  {
+    "task": "Q1",
+    "state": "B",
+    "original_id": "artifact-66a156c7db",
+    "canonical_original": "artifact-5cc3857931",
+    "recovery_id": "artifact-873c5026c1eafccd"
+  },
+  {
+    "task": "Q5",
+    "state": "A",
+    "original_id": "artifact-205fe576ba",
+    "canonical_original": "artifact-205fe576ba",
+    "recovery_id": "artifact-a742c71054b736ff"
+  },
+  {
+    "task": "Q5",
+    "state": "C",
+    "original_id": "artifact-827d727ae7",
+    "canonical_original": "artifact-205fe576ba",
+    "recovery_id": "artifact-a742c71054b736ff"
+  },
+  {
+    "task": "Q5",
+    "state": "B",
+    "original_id": "artifact-90155227a9",
+    "canonical_original": "artifact-205fe576ba",
+    "recovery_id": "artifact-a742c71054b736ff"
+  },
+  {
+    "task": "Q5",
+    "state": "initial",
+    "original_id": "artifact-e312eb6a90",
+    "canonical_original": "artifact-205fe576ba",
+    "recovery_id": "artifact-a742c71054b736ff"
+  },
+  {
+    "task": "Q3",
+    "state": "initial",
+    "original_id": "artifact-96eb25fdea",
+    "canonical_original": "artifact-96eb25fdea",
+    "recovery_id": "artifact-84789bf28a93a13b"
+  },
+  {
+    "task": "Q3",
+    "state": "C",
+    "original_id": "artifact-e19a78dc1e",
+    "canonical_original": "artifact-96eb25fdea",
+    "recovery_id": "artifact-84789bf28a93a13b"
+  },
+  {
+    "task": "Q3",
+    "state": "B",
+    "original_id": "artifact-21db2366d9",
+    "canonical_original": "artifact-96eb25fdea",
+    "recovery_id": "artifact-84789bf28a93a13b"
+  },
+  {
+    "task": "Q3",
+    "state": "A",
+    "original_id": "artifact-bac8c80f26",
+    "canonical_original": "artifact-96eb25fdea",
+    "recovery_id": "artifact-84789bf28a93a13b"
+  },
+  {
+    "task": "Q6",
+    "state": "C",
+    "original_id": "artifact-9f418bf496",
+    "canonical_original": "artifact-9f418bf496",
+    "recovery_id": "artifact-c6082ee747080ee9"
+  },
+  {
+    "task": "Q6",
+    "state": "B",
+    "original_id": "artifact-e5d811bd39",
+    "canonical_original": "artifact-e5d811bd39",
+    "recovery_id": "artifact-8ff7b1a669132830"
+  },
+  {
+    "task": "Q6",
+    "state": "initial",
+    "original_id": "artifact-a0cd71248f",
+    "canonical_original": "artifact-a0cd71248f",
+    "recovery_id": "artifact-cfcb64f2e25e2ca4"
+  },
+  {
+    "task": "Q6",
+    "state": "A",
+    "original_id": "artifact-b73a53106e",
+    "canonical_original": "artifact-b73a53106e",
+    "recovery_id": "artifact-0aecaccf6ee1ccb7"
+  }
+]

@@ -1,0 +1,121 @@
+{
+  "seed": 2026110902,
+  "initial_draft_order": [
+    "Q2",
+    "Q4",
+    "Q1",
+    "Q5",
+    "Q3",
+    "Q6"
+  ],
+  "finishing_order": [
+    {
+      "task": "Q2",
+      "arm": "A",
+      "run_id": "Q2-A",
+      "order_within_task": 1
+    },
+    {
+      "task": "Q2",
+      "arm": "C",
+      "run_id": "Q2-C",
+      "order_within_task": 2
+    },
+    {
+      "task": "Q2",
+      "arm": "B",
+      "run_id": "Q2-B",
+      "order_within_task": 3
+    },
+    {
+      "task": "Q4",
+      "arm": "A",
+      "run_id": "Q4-A",
+      "order_within_task": 1
+    },
+    {
+      "task": "Q4",
+      "arm": "B",
+      "run_id": "Q4-B",
+      "order_within_task": 2
+    },
+    {
+      "task": "Q4",
+      "arm": "C",
+      "run_id": "Q4-C",
+      "order_within_task": 3
+    },
+    {
+      "task": "Q1",
+      "arm": "B",
+      "run_id": "Q1-B",
+      "order_within_task": 1
+    },
+    {
+      "task": "Q1",
+      "arm": "C",
+      "run_id": "Q1-C",
+      "order_within_task": 2
+    },
+    {
+      "task": "Q1",
+      "arm": "A",
+      "run_id": "Q1-A",
+      "order_within_task": 3
+    },
+    {
+      "task": "Q5",
+      "arm": "C",
+      "run_id": "Q5-C",
+      "order_within_task": 1
+    },
+    {
+      "task": "Q5",
+      "arm": "A",
+      "run_id": "Q5-A",
+      "order_within_task": 2
+    },
+    {
+      "task": "Q5",
+      "arm": "B",
+      "run_id": "Q5-B",
+      "order_within_task": 3
+    },
+    {
+      "task": "Q3",
+      "arm": "B",
+      "run_id": "Q3-B",
+      "order_within_task": 1
+    },
+    {
+      "task": "Q3",
+      "arm": "A",
+      "run_id": "Q3-A",
+      "order_within_task": 2
+    },
+    {
+      "task": "Q3",
+      "arm": "C",
+      "run_id": "Q3-C",
+      "order_within_task": 3
+    },
+    {
+      "task": "Q6",
+      "arm": "C",
+      "run_id": "Q6-C",
+      "order_within_task": 1
+    },
+    {
+      "task": "Q6",
+      "arm": "B",
+      "run_id": "Q6-B",
+      "order_within_task": 2
+    },
+    {
+      "task": "Q6",
+      "arm": "A",
+      "run_id": "Q6-A",
+      "order_within_task": 3
+    }
+  ]
+}

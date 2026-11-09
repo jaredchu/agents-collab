@@ -1,0 +1,61 @@
+{
+  "comparisons": {
+    "B_vs_A": {
+      "status": "incomplete/inconclusive",
+      "success": null,
+      "reason": "Required blind grading unavailable for every task; registered complete task scores and maintainability unknown."
+    },
+    "C_vs_A": {
+      "status": "incomplete/inconclusive",
+      "success": null,
+      "reason": "Required blind grading unavailable for every task; registered complete task scores and maintainability unknown."
+    },
+    "C_vs_B": {
+      "status": "incomplete/inconclusive",
+      "success": null,
+      "reason": "Required blind grading unavailable for every task; registered complete task scores and maintainability unknown."
+    }
+  },
+  "secondary": {
+    "A": {
+      "runs": 6,
+      "sum_branch_wall_clock_s": 1807.253,
+      "median_branch_wall_clock_s": 313.189,
+      "range_s": [
+        235.129,
+        332.65
+      ],
+      "note": "Branch runs overlapped; sum is not elapsed study time or human time; no speed claim."
+    },
+    "B": {
+      "runs": 6,
+      "sum_branch_wall_clock_s": 1411.214,
+      "median_branch_wall_clock_s": 181.132,
+      "range_s": [
+        146.469,
+        369.003
+      ],
+      "note": "Branch runs overlapped; sum is not elapsed study time or human time; no speed claim."
+    },
+    "C": {
+      "runs": 6,
+      "sum_branch_wall_clock_s": 1872.081,
+      "median_branch_wall_clock_s": 241.032,
+      "range_s": [
+        167.101,
+        540.261
+      ],
+      "note": "Branch runs overlapped; sum is not elapsed study time or human time; no speed claim."
+    }
+  },
+  "causal_claims": "No general quality, speed or cost claim; no equivalence claim. No registered quality advantage established.",
+  "study_status": "blocked_pending_required_blind_grading",
+  "completion_status": "unfinished",
+  "publication_status": "interim record only; final results pending",
+  "remaining_work": [
+    "Recover the required grading access without a substitute or paid fallback",
+    "Declare any recovery amendment and recheck anonymity before unfinished grading resumes",
+    "Complete required blind assessments and evidence reconciliation",
+    "Apply frozen success criteria and publish final results"
+  ]
+}

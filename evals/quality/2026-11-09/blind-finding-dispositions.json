@@ -1,0 +1,209 @@
+[
+  {
+    "task": "Q1",
+    "artifact_id": "artifact-873c5026c1eafccd",
+    "grader_finding_id": "q1-note-empty-human-message",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q1",
+    "artifact_id": "artifact-873c5026c1eafccd",
+    "grader_finding_id": "q1-note-test-wallclock-margin",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q2",
+    "artifact_id": "artifact-dab7a4294aaf56f8",
+    "grader_finding_id": "q2-dab7-clap-guard-redundant",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q2",
+    "artifact_id": "artifact-dab7a4294aaf56f8",
+    "grader_finding_id": "q2-dab7-16mib-fixture-io",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q2",
+    "artifact_id": "artifact-f478605e76c22a84",
+    "grader_finding_id": "q2-f478-clap-guard-redundant",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q2",
+    "artifact_id": "artifact-f478605e76c22a84",
+    "grader_finding_id": "q2-f478-record-schema-duplicated-in-test",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q2",
+    "artifact_id": "artifact-f478605e76c22a84",
+    "grader_finding_id": "q2-f478-16mib-fixture-io",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q3",
+    "artifact_id": "artifact-84789bf28a93a13b",
+    "grader_finding_id": "q3-readme-readonly-wording",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q3",
+    "artifact_id": "artifact-84789bf28a93a13b",
+    "grader_finding_id": "q3-window-test-wallclock",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q4",
+    "artifact_id": "artifact-91bd28c1a5c18667",
+    "grader_finding_id": "91bd-keep-skips-quarantine-retry",
+    "grader_severity": "minor",
+    "disposition": "unconfirmed_requirement_dispute",
+    "counted_issue_id": null,
+    "reason": "B preserves quarantine during protection, unlike base. Exactly-as-today conflicts with nothing-deleted parenthetical; cannot assign a settled violation from ambiguous wording. Opposite operator allegation is disputed too."
+  },
+  {
+    "task": "Q4",
+    "artifact_id": "artifact-f9b52cde130ecb34",
+    "grader_finding_id": "f9b5-unused-completed-id-param",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q4",
+    "artifact_id": "artifact-7d2c3ee339dc0581",
+    "grader_finding_id": "7d2c-full-cargo-test-fails",
+    "grader_severity": "major",
+    "disposition": "confirmed_common_acceptance_duplicate",
+    "counted_issue_id": "Q4-suite",
+    "reason": "Count full-suite exit101 once via common acceptance. Named log identifies existing expiry/socket test; grader described environment sensitivity as plausible, not a proved cause."
+  },
+  {
+    "task": "Q4",
+    "artifact_id": "artifact-7d2c3ee339dc0581",
+    "grader_finding_id": "7d2c-deferred-test-thin",
+    "grader_severity": "note",
+    "disposition": "confirmed",
+    "counted_issue_id": "Q4-deferral-test",
+    "reason": "Concrete missing candidate assertions are weak-but-present coverage, minor under frozen rubric. B/C add assertions; independent of unresolved candidate-list semantics."
+  },
+  {
+    "task": "Q5",
+    "artifact_id": "artifact-a742c71054b736ff",
+    "grader_finding_id": "q5a-test-lease-headroom",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q5",
+    "artifact_id": "artifact-a742c71054b736ff",
+    "grader_finding_id": "q5a-select-visible-rank-dup",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q6",
+    "artifact_id": "artifact-8ff7b1a669132830",
+    "grader_finding_id": "readme-lazy-continuation",
+    "grader_severity": "minor",
+    "disposition": "confirmed",
+    "counted_issue_id": "Q6-readme-format",
+    "reason": "Rendered all four README trees; I/B/C swallow paragraph, A separates it."
+  },
+  {
+    "task": "Q6",
+    "artifact_id": "artifact-8ff7b1a669132830",
+    "grader_finding_id": "std-relative-program-coupling",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q6",
+    "artifact_id": "artifact-0aecaccf6ee1ccb7",
+    "grader_finding_id": "cargo-test-failed",
+    "grader_severity": "major",
+    "disposition": "confirmed_common_acceptance_duplicate",
+    "counted_issue_id": "Q6-suite",
+    "reason": "Count full-suite exit101 once via common acceptance. Logs identify existing expiry/socket test. Grader speculation about new parser test causing it is contradicted by named failure log; preserve score as supplied with this qualification."
+  },
+  {
+    "task": "Q6",
+    "artifact_id": "artifact-0aecaccf6ee1ccb7",
+    "grader_finding_id": "shebang-dollar0-changed",
+    "grader_severity": "minor",
+    "disposition": "confirmed",
+    "counted_issue_id": "Q6-script-name",
+    "reason": "Exact supplementary reproduction confirms no-option compatibility regression. Frozen rubric normalizes severity to major."
+  },
+  {
+    "task": "Q6",
+    "artifact_id": "artifact-c6082ee747080ee9",
+    "grader_finding_id": "readme-lazy-continuation",
+    "grader_severity": "minor",
+    "disposition": "confirmed",
+    "counted_issue_id": "Q6-readme-format",
+    "reason": "Rendered all four README trees; I/B/C swallow paragraph, A separates it."
+  },
+  {
+    "task": "Q6",
+    "artifact_id": "artifact-c6082ee747080ee9",
+    "grader_finding_id": "std-relative-program-coupling",
+    "grader_severity": "note",
+    "disposition": "note_not_counted",
+    "counted_issue_id": null,
+    "reason": "No demonstrated criterion failure; retain observation and uncertainty."
+  },
+  {
+    "task": "Q6",
+    "artifact_id": "artifact-cfcb64f2e25e2ca4",
+    "grader_finding_id": "shebang-dollar0-changed",
+    "grader_severity": "minor",
+    "disposition": "confirmed",
+    "counted_issue_id": "Q6-script-name",
+    "reason": "Exact supplementary reproduction confirms no-option compatibility regression. Frozen rubric normalizes severity to major."
+  },
+  {
+    "task": "Q6",
+    "artifact_id": "artifact-cfcb64f2e25e2ca4",
+    "grader_finding_id": "readme-lazy-continuation",
+    "grader_severity": "minor",
+    "disposition": "confirmed",
+    "counted_issue_id": "Q6-readme-format",
+    "reason": "Rendered all four README trees; I/B/C swallow paragraph, A separates it."
+  }
+]

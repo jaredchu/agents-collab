@@ -1,0 +1,9 @@
+{
+  "reviewer": "gpt-6-astra",
+  "effort": "high",
+  "verdict": "No remaining findings",
+  "commitment_sha256": "f1c60ba37df688e2ef0b30c71610c8fe97d803f527c147a9f040ade489167242",
+  "clears": "Recovery method only, not grading or conclusions",
+  "round": "single focused follow-up",
+  "limits": "Prior publication anonymity limitation remains; all grading and final gates required."
+}

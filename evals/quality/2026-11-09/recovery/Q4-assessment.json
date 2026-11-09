@@ -1,0 +1,194 @@
+{
+  "assessments": [
+    {
+      "artifact_id": "artifact-91bd28c1a5c18667",
+      "hidden_groups_confirmed": [
+        {
+          "group": "in-progress-protection",
+          "check": "q4.deferred.report",
+          "severity": "major",
+          "code_support": "src/store.rs:293-296 returns early with an empty report whenever report.deferred && explicit_keep.is_some(), before the directory scan, so `prune --dry-run --keep N` under a held retention lock lists no candidates. The oracle expected the seven collectable IDs. The deferral and no-delete parts of the check passed; only the dry-run candidate listing differs. Deliberate and documented in README.md ('its preview then lists no candidates either')."
+        }
+      ],
+      "hidden_check_disputes": [
+        {
+          "check_id": "q4.deferred.report",
+          "public_criterion": "3 and 4",
+          "reason": "Ambiguous specification rather than a clear oracle error. Criterion 4 literally says the dry run reports exactly the candidates `prune --keep N` would remove from the same state; under protection the real run removes nothing and returns empty candidates (base path store.rs `if report.deferred && !dry_run { return }`), so an empty dry-run list is the literal reading. Criterion 3 says deferral is 'exactly as today', and today's deferred default dry run does list candidates, which is the oracle's reading. Both readings are defensible; the artifact chose the criterion-4 reading and documented it. Confidence that the oracle is wrong: low to moderate. Operator should decide which reading governs.",
+          "evidence": "src/store.rs:293-296; README.md prune paragraph; base behavior at store.rs line `if report.deferred && !dry_run`."
+        }
+      ],
+      "group_merges": [],
+      "additional_findings": [
+        {
+          "id": "91bd-keep-skips-quarantine-retry",
+          "location": "src/store.rs:293-296",
+          "severity": "minor",
+          "criterion": "3 ('job collection is deferred exactly as today')",
+          "failure_scenario": "With a bulk stop holding retention protection and an interrupted deletion left as a `.prune-<id>-<uuid>` directory, `prune --keep N` (any N, 100 included) returns before the scan. Quarantine directories are not retried and no per-record 'history preserved' warnings are produced, whereas default `prune` retries quarantine under deferral. Deletes less, never more, so not a safety violation.",
+          "evidence": "Early return precedes the `for entry in fs::read_dir` loop that handles quarantined_id entries; test prune_keep_is_deferred_while_retention_is_protected asserts `pending.join(\"partial\").exists()` after `--keep` and `!pending.exists()` after default prune, confirming the divergence by design.",
+          "reproducer": "Seed a 0o700 `.prune-a00000000009-<32hex>` dir, hold a shared flock on `.retention`, run `--json prune --keep 0`; observe removed [] and the quarantine dir still present; run `--json prune`; observe removed ['a00000000009'].",
+          "support": "conclusive_code_analysis"
+        }
+      ],
+      "maintainability": {
+        "score": 2,
+        "reason": "Follows existing structure and reuses the locked path, but `explicit_keep: Option<usize>` carries two meanings (count limit and 'skip everything under deferral'), creating a second behavioral mode for quarantine retry and warnings that diverges from default collection. Tests are deterministic, seeded, thorough (ties, 100 vs default, every protected class, quarantine under protection, ten invalid forms) and honour PROCLEASE_TEST_ROOT via the shared Fixture. README is accurate to its own behavior.",
+        "evidence": "src/store.rs:252-296 (doc comment: 'also gates quarantine retries on permission'); tests/lifecycle.rs new block after line 2474."
+      },
+      "review_items": [
+        {
+          "item": "help/README (7)",
+          "status": "pass",
+          "location": "src/main.rs:124-131 clap help; README.md:85 and :328-338"
+        },
+        {
+          "item": "test coverage (8)",
+          "status": "pass",
+          "location": "tests/lifecycle.rs: prune_keep_replaces_the_count_limit_for_one_invocation_only (N=0, 3, 5, 6, 100, 24h, dry-run equivalence, non-persistence incl. run/list/watch), prune_keep_100_matches_default_retention_beyond_the_count, prune_keep_never_collects_or_counts_protected_jobs (starting/running/stopping/unknown, live keeper, live guardian group, null finish), prune_keep_is_deferred_while_retention_is_protected, prune_keep_rejects_invalid_values_before_deleting_anything"
+        },
+        {
+          "item": "no change to keeper/run/list collection call sites (5, code review)",
+          "status": "pass",
+          "location": "src/main.rs:339, :509, :625 and src/lifecycle.rs:238 unchanged; `prune`/`prune_locked` default to HISTORY_MAX_FINISHED via prune_locked_with(.., None)"
+        },
+        {
+          "item": "common acceptance",
+          "status": "pass",
+          "location": "checks: fmt 0, clippy 0, test 0, build 0; diff touches only README.md, src/main.rs, src/store.rs, tests/lifecycle.rs"
+        }
+      ],
+      "limits": [
+        "No commands executed; conclusions from supplied check results and static reading.",
+        "Platform-specific process/group probing in tests not verified beyond code reading."
+      ]
+    },
+    {
+      "artifact_id": "artifact-f9b52cde130ecb34",
+      "hidden_groups_confirmed": [
+        {
+          "group": "in-progress-protection",
+          "check": "q4.deferred.report",
+          "severity": "major",
+          "code_support": "src/store.rs prune_locked_keeping: `if report.deferred && (!dry_run || exact_preview) { return Ok(report); }` with exact_preview=true from prune_keeping (the only `--keep` path). Under a held retention lock the dry run returns after the scan with no job candidates; the oracle expected the seven collectable IDs. Quarantine retry still runs because the return is after the scan. Deliberate and documented in README ('no job directories while collection is deferred')."
+        }
+      ],
+      "hidden_check_disputes": [
+        {
+          "check_id": "q4.deferred.report",
+          "public_criterion": "3 and 4",
+          "reason": "Same ambiguity as described for the other artifact with this behavior: criterion 4's literal 'reports exactly the candidates that prune --keep N would remove from the same state' yields an empty list under deferral because the real run removes nothing; criterion 3's 'exactly as today' plus the default deferred dry-run behavior yields the oracle's list. Not a clear oracle error; flagged for operator reconciliation.",
+          "evidence": "src/store.rs exact_preview branch; doc comment 'an exact_preview lists only what this call would delete now'; README.md prune paragraph."
+        }
+      ],
+      "group_merges": [],
+      "additional_findings": [
+        {
+          "id": "f9b5-unused-completed-id-param",
+          "location": "src/store.rs prune_keeping signature",
+          "severity": "note",
+          "criterion": "none (code quality)",
+          "failure_scenario": "`prune_keeping` accepts `completed_id` but its sole caller (src/main.rs:683) always passes None; a bool `exact_preview` flag is threaded through the shared locked path. No functional failure.",
+          "evidence": "src/main.rs:683 `store.prune_keeping(*dry_run, None, max_finished)`",
+          "reproducer": "n/a",
+          "support": "conclusive_code_analysis"
+        }
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Localized change: one shared `prune_locked_keeping` with a count parameter, defaults routed through `prune_locked`, default behaviour untouched including quarantine retry under deferral. The `exact_preview` bool is a small mode flag but clearly documented. Tests are deterministic, seeded, honour PROCLEASE_TEST_ROOT, cover every criterion including both default and `--keep` dry-run under protection, ties, 100 vs default, and all protected classes; the live-guardian fixture is made more precise (keeper verified absent so only the group protects). README accurate.",
+        "evidence": "src/store.rs:83-135 (diff numbering); tests/lifecycle.rs new block after line 2474."
+      },
+      "review_items": [
+        {
+          "item": "help/README (7)",
+          "status": "pass",
+          "location": "src/main.rs:124-131; README.md:85 and :328-338"
+        },
+        {
+          "item": "test coverage (8)",
+          "status": "pass",
+          "location": "tests/lifecycle.rs: five new prune_keep_* tests covering N=0, below count, 100, 24h rule, each protected class, deferral (default and --keep), dry-run equivalence, invalid values"
+        },
+        {
+          "item": "no change to keeper/run/list collection call sites (5, code review)",
+          "status": "pass",
+          "location": "src/main.rs:339, :509, :625 and src/lifecycle.rs:238 unchanged; `prune` still calls `prune_locked`, which passes HISTORY_MAX_FINISHED and exact_preview=false"
+        },
+        {
+          "item": "common acceptance",
+          "status": "pass",
+          "location": "checks: fmt 0, clippy 0, test 0, build 0; diff limited to README.md, src/main.rs, src/store.rs, tests/lifecycle.rs"
+        }
+      ],
+      "limits": [
+        "No commands executed; static analysis plus supplied check results only."
+      ]
+    },
+    {
+      "artifact_id": "artifact-7d2c3ee339dc0581",
+      "hidden_groups_confirmed": [],
+      "hidden_check_disputes": [],
+      "group_merges": [],
+      "additional_findings": [
+        {
+          "id": "7d2c-full-cargo-test-fails",
+          "location": "checks.json common.test exit_code 101",
+          "severity": "major",
+          "criterion": "common acceptance: cargo test passes (full suite)",
+          "failure_scenario": "The grader's full `cargo test` run exited 101 while fmt, clippy, build and all 15 objective checks passed. The failing test is not identified in the supplied packet. The five new tests are seeded and deterministic by construction and three of them are byte-identical to tests that passed in another tree with equivalent default-path semantics; the deferred test here is a strict subset of assertions that hold against the unchanged base logic (store.rs:361-363 returns empty candidates on deferred non-dry runs). A pre-existing live-process test or environment-sensitive failure is therefore plausible but unconfirmed.",
+          "evidence": "artifact-7d2c3ee339dc0581.checks.json common.test.exit_code=101; src/store.rs:238-256 shows default callers route through prune_keeping/prune_locked_keeping with HISTORY_MAX_FINISHED, so default semantics are unchanged.",
+          "reproducer": "Run `cargo test` with CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT outside the repo and capture the failing test name; rerun that test in isolation to distinguish flakiness from a deterministic defect.",
+          "support": "existing_check"
+        },
+        {
+          "id": "7d2c-deferred-test-thin",
+          "location": "tests/lifecycle.rs prune_keep_is_deferred_while_retention_is_protected",
+          "severity": "note",
+          "criterion": "8 (deferral under retention protection, dry-run equivalence)",
+          "failure_scenario": "The deferred dry run is asserted only for `deferred` and `removed`; the `candidates` list under protection and the default (no `--keep`) deferred path are not asserted. Coverage of the criterion is present but weaker than the other trees.",
+          "evidence": "Test asserts preview[\"deferred\"] and preview[\"removed\"] only before dropping the guard.",
+          "reproducer": "n/a",
+          "support": "conclusive_code_analysis"
+        }
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Smallest and most direct change: a single `prune_locked_keeping(max_finished)` with `prune`, `prune_locked` and the CLI all funnelling through it; no mode flags; default dry-run-under-deferral behavior preserved exactly as today, which is also what the hidden checks expect. Tests are seeded, deterministic and honour PROCLEASE_TEST_ROOT, covering every listed criterion, though the deferral test is thinner. README and help are accurate. Score held at 3 rather than 4 because of the thin deferral test and the unexplained full-suite failure.",
+        "evidence": "src/store.rs:238-273; src/main.rs:677-686; tests/lifecycle.rs new block after line 2474."
+      },
+      "review_items": [
+        {
+          "item": "help/README (7)",
+          "status": "pass",
+          "location": "src/main.rs:124-131; README.md:85 and :328-337"
+        },
+        {
+          "item": "test coverage (8)",
+          "status": "pass",
+          "location": "tests/lifecycle.rs: prune_keep_replaces_the_count_limit_for_one_invocation_only, prune_keep_100_matches_default_retention_beyond_the_count, prune_keep_never_collects_or_counts_protected_jobs, prune_keep_is_deferred_while_retention_is_protected (thinner), prune_keep_rejects_invalid_values_before_deleting_anything"
+        },
+        {
+          "item": "no change to keeper/run/list collection call sites (5, code review)",
+          "status": "pass",
+          "location": "src/main.rs:339, :509, :625 and src/lifecycle.rs:238 unchanged; `prune` delegates to prune_keeping with HISTORY_MAX_FINISHED (store.rs:238-240)"
+        },
+        {
+          "item": "common acceptance",
+          "status": "fail",
+          "location": "checks.json common.test exit_code 101; fmt, clippy, build 0; diff limited to allowed paths; Cargo files unchanged"
+        }
+      ],
+      "limits": [
+        "Failing test name and output are not in the packet; cannot distinguish a deterministic defect from a flaky live-process test.",
+        "No commands executed."
+      ]
+    }
+  ],
+  "overall_limits": [
+    "Static review only; no cargo, shell or test execution was performed.",
+    "The q4.deferred.report failure in two trees stems from a specification ambiguity between criterion 3 ('exactly as today') and criterion 4 ('exactly the candidates the real run would remove'); the frozen oracle encodes the criterion-3 reading. Severity is left as frozen; the operator should reconcile.",
+    "Platform-dependent behaviors (flock contention codes, process-group probing) were checked by reading, not by running.",
+    "Three trees share identical help text, README skeleton and most tests; they are nonetheless distinct source trees and were assessed separately."
+  ]
+}

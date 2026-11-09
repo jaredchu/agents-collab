@@ -1,0 +1,352 @@
+{
+  "task": "Q2",
+  "common": {
+    "fmt": {
+      "exit_code": 0,
+      "timed_out": false,
+      "owned_process_group": "absent"
+    },
+    "clippy": {
+      "exit_code": 0,
+      "timed_out": false,
+      "owned_process_group": "absent"
+    },
+    "test": {
+      "exit_code": 0,
+      "timed_out": false,
+      "owned_process_group": "absent"
+    },
+    "build": {
+      "exit_code": 0,
+      "timed_out": false,
+      "owned_process_group": "absent"
+    }
+  },
+  "objective": {
+    "binary_sha256": "fe2b0b843a309162f7cdc59298c7573221e3e801012e89344e80d21dbc221289",
+    "checks": [
+      {
+        "base_expectation": "fail",
+        "criteria": [
+          1,
+          2
+        ],
+        "dependent_symptom": false,
+        "depends_on": null,
+        "description": "--head 1, 3 and 500 return the first N escaped lines",
+        "evidence": "--head 3: ok; --head 1: ok; --head 500 (first/last/len): ok",
+        "group": "head-select",
+        "id": "q2.head.select",
+        "severity": "major",
+        "status": "pass"
+      },
+      {
+        "base_expectation": "fail",
+        "criteria": [
+          1
+        ],
+        "dependent_symptom": false,
+        "depends_on": null,
+        "description": "--head larger than the log returns every line",
+        "evidence": "--head 10 on 3-line log: ok",
+        "group": "head-select",
+        "id": "q2.head.short_log",
+        "severity": "minor",
+        "status": "pass"
+      },
+      {
+        "base_expectation": "fail",
+        "criteria": [
+          4
+        ],
+        "dependent_symptom": false,
+        "depends_on": null,
+        "description": "JSON keys unchanged with --head",
+        "evidence": "keys: ok; id: ok; logs_truncated: ok",
+        "group": "envelope",
+        "id": "q2.envelope",
+        "severity": "minor",
+        "status": "pass"
+      },
+      {
+        "base_expectation": "fail",
+        "criteria": [
+          4
+        ],
+        "dependent_symptom": false,
+        "depends_on": null,
+        "description": "logs_truncated and the human stderr note are preserved with --head",
+        "evidence": "json logs_truncated: ok; json lines: ok; human [logs 000000000202 --head 2] exit 0 stderr=Log capture reached its byte cap; newer output was discarded.\n",
+        "group": "truncation",
+        "id": "q2.truncation",
+        "severity": "major",
+        "status": "pass"
+      },
+      {
+        "base_expectation": "fail",
+        "criteria": [
+          1,
+          4
+        ],
+        "dependent_symptom": false,
+        "depends_on": null,
+        "description": "human --head output escapes terminal controls exactly as --tail does",
+        "evidence": "[logs 000000000201 --head 2] exit 0; stdout bytes: ok; no raw ESC",
+        "group": "escaping",
+        "id": "q2.escape_human",
+        "severity": "major",
+        "status": "pass"
+      },
+      {
+        "base_expectation": "pass",
+        "criteria": [
+          2
+        ],
+        "dependent_symptom": false,
+        "depends_on": null,
+        "description": "--head 0, 501, -1 and non-numeric fail without lines",
+        "evidence": "all rejected",
+        "group": "validation",
+        "id": "q2.reject.range",
+        "severity": "major",
+        "status": "pass"
+      },
+      {
+        "base_expectation": "pass",
+        "criteria": [
+          3
+        ],
+        "dependent_symptom": false,
+        "depends_on": null,
+        "description": "--head with any explicit --tail (including 50) fails without lines",
+        "evidence": "all rejected",
+        "group": "conflict",
+        "id": "q2.reject.conflict",
+        "severity": "major",
+        "status": "pass"
+      },
+      {
+        "base_expectation": "pass",
+        "criteria": [
+          3,
+          4
+        ],
+        "dependent_symptom": false,
+        "depends_on": null,
+        "description": "default last 50 lines and --tail bounds unchanged",
+        "evidence": "default: ok; --tail 3: ok; all rejected",
+        "group": "compat",
+        "id": "q2.compat.tail",
+        "severity": "major",
+        "status": "pass"
+      },
+      {
+        "base_expectation": "pass",
+        "criteria": [
+          5
+        ],
+        "dependent_symptom": false,
+        "depends_on": null,
+        "description": "--head prints none of a symlink target's bytes",
+        "evidence": "JSON target bytes absent; human target bytes absent",
+        "group": "symlink-disclosure",
+        "id": "q2.symlink.head",
+        "severity": "blocker",
+        "status": "pass"
+      },
+      {
+        "base_expectation": "pass",
+        "criteria": [
+          5
+        ],
+        "dependent_symptom": false,
+        "depends_on": null,
+        "description": "default logs prints none of a symlink target's bytes",
+        "evidence": "JSON target bytes absent; human target bytes absent",
+        "group": "symlink-disclosure",
+        "id": "q2.symlink.default",
+        "severity": "blocker",
+        "status": "pass"
+      },
+      {
+        "base_expectation": "pass",
+        "criteria": [
+          5
+        ],
+        "dependent_symptom": false,
+        "depends_on": null,
+        "description": "--head returns nonzero promptly for a symlink",
+        "evidence": "json [--json logs 000000000203 --head 5] exit 1; human [logs 000000000203 --head 5] exit 1",
+        "group": "symlink-head-status",
+        "id": "q2.symlink.head.refusal",
+        "severity": "major",
+        "status": "pass"
+      },
+      {
+        "base_expectation": "pass",
+        "criteria": [
+          5
+        ],
+        "dependent_symptom": false,
+        "depends_on": null,
+        "description": "default logs returns nonzero promptly for a symlink",
+        "evidence": "json [--json logs 000000000203] exit 1; human [logs 000000000203] exit 1",
+        "group": "symlink-default-status",
+        "id": "q2.symlink.default.refusal",
+        "severity": "major",
+        "status": "pass"
+      },
+      {
+        "base_expectation": "fail",
+        "criteria": [
+          5
+        ],
+        "dependent_symptom": false,
+        "depends_on": "q2.symlink.head.refusal",
+        "description": "--head symlink refusal has exit1 and the JSON error envelope",
+        "evidence": "required exit1 in both modes; JSON error envelope",
+        "group": "symlink-head-status",
+        "id": "q2.symlink.head.error",
+        "severity": "minor",
+        "status": "pass"
+      },
+      {
+        "base_expectation": "pass",
+        "criteria": [
+          5
+        ],
+        "dependent_symptom": false,
+        "depends_on": "q2.symlink.default.refusal",
+        "description": "default symlink refusal has exit1 and the JSON error envelope",
+        "evidence": "required exit1 in both modes; JSON error envelope",
+        "group": "symlink-default-status",
+        "id": "q2.symlink.default.error",
+        "severity": "minor",
+        "status": "pass"
+      }
+    ],
+    "cleanup": {
+      "command_groups": {
+        "all_absent": true,
+        "count": 23
+      },
+      "detached_fixture_inventory": {
+        "detached_process_absence": "not guaranteed when metadata has been deleted",
+        "jobs": [],
+        "observable_cleanup_complete": true,
+        "unresolved_ids": []
+      }
+    },
+    "counts": {
+      "fail": 0,
+      "not_run": 0,
+      "pass": 14
+    },
+    "duration_s": 0.33,
+    "fatal": false,
+    "fatal_evidence": null,
+    "grader_version": "2026-11-09.1",
+    "groups": {
+      "compat": {
+        "checks": [
+          "q2.compat.tail"
+        ],
+        "failed": [],
+        "severity": null,
+        "status": "pass"
+      },
+      "conflict": {
+        "checks": [
+          "q2.reject.conflict"
+        ],
+        "failed": [],
+        "severity": null,
+        "status": "pass"
+      },
+      "envelope": {
+        "checks": [
+          "q2.envelope"
+        ],
+        "failed": [],
+        "severity": null,
+        "status": "pass"
+      },
+      "escaping": {
+        "checks": [
+          "q2.escape_human"
+        ],
+        "failed": [],
+        "severity": null,
+        "status": "pass"
+      },
+      "head-select": {
+        "checks": [
+          "q2.head.select",
+          "q2.head.short_log"
+        ],
+        "failed": [],
+        "severity": null,
+        "status": "pass"
+      },
+      "symlink-default-status": {
+        "checks": [
+          "q2.symlink.default.refusal",
+          "q2.symlink.default.error"
+        ],
+        "failed": [],
+        "severity": null,
+        "status": "pass"
+      },
+      "symlink-disclosure": {
+        "checks": [
+          "q2.symlink.head",
+          "q2.symlink.default"
+        ],
+        "failed": [],
+        "severity": null,
+        "status": "pass"
+      },
+      "symlink-head-status": {
+        "checks": [
+          "q2.symlink.head.refusal",
+          "q2.symlink.head.error"
+        ],
+        "failed": [],
+        "severity": null,
+        "status": "pass"
+      },
+      "truncation": {
+        "checks": [
+          "q2.truncation"
+        ],
+        "failed": [],
+        "severity": null,
+        "status": "pass"
+      },
+      "validation": {
+        "checks": [
+          "q2.reject.range"
+        ],
+        "failed": [],
+        "severity": null,
+        "status": "pass"
+      }
+    },
+    "harness_error": null,
+    "task": "Q2"
+  },
+  "source_fingerprint": "f83bf36b26b707f38aa4e9cc8a1e2c3a2b9e3bbe8f1e761a3f16bbcfe849fb35",
+  "grader_sha256": "23b5c812107b52ddb4d28f311fa9d4e22281cf4b0f492e778dfd04012f5f3fe4",
+  "objective_exit_code": 0,
+  "objective_supervision": {
+    "timed_out": false,
+    "owned_process_group": "absent"
+  },
+  "fixture_cleanup": {
+    "jobs": [],
+    "unresolved_ids": [],
+    "observable_cleanup_complete": true,
+    "detached_process_absence": "not guaranteed when metadata has been deleted"
+  },
+  "wall_clock_s": 62.803
+}

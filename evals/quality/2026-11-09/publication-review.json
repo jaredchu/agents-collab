@@ -1,0 +1,59 @@
+{
+  "scope": "Completed recovered grading, reconciliation and final claims; not another participant grading",
+  "reviewer": "gpt-6-astra",
+  "effort_requested": "high",
+  "initial": {
+    "reviewer": "gpt-6-astra",
+    "effort": "high",
+    "scope": "completed recovered results",
+    "findings": [
+      {
+        "id": "R1",
+        "priority": "P1",
+        "issue": "Guardian test weakness incorrectly excluded",
+        "disposition": "Counted minor in I/A/B; C correction and C-vs-B minor Q4 win."
+      },
+      {
+        "id": "R2",
+        "priority": "P1",
+        "issue": "Thin deferral test incorrectly excluded",
+        "disposition": "Counted separate minor in I/A; B/C corrections. Sensitivity still two task wins, but fails material-initial-draft floor."
+      },
+      {
+        "id": "R3",
+        "priority": "P3",
+        "issue": "Q6 parser speculation copied into Q4 disposition",
+        "disposition": "Removed incorrect attribution; Q4 grader only hypothesized environment sensitivity."
+      }
+    ]
+  },
+  "initial_identity": {
+    "report.md": "d24959800fc13028a679972477747e5469b69c652da5cd5862b84afb9dc92217",
+    "analysis.json": "4fbe9726f5b956627d62cc7341999fba435778b5a50bcbdefdf6324bc1164a37",
+    "defects.json": "5e337f504864e66c0fd77c20c84285773662bc4eb1c0d2e54930b7ca0fdcff76",
+    "finding-reconciliation.json": "dc5e33a38f08bd75b7b030ab305c9a7ac2db4cac15e75dbf0962de9ed3b87211",
+    "blind-finding-dispositions.json": "5e5de06c1fbf9e09c1322c264bf6a160cad7d21b86061fe4d52cf329806c9105",
+    "blind-assessments.json": "c77243947a35014757a012b5dd8d02957994d6ba330053b9e4aacd9638d4c419"
+  },
+  "focused_followup": {
+    "verdict": "Scoring fixes correct; no remaining material finding",
+    "identity": {
+      "final-study/report.md": "96822b7cb99084e36d4029192961763df48b3cf0fd996e04e051c0e92516fa5b",
+      "final-study/analysis.json": "c9f93ad4ca8c15c1c49f15e6d709773ed68258e43726b43aff9bad53d6bd688e",
+      "final-study/defects.json": "ec48ce6542c358dcd492ce8f3fb322a56ce7f886630a1a68484a25a56a34d021",
+      "final-study/finding-reconciliation.json": "a0a74897553253cd8812e5154b0a9d8c9acac10dbd31cc3e5260ff4f24a86c36",
+      "final-study/blind-finding-dispositions.json": "fb9635a80398c31c12c76257606234ef160a9ba961d01b0ed8bfce6da9de361d",
+      "final-study/blind-assessments.json": "c77243947a35014757a012b5dd8d02957994d6ba330053b9e4aacd9638d4c419",
+      "final-summary-drafts/README.md": "a197e96a90bff9b59d3ccd7f6a6c423c23e1f274edf36523bc67f1e227d1bd08",
+      "final-summary-drafts/website/index.html": "b516b1e4560b66e6935c859cdbded6f5e8a7e32044cb2611beb0b69526dd6178",
+      "final-summary-drafts/tests/test_repository.py": "7ae70f3cb1939a377716ff8074ef38c2bcc816f6d9b52fb02fd6337a602af41a",
+      "final-summary-drafts/docs/project-context.md": "e35708ea6d83a9b5e432ca08cc819bba2cb892b2f957d35e67ca959c7886a4e0",
+      "final-summary-drafts/docs/experiments.md": "6ba1773b68dec90cdeacd7e544a788412742c51560544568fd97d4bf8667cce5",
+      "final-summary-drafts/website/experiments/index.html": "67f28534ff6cc25e010a4a1a52d0d2b34f789a147a9c6d30f547220f7c2feb1e"
+    },
+    "remaining_minor_wording": "Summary omitted counted deferral-test finding and called the keeper live rather than absence unverifiable.",
+    "disposition": "Lead applied suggested mechanical wording; no count, score, criterion or outcome changed. No third review round."
+  },
+  "final_report_sha256": "4b2949b67c1d018ce38a420d90fd85f20208c835c314ec6ef6ca8b4b241e6c9c",
+  "limits": "Read-only accuracy review; no participant runs, grading calls or tests repeated by reviewer."
+}

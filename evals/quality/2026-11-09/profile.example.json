@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "name": "quality-pilot-2026-11-09-trial-conditions",
+  "agents": {
+    "lead": {"model": "current", "transport": "host", "reasoning": "inherit"},
+    "writer": {"model": "claude-opus-5-5", "transport": "claude-cli", "reasoning": "high"},
+    "reviewer": {"model": "gpt-6-astra", "transport": "codex-native", "reasoning": "high"}
+  },
+  "routing": {"small_writer": "writer", "substantial_writer": "writer"},
+  "review": {
+    "on_consequential_work": "single",
+    "candidates": ["reviewer"],
+    "prefer_different_model": true,
+    "recipes": {},
+    "max_followup_rounds": 0
+  },
+  "effort_check": "supported-control",
+  "access": "existing-authorized-access",
+  "bounds": {"enforcement": "advisory", "writer_minutes": 20, "reviewer_minutes": 8, "review_output_words": 800},
+  "records_root": "~/.local/state/agents-collab-quality-study"
+}

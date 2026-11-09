@@ -1,0 +1,164 @@
+[
+  {
+    "task": "Q1",
+    "status": "completed",
+    "assessment_count": 1,
+    "model_ids": [
+      "claude-fable-5-1"
+    ],
+    "model_requested": "claude-fable-5-1",
+    "effort_requested": "high",
+    "runtime_effort_attested": false,
+    "start": "2026-11-09T05:10:49.299760+00:00",
+    "finish": "2026-11-09T05:13:01.625537+00:00",
+    "prior_failed_elapsed_s": 38.102561,
+    "recovery_wall_clock_s": 132.325777,
+    "remaining_outer_seconds_at_start": 681.897439,
+    "format_deviation": null,
+    "usage": {
+      "claude-fable-5-1": {
+        "inputTokens": 226,
+        "outputTokens": 9313,
+        "cacheReadInputTokens": 192489,
+        "cacheCreationInputTokens": 39443,
+        "thinkingTokens": 3452
+      }
+    },
+    "assessment_file": "recovery/Q1-assessment.json"
+  },
+  {
+    "task": "Q2",
+    "status": "completed",
+    "assessment_count": 2,
+    "model_ids": [
+      "claude-fable-5-1"
+    ],
+    "model_requested": "claude-fable-5-1",
+    "effort_requested": "high",
+    "runtime_effort_attested": false,
+    "start": "2026-11-09T05:10:49.300396+00:00",
+    "finish": "2026-11-09T05:13:12.768061+00:00",
+    "prior_failed_elapsed_s": 46.982497,
+    "recovery_wall_clock_s": 143.467665,
+    "remaining_outer_seconds_at_start": 673.017503,
+    "format_deviation": null,
+    "usage": {
+      "claude-fable-5-1": {
+        "inputTokens": 130,
+        "outputTokens": 11080,
+        "cacheReadInputTokens": 101709,
+        "cacheCreationInputTokens": 51820,
+        "thinkingTokens": 4419
+      }
+    },
+    "assessment_file": "recovery/Q2-assessment.json"
+  },
+  {
+    "task": "Q3",
+    "status": "completed",
+    "assessment_count": 1,
+    "model_ids": [
+      "claude-fable-5-1"
+    ],
+    "model_requested": "claude-fable-5-1",
+    "effort_requested": "high",
+    "runtime_effort_attested": false,
+    "start": "2026-11-09T05:10:49.300189+00:00",
+    "finish": "2026-11-09T05:12:43.669195+00:00",
+    "prior_failed_elapsed_s": 39.126702,
+    "recovery_wall_clock_s": 114.369006,
+    "remaining_outer_seconds_at_start": 680.873298,
+    "format_deviation": null,
+    "usage": {
+      "claude-fable-5-1": {
+        "inputTokens": 226,
+        "outputTokens": 7204,
+        "cacheReadInputTokens": 153738,
+        "cacheCreationInputTokens": 35321,
+        "thinkingTokens": 2851
+      }
+    },
+    "assessment_file": "recovery/Q3-assessment.json"
+  },
+  {
+    "task": "Q4",
+    "status": "completed",
+    "assessment_count": 3,
+    "model_ids": [
+      "claude-fable-5-1"
+    ],
+    "model_requested": "claude-fable-5-1",
+    "effort_requested": "high",
+    "runtime_effort_attested": false,
+    "start": "2026-11-09T05:12:43.831555+00:00",
+    "finish": "2026-11-09T05:15:54.739034+00:00",
+    "prior_failed_elapsed_s": 2.122582,
+    "recovery_wall_clock_s": 190.907479,
+    "remaining_outer_seconds_at_start": 717.877418,
+    "format_deviation": "Prose prefix before one complete JSON object; deterministically extracted without changing content",
+    "usage": {
+      "claude-fable-5-1": {
+        "inputTokens": 194,
+        "outputTokens": 14657,
+        "cacheReadInputTokens": 287883,
+        "cacheCreationInputTokens": 75737,
+        "thinkingTokens": 6589
+      }
+    },
+    "assessment_file": "recovery/Q4-assessment.json"
+  },
+  {
+    "task": "Q5",
+    "status": "completed",
+    "assessment_count": 1,
+    "model_ids": [
+      "claude-fable-5-1"
+    ],
+    "model_requested": "claude-fable-5-1",
+    "effort_requested": "high",
+    "runtime_effort_attested": false,
+    "start": "2026-11-09T05:13:01.785417+00:00",
+    "finish": "2026-11-09T05:14:55.508634+00:00",
+    "prior_failed_elapsed_s": 1.860954,
+    "recovery_wall_clock_s": 113.723217,
+    "remaining_outer_seconds_at_start": 718.139046,
+    "format_deviation": "Prose prefix before one complete JSON object; deterministically extracted without changing content",
+    "usage": {
+      "claude-fable-5-1": {
+        "inputTokens": 130,
+        "outputTokens": 7943,
+        "cacheReadInputTokens": 75163,
+        "cacheCreationInputTokens": 32474,
+        "thinkingTokens": 3190
+      }
+    },
+    "assessment_file": "recovery/Q5-assessment.json"
+  },
+  {
+    "task": "Q6",
+    "status": "completed",
+    "assessment_count": 4,
+    "model_ids": [
+      "claude-fable-5-1"
+    ],
+    "model_requested": "claude-fable-5-1",
+    "effort_requested": "high",
+    "runtime_effort_attested": false,
+    "start": "2026-11-09T05:13:12.823436+00:00",
+    "finish": "2026-11-09T05:19:09.308045+00:00",
+    "prior_failed_elapsed_s": 1.849496,
+    "recovery_wall_clock_s": 356.484609,
+    "remaining_outer_seconds_at_start": 718.150504,
+    "format_deviation": null,
+    "usage": {
+      "claude-fable-5-1": {
+        "inputTokens": 130,
+        "outputTokens": 27782,
+        "cacheReadInputTokens": 178641,
+        "cacheCreationInputTokens": 95631,
+        "thinkingTokens": 17645
+      }
+    },
+    "assessment_file": "recovery/Q6-assessment.json"
+  }
+]

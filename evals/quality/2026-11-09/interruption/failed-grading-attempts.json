@@ -1,0 +1,122 @@
+[
+  {
+    "task": "Q1",
+    "assignment": "blind-Q1-1",
+    "model_requested": "claude-fable-5-1",
+    "effort_requested": "high",
+    "start": "2026-11-09T03:35:37.771759+00:00",
+    "finish": "2026-11-09T03:36:15.874320+00:00",
+    "status": "provider_failure",
+    "exit_code": 1,
+    "provider_error": true,
+    "result": "You've hit your 5-hour limit \u00b7 resets 12pm (Asia/Saigon)",
+    "model_usage": {
+      "claude-fable-5-1": {
+        "inputTokens": 66,
+        "outputTokens": 2609,
+        "cacheReadInputTokens": 21326,
+        "cacheCreationInputTokens": 22797,
+        "thinkingTokens": 1354
+      }
+    },
+    "usage_completeness": "partial",
+    "assessment": null,
+    "maintainability": null
+  },
+  {
+    "task": "Q2",
+    "assignment": "blind-Q2-1",
+    "model_requested": "claude-fable-5-1",
+    "effort_requested": "high",
+    "start": "2026-11-09T03:35:37.771953+00:00",
+    "finish": "2026-11-09T03:36:24.754450+00:00",
+    "status": "provider_failure",
+    "exit_code": 1,
+    "provider_error": true,
+    "result": "You've hit your 5-hour limit \u00b7 resets 12pm (Asia/Saigon)",
+    "model_usage": {
+      "claude-fable-5-1": {
+        "inputTokens": 98,
+        "outputTokens": 3300,
+        "cacheReadInputTokens": 54848,
+        "cacheCreationInputTokens": 38932,
+        "thinkingTokens": 1380
+      }
+    },
+    "usage_completeness": "partial",
+    "assessment": null,
+    "maintainability": null
+  },
+  {
+    "task": "Q3",
+    "assignment": "blind-Q3-1",
+    "model_requested": "claude-fable-5-1",
+    "effort_requested": "high",
+    "start": "2026-11-09T03:35:37.772050+00:00",
+    "finish": "2026-11-09T03:36:16.898752+00:00",
+    "status": "provider_failure",
+    "exit_code": 1,
+    "provider_error": true,
+    "result": "You've hit your 5-hour limit \u00b7 resets 12pm (Asia/Saigon)",
+    "model_usage": {
+      "claude-fable-5-1": {
+        "inputTokens": 194,
+        "outputTokens": 1917,
+        "cacheReadInputTokens": 112310,
+        "cacheCreationInputTokens": 25824,
+        "thinkingTokens": 861
+      }
+    },
+    "usage_completeness": "partial",
+    "assessment": null,
+    "maintainability": null
+  },
+  {
+    "task": "Q4",
+    "assignment": "blind-Q4-1",
+    "model_requested": "claude-fable-5-1",
+    "effort_requested": "high",
+    "start": "2026-11-09T03:36:15.875942+00:00",
+    "finish": "2026-11-09T03:36:17.998524+00:00",
+    "status": "provider_failure",
+    "exit_code": 1,
+    "provider_error": true,
+    "result": "You've hit your 5-hour limit \u00b7 resets 12pm (Asia/Saigon)",
+    "model_usage": {},
+    "usage_completeness": "unknown; empty usage is not zero",
+    "assessment": null,
+    "maintainability": null
+  },
+  {
+    "task": "Q5",
+    "assignment": "blind-Q5-1",
+    "model_requested": "claude-fable-5-1",
+    "effort_requested": "high",
+    "start": "2026-11-09T03:36:16.899572+00:00",
+    "finish": "2026-11-09T03:36:18.760526+00:00",
+    "status": "provider_failure",
+    "exit_code": 1,
+    "provider_error": true,
+    "result": "You've hit your 5-hour limit \u00b7 resets 12pm (Asia/Saigon)",
+    "model_usage": {},
+    "usage_completeness": "unknown; empty usage is not zero",
+    "assessment": null,
+    "maintainability": null
+  },
+  {
+    "task": "Q6",
+    "assignment": "blind-Q6-1",
+    "model_requested": "claude-fable-5-1",
+    "effort_requested": "high",
+    "start": "2026-11-09T03:36:17.999010+00:00",
+    "finish": "2026-11-09T03:36:19.848506+00:00",
+    "status": "provider_failure",
+    "exit_code": 1,
+    "provider_error": true,
+    "result": "You've hit your 5-hour limit \u00b7 resets 12pm (Asia/Saigon)",
+    "model_usage": {},
+    "usage_completeness": "unknown; empty usage is not zero",
+    "assessment": null,
+    "maintainability": null
+  }
+]

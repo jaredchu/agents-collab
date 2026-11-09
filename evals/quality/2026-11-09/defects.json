@@ -1,0 +1,897 @@
+{
+  "status": "completed evidence reconciliation; only confirmed issues counted; zero is not proof of correctness",
+  "issues": [
+    {
+      "unique_issue_id": "Q4-suite",
+      "task": "Q4",
+      "severity": "major",
+      "criterion": "common acceptance: full cargo test",
+      "failure_scenario": "Existing 700ms expiry/socket test fails with ConnectionRefused and expiry before command startup.",
+      "reproduction": "Original frozen full cargo test, grading/Q4-artifact-70b844df47/test.log. No replacement rerun.",
+      "evidence": "common.test.exit_code=101; original failing test is slow_partial_control_request_cannot_starve_expiry.",
+      "source": "common_acceptance",
+      "present": [
+        "initial",
+        "A"
+      ],
+      "absent": [
+        "B",
+        "C"
+      ],
+      "causation": "Observed acceptance failure; attribution to load/concurrency or edits is unproved."
+    },
+    {
+      "unique_issue_id": "Q6-suite",
+      "task": "Q6",
+      "severity": "major",
+      "criterion": "common acceptance: full cargo test",
+      "failure_scenario": "Same existing 700ms expiry/socket test fails in A.",
+      "reproduction": "Original frozen full cargo test, grading/Q6-artifact-b73a53106e/test.log. No replacement rerun.",
+      "evidence": "common.test.exit_code=101; failing test is slow_partial_control_request_cannot_starve_expiry, not the new parser test suspected by grader.",
+      "source": "common_acceptance",
+      "present": [
+        "A"
+      ],
+      "absent": [
+        "initial",
+        "B",
+        "C"
+      ],
+      "causation": "Observed acceptance outcome introduced in A; no demonstrated source-induced regression."
+    },
+    {
+      "unique_issue_id": "Q6-script-name",
+      "task": "Q6",
+      "severity": "major",
+      "criterion": "6: unchanged no-option behavior",
+      "failure_scenario": "A relative executable shebang script sees an absolute $0 after unconditional program_path rewriting, without --cwd.",
+      "reproduction": "supplementary-probes.json: executable ./probe with #!/bin/sh printing $0, on base and every distinct Q6 tree.",
+      "evidence": "Initial/A print absolute path; base/B/C print ./probe. src/lifecycle.rs:472-480,507-509.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "A"
+      ],
+      "absent": [
+        "B",
+        "C"
+      ],
+      "grader_severity": "minor",
+      "severity_disposition": "Frozen rubric explicitly assigns unchanged-behavior regressions major; normalize grader suggestion to that rule."
+    },
+    {
+      "unique_issue_id": "Q6-readme-format",
+      "task": "Q6",
+      "severity": "minor",
+      "criterion": "7: README documentation deviation",
+      "failure_scenario": "Missing blank line makes existing metadata paragraph a lazy continuation inside final --cwd bullet.",
+      "reproduction": "recovery/readme-render-probe.json; render all four distinct README trees with marked gfm:false.",
+      "evidence": "Metadata paragraph inside list item in initial/B/C; separate paragraph in A.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "B",
+        "C"
+      ],
+      "absent": [
+        "A"
+      ]
+    },
+    {
+      "unique_issue_id": "Q4-guardian-test",
+      "task": "Q4",
+      "severity": "minor",
+      "criterion": "8; frozen weak-but-present-test rule",
+      "failure_scenario": "keeper_pid=0 rejects the live-guardian fixture before the guardian predicate. The intended independent guardian protection is not exercised.",
+      "reproduction": "Follow initial tests/lifecycle.rs:2676 through store.rs:338: guardian set makes never_supervised false, process_is_absent(0) false, early return precedes guardian check. C uses a verified-absent keeper.",
+      "evidence": "C initial review, recovered Fable fixture-precision observation, final independent rubric review and cited source control flow.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "A",
+        "B"
+      ],
+      "absent": [
+        "C"
+      ]
+    },
+    {
+      "unique_issue_id": "Q4-deferral-test",
+      "task": "Q4",
+      "severity": "minor",
+      "criterion": "8; frozen weak-but-present-test rule",
+      "failure_scenario": "Protected dry-run test asserts deferred and removed but never preview candidates; it cannot detect either interpretation of candidate-list behavior.",
+      "reproduction": "Inspect I/A tests/lifecycle.rs:2735-2743. No candidates assertion. B/C add explicit assertions. Does not require resolving Q4 runtime specification conflict.",
+      "evidence": "Recovered Fable finding 7d2c-deferred-test-thin; B/C original preview review findings also identify missing candidate assertions.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "A"
+      ],
+      "absent": [
+        "B",
+        "C"
+      ]
+    }
+  ],
+  "records": [
+    {
+      "unique_issue_id": "Q4-suite",
+      "task": "Q4",
+      "severity": "major",
+      "criterion": "common acceptance: full cargo test",
+      "failure_scenario": "Existing 700ms expiry/socket test fails with ConnectionRefused and expiry before command startup.",
+      "reproduction": "Original frozen full cargo test, grading/Q4-artifact-70b844df47/test.log. No replacement rerun.",
+      "evidence": "common.test.exit_code=101; original failing test is slow_partial_control_request_cannot_starve_expiry.",
+      "source": "common_acceptance",
+      "present": [
+        "initial",
+        "A"
+      ],
+      "absent": [
+        "B",
+        "C"
+      ],
+      "causation": "Observed acceptance failure; attribution to load/concurrency or edits is unproved.",
+      "state_id": "Q4-A"
+    },
+    {
+      "unique_issue_id": "Q4-guardian-test",
+      "task": "Q4",
+      "severity": "minor",
+      "criterion": "8; frozen weak-but-present-test rule",
+      "failure_scenario": "keeper_pid=0 rejects the live-guardian fixture before the guardian predicate. The intended independent guardian protection is not exercised.",
+      "reproduction": "Follow initial tests/lifecycle.rs:2676 through store.rs:338: guardian set makes never_supervised false, process_is_absent(0) false, early return precedes guardian check. C uses a verified-absent keeper.",
+      "evidence": "C initial review, recovered Fable fixture-precision observation, final independent rubric review and cited source control flow.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "A",
+        "B"
+      ],
+      "absent": [
+        "C"
+      ],
+      "state_id": "Q4-A"
+    },
+    {
+      "unique_issue_id": "Q4-deferral-test",
+      "task": "Q4",
+      "severity": "minor",
+      "criterion": "8; frozen weak-but-present-test rule",
+      "failure_scenario": "Protected dry-run test asserts deferred and removed but never preview candidates; it cannot detect either interpretation of candidate-list behavior.",
+      "reproduction": "Inspect I/A tests/lifecycle.rs:2735-2743. No candidates assertion. B/C add explicit assertions. Does not require resolving Q4 runtime specification conflict.",
+      "evidence": "Recovered Fable finding 7d2c-deferred-test-thin; B/C original preview review findings also identify missing candidate assertions.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "A"
+      ],
+      "absent": [
+        "B",
+        "C"
+      ],
+      "state_id": "Q4-A"
+    },
+    {
+      "unique_issue_id": "Q4-guardian-test",
+      "task": "Q4",
+      "severity": "minor",
+      "criterion": "8; frozen weak-but-present-test rule",
+      "failure_scenario": "keeper_pid=0 rejects the live-guardian fixture before the guardian predicate. The intended independent guardian protection is not exercised.",
+      "reproduction": "Follow initial tests/lifecycle.rs:2676 through store.rs:338: guardian set makes never_supervised false, process_is_absent(0) false, early return precedes guardian check. C uses a verified-absent keeper.",
+      "evidence": "C initial review, recovered Fable fixture-precision observation, final independent rubric review and cited source control flow.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "A",
+        "B"
+      ],
+      "absent": [
+        "C"
+      ],
+      "state_id": "Q4-B"
+    },
+    {
+      "unique_issue_id": "Q4-suite",
+      "task": "Q4",
+      "severity": "major",
+      "criterion": "common acceptance: full cargo test",
+      "failure_scenario": "Existing 700ms expiry/socket test fails with ConnectionRefused and expiry before command startup.",
+      "reproduction": "Original frozen full cargo test, grading/Q4-artifact-70b844df47/test.log. No replacement rerun.",
+      "evidence": "common.test.exit_code=101; original failing test is slow_partial_control_request_cannot_starve_expiry.",
+      "source": "common_acceptance",
+      "present": [
+        "initial",
+        "A"
+      ],
+      "absent": [
+        "B",
+        "C"
+      ],
+      "causation": "Observed acceptance failure; attribution to load/concurrency or edits is unproved.",
+      "state_id": "Q4-I"
+    },
+    {
+      "unique_issue_id": "Q4-guardian-test",
+      "task": "Q4",
+      "severity": "minor",
+      "criterion": "8; frozen weak-but-present-test rule",
+      "failure_scenario": "keeper_pid=0 rejects the live-guardian fixture before the guardian predicate. The intended independent guardian protection is not exercised.",
+      "reproduction": "Follow initial tests/lifecycle.rs:2676 through store.rs:338: guardian set makes never_supervised false, process_is_absent(0) false, early return precedes guardian check. C uses a verified-absent keeper.",
+      "evidence": "C initial review, recovered Fable fixture-precision observation, final independent rubric review and cited source control flow.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "A",
+        "B"
+      ],
+      "absent": [
+        "C"
+      ],
+      "state_id": "Q4-I"
+    },
+    {
+      "unique_issue_id": "Q4-deferral-test",
+      "task": "Q4",
+      "severity": "minor",
+      "criterion": "8; frozen weak-but-present-test rule",
+      "failure_scenario": "Protected dry-run test asserts deferred and removed but never preview candidates; it cannot detect either interpretation of candidate-list behavior.",
+      "reproduction": "Inspect I/A tests/lifecycle.rs:2735-2743. No candidates assertion. B/C add explicit assertions. Does not require resolving Q4 runtime specification conflict.",
+      "evidence": "Recovered Fable finding 7d2c-deferred-test-thin; B/C original preview review findings also identify missing candidate assertions.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "A"
+      ],
+      "absent": [
+        "B",
+        "C"
+      ],
+      "state_id": "Q4-I"
+    },
+    {
+      "unique_issue_id": "Q6-suite",
+      "task": "Q6",
+      "severity": "major",
+      "criterion": "common acceptance: full cargo test",
+      "failure_scenario": "Same existing 700ms expiry/socket test fails in A.",
+      "reproduction": "Original frozen full cargo test, grading/Q6-artifact-b73a53106e/test.log. No replacement rerun.",
+      "evidence": "common.test.exit_code=101; failing test is slow_partial_control_request_cannot_starve_expiry, not the new parser test suspected by grader.",
+      "source": "common_acceptance",
+      "present": [
+        "A"
+      ],
+      "absent": [
+        "initial",
+        "B",
+        "C"
+      ],
+      "causation": "Observed acceptance outcome introduced in A; no demonstrated source-induced regression.",
+      "state_id": "Q6-A"
+    },
+    {
+      "unique_issue_id": "Q6-script-name",
+      "task": "Q6",
+      "severity": "major",
+      "criterion": "6: unchanged no-option behavior",
+      "failure_scenario": "A relative executable shebang script sees an absolute $0 after unconditional program_path rewriting, without --cwd.",
+      "reproduction": "supplementary-probes.json: executable ./probe with #!/bin/sh printing $0, on base and every distinct Q6 tree.",
+      "evidence": "Initial/A print absolute path; base/B/C print ./probe. src/lifecycle.rs:472-480,507-509.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "A"
+      ],
+      "absent": [
+        "B",
+        "C"
+      ],
+      "grader_severity": "minor",
+      "severity_disposition": "Frozen rubric explicitly assigns unchanged-behavior regressions major; normalize grader suggestion to that rule.",
+      "state_id": "Q6-A"
+    },
+    {
+      "unique_issue_id": "Q6-readme-format",
+      "task": "Q6",
+      "severity": "minor",
+      "criterion": "7: README documentation deviation",
+      "failure_scenario": "Missing blank line makes existing metadata paragraph a lazy continuation inside final --cwd bullet.",
+      "reproduction": "recovery/readme-render-probe.json; render all four distinct README trees with marked gfm:false.",
+      "evidence": "Metadata paragraph inside list item in initial/B/C; separate paragraph in A.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "B",
+        "C"
+      ],
+      "absent": [
+        "A"
+      ],
+      "state_id": "Q6-B"
+    },
+    {
+      "unique_issue_id": "Q6-readme-format",
+      "task": "Q6",
+      "severity": "minor",
+      "criterion": "7: README documentation deviation",
+      "failure_scenario": "Missing blank line makes existing metadata paragraph a lazy continuation inside final --cwd bullet.",
+      "reproduction": "recovery/readme-render-probe.json; render all four distinct README trees with marked gfm:false.",
+      "evidence": "Metadata paragraph inside list item in initial/B/C; separate paragraph in A.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "B",
+        "C"
+      ],
+      "absent": [
+        "A"
+      ],
+      "state_id": "Q6-C"
+    },
+    {
+      "unique_issue_id": "Q6-script-name",
+      "task": "Q6",
+      "severity": "major",
+      "criterion": "6: unchanged no-option behavior",
+      "failure_scenario": "A relative executable shebang script sees an absolute $0 after unconditional program_path rewriting, without --cwd.",
+      "reproduction": "supplementary-probes.json: executable ./probe with #!/bin/sh printing $0, on base and every distinct Q6 tree.",
+      "evidence": "Initial/A print absolute path; base/B/C print ./probe. src/lifecycle.rs:472-480,507-509.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "A"
+      ],
+      "absent": [
+        "B",
+        "C"
+      ],
+      "grader_severity": "minor",
+      "severity_disposition": "Frozen rubric explicitly assigns unchanged-behavior regressions major; normalize grader suggestion to that rule.",
+      "state_id": "Q6-I"
+    },
+    {
+      "unique_issue_id": "Q6-readme-format",
+      "task": "Q6",
+      "severity": "minor",
+      "criterion": "7: README documentation deviation",
+      "failure_scenario": "Missing blank line makes existing metadata paragraph a lazy continuation inside final --cwd bullet.",
+      "reproduction": "recovery/readme-render-probe.json; render all four distinct README trees with marked gfm:false.",
+      "evidence": "Metadata paragraph inside list item in initial/B/C; separate paragraph in A.",
+      "source": "blind_grader_corroborated",
+      "present": [
+        "initial",
+        "B",
+        "C"
+      ],
+      "absent": [
+        "A"
+      ],
+      "state_id": "Q6-I"
+    }
+  ],
+  "states": [
+    {
+      "task": "Q1",
+      "state": "A",
+      "state_id": "Q1-A",
+      "recovery_id": "artifact-873c5026c1eafccd",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Implementation is minimal and localized: `State` derives clap::ValueEnum with snake_case renaming so the CLI names are the exact JSON spellings by construction, and filtering is one `retain` inserted in the shared visible_jobs helper after store.list() observation and before select_visible, with watch passing an empty slice. Help and README are accurate. Tests are deterministic and seeded, but the second test is a single ~270-line monolith covering criteria 2-6 with a small wall-clock margin, which is why this is not a 4.",
+        "evidence": "src/model.rs:47-59 (ValueEnum + value(rename_all)); src/main.rs:119-127 (arg), 337-353 (visible_jobs), 820 (watch passes &[]); README.md:79, 335-347; tests/lifecycle.rs new tests after line 2967."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q1",
+      "state": "B",
+      "state_id": "Q1-B",
+      "recovery_id": "artifact-873c5026c1eafccd",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Implementation is minimal and localized: `State` derives clap::ValueEnum with snake_case renaming so the CLI names are the exact JSON spellings by construction, and filtering is one `retain` inserted in the shared visible_jobs helper after store.list() observation and before select_visible, with watch passing an empty slice. Help and README are accurate. Tests are deterministic and seeded, but the second test is a single ~270-line monolith covering criteria 2-6 with a small wall-clock margin, which is why this is not a 4.",
+        "evidence": "src/model.rs:47-59 (ValueEnum + value(rename_all)); src/main.rs:119-127 (arg), 337-353 (visible_jobs), 820 (watch passes &[]); README.md:79, 335-347; tests/lifecycle.rs new tests after line 2967."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q1",
+      "state": "C",
+      "state_id": "Q1-C",
+      "recovery_id": "artifact-873c5026c1eafccd",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Implementation is minimal and localized: `State` derives clap::ValueEnum with snake_case renaming so the CLI names are the exact JSON spellings by construction, and filtering is one `retain` inserted in the shared visible_jobs helper after store.list() observation and before select_visible, with watch passing an empty slice. Help and README are accurate. Tests are deterministic and seeded, but the second test is a single ~270-line monolith covering criteria 2-6 with a small wall-clock margin, which is why this is not a 4.",
+        "evidence": "src/model.rs:47-59 (ValueEnum + value(rename_all)); src/main.rs:119-127 (arg), 337-353 (visible_jobs), 820 (watch passes &[]); README.md:79, 335-347; tests/lifecycle.rs new tests after line 2967."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q1",
+      "state": "initial",
+      "state_id": "Q1-I",
+      "recovery_id": "artifact-873c5026c1eafccd",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Implementation is minimal and localized: `State` derives clap::ValueEnum with snake_case renaming so the CLI names are the exact JSON spellings by construction, and filtering is one `retain` inserted in the shared visible_jobs helper after store.list() observation and before select_visible, with watch passing an empty slice. Help and README are accurate. Tests are deterministic and seeded, but the second test is a single ~270-line monolith covering criteria 2-6 with a small wall-clock margin, which is why this is not a 4.",
+        "evidence": "src/model.rs:47-59 (ValueEnum + value(rename_all)); src/main.rs:119-127 (arg), 337-353 (visible_jobs), 820 (watch passes &[]); README.md:79, 335-347; tests/lifecycle.rs new tests after line 2967."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q2",
+      "state": "A",
+      "state_id": "Q2-A",
+      "recovery_id": "artifact-f478605e76c22a84",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Production change is byte-identical to the other tree (same blob hashes for src/main.rs and README.md): well-factored `select_lines`/`LineSelection`, named constants, shared read path, accurate docs. The test is fully deterministic and spawns nothing, which fits the ticket's 'seeded finished job records' wording well, but it introduces a parallel seeding helper that duplicates the Record schema rather than reusing `finished_template`/`seed_history`. One very large test function.",
+        "evidence": "src/main.rs:220-240, 753-795; tests/lifecycle.rs:973-1012 (new seeding helper), 1034-1178 (test); src/main.rs unit test `log_selection_uses_the_same_line_splitting_at_either_end`."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q2",
+      "state": "B",
+      "state_id": "Q2-B",
+      "recovery_id": "artifact-dab7a4294aaf56f8",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Localized, idiomatic change. Selection is factored into `select_lines` with a `LineSelection` enum, both flags share the same read/escape path, magic numbers become named constants, and the test reuses the existing `finished_template`/`seed_history` fixture pattern used by sibling tests. Docs and help are accurate. One very large integration test function covers all criteria, which hurts readability slightly; the clap-conflict re-check is redundant.",
+        "evidence": "src/main.rs:220-240 (constants, enum, select_lines); src/main.rs:753-795 (single read path, O_NOFOLLOW, 16 MiB bound, then select_lines); tests/lifecycle.rs new test uses fixture.finished_template()/seed_history (existing helpers at tests/lifecycle.rs:96-131); unit test in src/main.rs tests module `log_selection_uses_the_same_line_splitting_at_either_end`."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q2",
+      "state": "C",
+      "state_id": "Q2-C",
+      "recovery_id": "artifact-dab7a4294aaf56f8",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Localized, idiomatic change. Selection is factored into `select_lines` with a `LineSelection` enum, both flags share the same read/escape path, magic numbers become named constants, and the test reuses the existing `finished_template`/`seed_history` fixture pattern used by sibling tests. Docs and help are accurate. One very large integration test function covers all criteria, which hurts readability slightly; the clap-conflict re-check is redundant.",
+        "evidence": "src/main.rs:220-240 (constants, enum, select_lines); src/main.rs:753-795 (single read path, O_NOFOLLOW, 16 MiB bound, then select_lines); tests/lifecycle.rs new test uses fixture.finished_template()/seed_history (existing helpers at tests/lifecycle.rs:96-131); unit test in src/main.rs tests module `log_selection_uses_the_same_line_splitting_at_either_end`."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q2",
+      "state": "initial",
+      "state_id": "Q2-I",
+      "recovery_id": "artifact-dab7a4294aaf56f8",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Localized, idiomatic change. Selection is factored into `select_lines` with a `LineSelection` enum, both flags share the same read/escape path, magic numbers become named constants, and the test reuses the existing `finished_template`/`seed_history` fixture pattern used by sibling tests. Docs and help are accurate. One very large integration test function covers all criteria, which hurts readability slightly; the clap-conflict re-check is redundant.",
+        "evidence": "src/main.rs:220-240 (constants, enum, select_lines); src/main.rs:753-795 (single read path, O_NOFOLLOW, 16 MiB bound, then select_lines); tests/lifecycle.rs new test uses fixture.finished_template()/seed_history (existing helpers at tests/lifecycle.rs:96-131); unit test in src/main.rs tests module `log_selection_uses_the_same_line_splitting_at_either_end`."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q3",
+      "state": "A",
+      "state_id": "Q3-A",
+      "recovery_id": "artifact-84789bf28a93a13b",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "The change is small and localized: a `ListSort` value enum, a shared `list_group` helper that both the unchanged default ordering and the new `order_jobs` reuse, and a three-line hook in the `List` dispatch applied after selection so the window cannot change. Comparator semantics are total (group, time, ID) and documented. Tests exist at two layers (unit tests on `order_jobs`/`select_visible`/clap parsing, plus CLI integration tests with seeded records, human output, `--resources`, read-only verification and invalid values). Docs are accurate. Held back from 4 by some redundancy between the unit and integration layers, a second `impl Fixture` block inserted mid-file rather than extending the main fixture impl, and the 30 s wall-clock dependence in one integration test.",
+        "evidence": "src/main.rs:348-408 (enum, list_group, order_jobs, select_visible refactor), src/main.rs:738-762 (dispatch), src/main.rs:985-1150 (unit tests), tests/lifecycle.rs:309-550 (fixture helpers and integration tests), README.md:79 and 335-345."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q3",
+      "state": "B",
+      "state_id": "Q3-B",
+      "recovery_id": "artifact-84789bf28a93a13b",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "The change is small and localized: a `ListSort` value enum, a shared `list_group` helper that both the unchanged default ordering and the new `order_jobs` reuse, and a three-line hook in the `List` dispatch applied after selection so the window cannot change. Comparator semantics are total (group, time, ID) and documented. Tests exist at two layers (unit tests on `order_jobs`/`select_visible`/clap parsing, plus CLI integration tests with seeded records, human output, `--resources`, read-only verification and invalid values). Docs are accurate. Held back from 4 by some redundancy between the unit and integration layers, a second `impl Fixture` block inserted mid-file rather than extending the main fixture impl, and the 30 s wall-clock dependence in one integration test.",
+        "evidence": "src/main.rs:348-408 (enum, list_group, order_jobs, select_visible refactor), src/main.rs:738-762 (dispatch), src/main.rs:985-1150 (unit tests), tests/lifecycle.rs:309-550 (fixture helpers and integration tests), README.md:79 and 335-345."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q3",
+      "state": "C",
+      "state_id": "Q3-C",
+      "recovery_id": "artifact-84789bf28a93a13b",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "The change is small and localized: a `ListSort` value enum, a shared `list_group` helper that both the unchanged default ordering and the new `order_jobs` reuse, and a three-line hook in the `List` dispatch applied after selection so the window cannot change. Comparator semantics are total (group, time, ID) and documented. Tests exist at two layers (unit tests on `order_jobs`/`select_visible`/clap parsing, plus CLI integration tests with seeded records, human output, `--resources`, read-only verification and invalid values). Docs are accurate. Held back from 4 by some redundancy between the unit and integration layers, a second `impl Fixture` block inserted mid-file rather than extending the main fixture impl, and the 30 s wall-clock dependence in one integration test.",
+        "evidence": "src/main.rs:348-408 (enum, list_group, order_jobs, select_visible refactor), src/main.rs:738-762 (dispatch), src/main.rs:985-1150 (unit tests), tests/lifecycle.rs:309-550 (fixture helpers and integration tests), README.md:79 and 335-345."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q3",
+      "state": "initial",
+      "state_id": "Q3-I",
+      "recovery_id": "artifact-84789bf28a93a13b",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "The change is small and localized: a `ListSort` value enum, a shared `list_group` helper that both the unchanged default ordering and the new `order_jobs` reuse, and a three-line hook in the `List` dispatch applied after selection so the window cannot change. Comparator semantics are total (group, time, ID) and documented. Tests exist at two layers (unit tests on `order_jobs`/`select_visible`/clap parsing, plus CLI integration tests with seeded records, human output, `--resources`, read-only verification and invalid values). Docs are accurate. Held back from 4 by some redundancy between the unit and integration layers, a second `impl Fixture` block inserted mid-file rather than extending the main fixture impl, and the 30 s wall-clock dependence in one integration test.",
+        "evidence": "src/main.rs:348-408 (enum, list_group, order_jobs, select_visible refactor), src/main.rs:738-762 (dispatch), src/main.rs:985-1150 (unit tests), tests/lifecycle.rs:309-550 (fixture helpers and integration tests), README.md:79 and 335-345."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q4",
+      "state": "A",
+      "state_id": "Q4-A",
+      "recovery_id": "artifact-7d2c3ee339dc0581",
+      "score": [
+        0,
+        1,
+        2
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Smallest and most direct change: a single `prune_locked_keeping(max_finished)` with `prune`, `prune_locked` and the CLI all funnelling through it; no mode flags; default dry-run-under-deferral behavior preserved exactly as today, which is also what the hidden checks expect. Tests are seeded, deterministic and honour PROCLEASE_TEST_ROOT, covering every listed criterion, though the deferral test is thinner. README and help are accurate. Score held at 3 rather than 4 because of the thin deferral test and the unexplained full-suite failure.",
+        "evidence": "src/store.rs:238-273; src/main.rs:677-686; tests/lifecycle.rs new block after line 2474."
+      },
+      "issues": [
+        "Q4-suite",
+        "Q4-guardian-test",
+        "Q4-deferral-test"
+      ],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q4",
+      "state": "B",
+      "state_id": "Q4-B",
+      "recovery_id": "artifact-91bd28c1a5c18667",
+      "score": [
+        0,
+        0,
+        1
+      ],
+      "maintainability": {
+        "score": 2,
+        "reason": "Follows existing structure and reuses the locked path, but `explicit_keep: Option<usize>` carries two meanings (count limit and 'skip everything under deferral'), creating a second behavioral mode for quarantine retry and warnings that diverges from default collection. Tests are deterministic, seeded, thorough (ties, 100 vs default, every protected class, quarantine under protection, ten invalid forms) and honour PROCLEASE_TEST_ROOT via the shared Fixture. README is accurate to its own behavior.",
+        "evidence": "src/store.rs:252-296 (doc comment: 'also gates quarantine retries on permission'); tests/lifecycle.rs new block after line 2474."
+      },
+      "issues": [
+        "Q4-guardian-test"
+      ],
+      "corrections": [
+        "Q4-suite",
+        "Q4-deferral-test"
+      ],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q4",
+      "state": "C",
+      "state_id": "Q4-C",
+      "recovery_id": "artifact-f9b52cde130ecb34",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Localized change: one shared `prune_locked_keeping` with a count parameter, defaults routed through `prune_locked`, default behaviour untouched including quarantine retry under deferral. The `exact_preview` bool is a small mode flag but clearly documented. Tests are deterministic, seeded, honour PROCLEASE_TEST_ROOT, cover every criterion including both default and `--keep` dry-run under protection, ties, 100 vs default, and all protected classes; the live-guardian fixture is made more precise (keeper verified absent so only the group protects). README accurate.",
+        "evidence": "src/store.rs:83-135 (diff numbering); tests/lifecycle.rs new block after line 2474."
+      },
+      "issues": [],
+      "corrections": [
+        "Q4-suite",
+        "Q4-guardian-test",
+        "Q4-deferral-test"
+      ],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q4",
+      "state": "initial",
+      "state_id": "Q4-I",
+      "recovery_id": "artifact-7d2c3ee339dc0581",
+      "score": [
+        0,
+        1,
+        2
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Smallest and most direct change: a single `prune_locked_keeping(max_finished)` with `prune`, `prune_locked` and the CLI all funnelling through it; no mode flags; default dry-run-under-deferral behavior preserved exactly as today, which is also what the hidden checks expect. Tests are seeded, deterministic and honour PROCLEASE_TEST_ROOT, covering every listed criterion, though the deferral test is thinner. README and help are accurate. Score held at 3 rather than 4 because of the thin deferral test and the unexplained full-suite failure.",
+        "evidence": "src/store.rs:238-273; src/main.rs:677-686; tests/lifecycle.rs new block after line 2474."
+      },
+      "issues": [
+        "Q4-suite",
+        "Q4-guardian-test",
+        "Q4-deferral-test"
+      ],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q5",
+      "state": "A",
+      "state_id": "Q5-A",
+      "recovery_id": "artifact-a742c71054b736ff",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Localized and idiomatic. A single Category enum plus Record::category() (src/model.rs:64-74, 148-156) is the one source of truth, and display.rs:143-150 was refactored to use it, so the summary and the table heading cannot diverge. Counts is a small Copy struct with total/json/line helpers; retained_jobs was factored out of visible_jobs so both list and summary share the same prune+scan path (src/main.rs:343-351, 396-402). Dispatch uses a `summary: true` match arm that relies on clap's conflicts_with, which is clear. Help long_help and README state the exact category definitions and output shape. The test is deterministic via seeded records and covers every seeded case the ticket asks for, the warning path, both output modes, --all, the --resources conflict in both argument orders, the watch no-op, byte-identical records, bounded stdout with 25 jobs, and help text. Held back from 4 by a single ~230-line monolithic test, by `model::Category::` being fully qualified in main.rs while display.rs imports it, and by leaving select_visible's inline rank logic untouched.",
+        "evidence": "src/model.rs:64-74,148-156; src/display.rs:143-150; src/main.rs:343-402, 768-787; tests/lifecycle.rs:255-502; README.md:338-367."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q5",
+      "state": "B",
+      "state_id": "Q5-B",
+      "recovery_id": "artifact-a742c71054b736ff",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Localized and idiomatic. A single Category enum plus Record::category() (src/model.rs:64-74, 148-156) is the one source of truth, and display.rs:143-150 was refactored to use it, so the summary and the table heading cannot diverge. Counts is a small Copy struct with total/json/line helpers; retained_jobs was factored out of visible_jobs so both list and summary share the same prune+scan path (src/main.rs:343-351, 396-402). Dispatch uses a `summary: true` match arm that relies on clap's conflicts_with, which is clear. Help long_help and README state the exact category definitions and output shape. The test is deterministic via seeded records and covers every seeded case the ticket asks for, the warning path, both output modes, --all, the --resources conflict in both argument orders, the watch no-op, byte-identical records, bounded stdout with 25 jobs, and help text. Held back from 4 by a single ~230-line monolithic test, by `model::Category::` being fully qualified in main.rs while display.rs imports it, and by leaving select_visible's inline rank logic untouched.",
+        "evidence": "src/model.rs:64-74,148-156; src/display.rs:143-150; src/main.rs:343-402, 768-787; tests/lifecycle.rs:255-502; README.md:338-367."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q5",
+      "state": "C",
+      "state_id": "Q5-C",
+      "recovery_id": "artifact-a742c71054b736ff",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Localized and idiomatic. A single Category enum plus Record::category() (src/model.rs:64-74, 148-156) is the one source of truth, and display.rs:143-150 was refactored to use it, so the summary and the table heading cannot diverge. Counts is a small Copy struct with total/json/line helpers; retained_jobs was factored out of visible_jobs so both list and summary share the same prune+scan path (src/main.rs:343-351, 396-402). Dispatch uses a `summary: true` match arm that relies on clap's conflicts_with, which is clear. Help long_help and README state the exact category definitions and output shape. The test is deterministic via seeded records and covers every seeded case the ticket asks for, the warning path, both output modes, --all, the --resources conflict in both argument orders, the watch no-op, byte-identical records, bounded stdout with 25 jobs, and help text. Held back from 4 by a single ~230-line monolithic test, by `model::Category::` being fully qualified in main.rs while display.rs imports it, and by leaving select_visible's inline rank logic untouched.",
+        "evidence": "src/model.rs:64-74,148-156; src/display.rs:143-150; src/main.rs:343-402, 768-787; tests/lifecycle.rs:255-502; README.md:338-367."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q5",
+      "state": "initial",
+      "state_id": "Q5-I",
+      "recovery_id": "artifact-a742c71054b736ff",
+      "score": [
+        0,
+        0,
+        0
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Localized and idiomatic. A single Category enum plus Record::category() (src/model.rs:64-74, 148-156) is the one source of truth, and display.rs:143-150 was refactored to use it, so the summary and the table heading cannot diverge. Counts is a small Copy struct with total/json/line helpers; retained_jobs was factored out of visible_jobs so both list and summary share the same prune+scan path (src/main.rs:343-351, 396-402). Dispatch uses a `summary: true` match arm that relies on clap's conflicts_with, which is clear. Help long_help and README state the exact category definitions and output shape. The test is deterministic via seeded records and covers every seeded case the ticket asks for, the warning path, both output modes, --all, the --resources conflict in both argument orders, the watch no-op, byte-identical records, bounded stdout with 25 jobs, and help text. Held back from 4 by a single ~230-line monolithic test, by `model::Category::` being fully qualified in main.rs while display.rs imports it, and by leaving select_visible's inline rank logic untouched.",
+        "evidence": "src/model.rs:64-74,148-156; src/display.rs:143-150; src/main.rs:343-402, 768-787; tests/lifecycle.rs:255-502; README.md:338-367."
+      },
+      "issues": [],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q6",
+      "state": "A",
+      "state_id": "Q6-A",
+      "recovery_id": "artifact-0aecaccf6ee1ccb7",
+      "score": [
+        0,
+        2,
+        0
+      ],
+      "maintainability": {
+        "score": 2,
+        "reason": "Shares the clean launch_dir helper and validation ordering with the other trees, adds a small program_path helper with a unit test, and the README is correctly formatted (blank line before the following paragraph). However the full suite failed in the grader run with the only test delta being an assertion about clap's parsing of `--cwd --`, which the code under test does not control, pointing to a brittle test; and the exec-path rewrite silently changes shebang `$0` for existing relative-script invocations. clippy::large_enum_variant is suppressed rather than addressed.",
+        "evidence": "src/main.rs:470-495, 647; src/lifecycle.rs:472-480, 507-511, 1000-1012; tests/lifecycle.rs:3140-3154; README.md:107-131; checks.json common.test.exit_code 101."
+      },
+      "issues": [
+        "Q6-suite",
+        "Q6-script-name"
+      ],
+      "corrections": [
+        "Q6-readme-format"
+      ],
+      "introduced_observations": [
+        "Q6-suite"
+      ],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q6",
+      "state": "B",
+      "state_id": "Q6-B",
+      "recovery_id": "artifact-8ff7b1a669132830",
+      "score": [
+        0,
+        0,
+        1
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Localized change: one new launch_dir helper in main.rs (470-495) called at 647 before the store lock (654) and reservation (678); lifecycle.rs changes only a comment; help text and README cover canonicalization and retry identity. Five deterministic integration tests use /bin/pwd, /usr/bin/true, /usr/bin/false and tiny #!/bin/sh scripts, wait for terminal state, and share a CwdLayout helper and run_from with env_clear so fingerprints are stable. Deductions: README lazy-continuation defect; clippy::large_enum_variant suppressed rather than addressed; the empty --cwd bail at main.rs:476-478 is unreachable because clap's PathBuf parser already rejects empty values (hidden check shows exit 2).",
+        "evidence": "src/main.rs:470-495, 646-647, 654, 678; src/lifecycle.rs:493-514; tests/lifecycle.rs:2968-3332; README.md:107-130."
+      },
+      "issues": [
+        "Q6-readme-format"
+      ],
+      "corrections": [
+        "Q6-script-name"
+      ],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q6",
+      "state": "C",
+      "state_id": "Q6-C",
+      "recovery_id": "artifact-c6082ee747080ee9",
+      "score": [
+        0,
+        0,
+        1
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Identical src/main.rs to the other trees (launch_dir helper, validation before lock); lifecycle.rs changes only a comment explaining why the program path is not rewritten; five deterministic integration tests including a `$0` preservation test that also proves the caller's copy of a same-named script never runs. Deductions: README lazy-continuation defect, suppressed large_enum_variant lint, unreachable empty --cwd bail.",
+        "evidence": "src/main.rs:470-495, 647-678; src/lifecycle.rs:493-515; tests/lifecycle.rs:2968-3332; README.md:107-130."
+      },
+      "issues": [
+        "Q6-readme-format"
+      ],
+      "corrections": [
+        "Q6-script-name"
+      ],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    },
+    {
+      "task": "Q6",
+      "state": "initial",
+      "state_id": "Q6-I",
+      "recovery_id": "artifact-cfcb64f2e25e2ca4",
+      "score": [
+        0,
+        1,
+        1
+      ],
+      "maintainability": {
+        "score": 3,
+        "reason": "Same launch_dir helper and validation ordering; explicit program_path helper with a focused unit test makes the relative-command rule independent of std's unstable behaviour, at the cost of changing shebang `$0`. Four deterministic integration tests with shared helpers cover every criterion-8 scenario and await termination. Deductions: README lazy-continuation defect, suppressed large_enum_variant lint, unreachable empty --cwd bail, `$0` behaviour change undocumented (README claims only argv and argv[0] stay as given, which is accurate but silent on `$0`).",
+        "evidence": "src/main.rs:470-495, 647-678; src/lifecycle.rs:472-480, 507-511, 1000-1012; tests/lifecycle.rs:2968-3287; README.md:107-129."
+      },
+      "issues": [
+        "Q6-script-name",
+        "Q6-readme-format"
+      ],
+      "corrections": [],
+      "introduced_observations": [],
+      "complete_and_gradable": true
+    }
+  ],
+  "unconfirmed_requirement_disputes": [
+    "Q4-preview semantics: criterion3 exactly-as-today versus criterion4 exact removal equivalence",
+    "Q4-quarantine deletion/preservation: inherited retry behavior versus nothing-deleted parenthesis"
+  ],
+  "invalid_hidden_checks": {
+    "q4.deferred.report": "Excluded for every Q4 state under post-freeze rule; ambiguous specification cannot support a unique oracle. Original outcomes retained."
+  }
+}

@@ -43,6 +43,13 @@ required collaboration routes on ordinary prompts. Explicit skill invocation
 matched all three expected routes in that small diagnostic, including staying
 solo for routine work; no model names were supplied in the prompts.
 
+A [completed six-task quality pilot](evals/quality/2026-11-09/report.md)
+found a reproduced regression corrected by both independent-review paths and
+missed by self-check. No quality advantage over matched manual coordination was
+established for the skill. Review-versus-self-check thresholds are sensitive to
+an existing test failure supplying a second initially material draft; the report
+preserves the primary counts, sensitivity and recovered grading receipts.
+
 Prefer no Node.js? Use the [manual ZIP or checkout instructions](docs/guide.md#manual-installation).
 The workflow currently targets a Codex lead; installing the files for another
 agent does not establish support for that lead.

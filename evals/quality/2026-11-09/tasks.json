@@ -1,0 +1,325 @@
+{
+  "schema": "agents-collab-quality-pilot-tasks/draft-1",
+  "status": "frozen before participant work",
+  "label": "All six tickets are authored evaluation tickets written for this study. None is, or describes, an existing public ProcLease issue or pull request. Each requests a feature that is absent at the base commit.",
+  "source": {
+    "repository": "https://github.com/jaredchu/proclease",
+    "commit": "37975b5245fcb5cac7b16fac74efd01269dff5d8"
+  },
+  "case_setup": {
+    "snapshot": "Export the base commit tree (no .git) and initialise a fresh repository with one commit whose message is identical for all six tasks: 'Evaluation snapshot based on ProcLease 37975b5 (may include authored evaluation changes)'. No remotes, tags or other refs. The frozen initial draft is committed once on top of it; branches A, B and C are byte-identical copies of that commit.",
+    "location": "<work-root>/drafts/<task>-draft/repo and <work-root>/runs/<task>-<arm>/repo; finishing repos clone the single frozen draft commit with no hard links or remotes",
+    "environment": {
+      "CARGO_TARGET_DIR": "<work-root>/cases/<task>/<state>/target",
+      "PROCLEASE_TEST_ROOT": "<short-fixture-root>/<task>-<state>",
+      "PROCLEASE_HOME": "<short-fixture-root>/<task>-<state>/state",
+      "CARGO_NET_OFFLINE": "true",
+      "XDG_STATE_HOME": "<short-fixture-root>/<task>-<state>/xdg"
+    },
+    "dependencies": "Fetch crates once for the base Cargo.lock before any run; every run uses the same offline cache.",
+    "prompt_rendering": "Participants receive task.prompt plus the frozen stage-control text and common developer metadata in run.py. No other tasks.json fields are supplied."
+  },
+  "common_acceptance": [
+    "cargo fmt --check passes",
+    "cargo clippy --all-targets -- -D warnings passes",
+    "cargo test passes (full suite, run by the grader with the case environment)",
+    "Cargo.toml and Cargo.lock unchanged; no new dependencies",
+    "changed paths are within allowed_paths; anything else is an out-of-scope change",
+    "no commits, pushes, tags, releases, website, packaging or skill changes; working-tree changes only",
+    "tests are deterministic, honour PROCLEASE_TEST_ROOT and stop every process they start"
+  ],
+  "allowed_paths": [
+    "src/",
+    "tests/",
+    "README.md"
+  ],
+  "tasks": [
+    {
+      "id": "Q1",
+      "title": "Repeatable --state filter for list",
+      "profile": "moderate control",
+      "prompt": "Evaluation ticket (authored for this study; not an existing ProcLease issue).\n\n`proclease list` can only be widened with `--all`. Callers that want, for example, only failed jobs must filter JSON themselves. Add a repeatable `--state <STATE>` filter to `list`.\n\nAcceptance criteria:\n1. `list --state <STATE>` accepts exactly the nine lifecycle state names used in JSON `state` values: `starting`, `running`, `stopping`, `stopped`, `expired`, `exited`, `failed`, `interrupted`, `unknown` (lowercase, exact). Each occurrence takes one name. Comma-separated lists, other spellings or case, and aliases such as `active` or `unverified` fail with a nonzero exit status and print no job list. Repeating a name is allowed and has no extra effect.\n2. A job matches when its displayed state equals any requested name (OR across repeated options). The displayed state is the state `list` reports now, after the existing supervisor observation: a `running` record whose supervisor endpoint is unreachable is shown, and matched, as `unknown`.\n3. Filtering happens before the default recent-finished window. Without `--all`, matching active and unverified jobs are always shown, and the five most recently finished matching jobs stay visible for 30 seconds under the existing rules. With `--all`, every matching retained job is shown.\n4. Output order, fields and the JSON envelope are the same as today, restricted to matching jobs, in human and JSON output and with `--resources`. Scan warnings (for example an unreadable job record) are still reported when filtering, because the state of such a record is unknown.\n5. Without `--state`, `list` output is unchanged. `watch` is unchanged.\n6. The filter only reads: it adds no lease renewal, signal or record write. The opportunistic history collection that every `list` already performs is unchanged.\n7. Help text lists the accepted values. README `list` usage documents the option and that it matches the displayed state.\n8. Integration tests in tests/lifecycle.rs cover criteria 1 to 6 using seeded job records rather than timing-sensitive live processes.\n\nScope: src/, tests/ and README.md only. Do not change Cargo.toml, Cargo.lock, dependencies, the shared skill, website, release or packaging files. Tests must be deterministic, honour PROCLEASE_TEST_ROOT like the existing fixtures and stop anything they start. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` must pass with CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT set outside the repository.",
+      "hidden_check_groups": {
+        "state-match": [
+          2,
+          3
+        ],
+        "observed-state": [
+          2
+        ],
+        "repeat-or": [
+          1,
+          2
+        ],
+        "enum": [
+          1
+        ],
+        "window-after-filter": [
+          3
+        ],
+        "order": [
+          4
+        ],
+        "warnings": [
+          4
+        ],
+        "validation": [
+          1
+        ],
+        "compat": [
+          5
+        ],
+        "human": [
+          4
+        ],
+        "read-only": [
+          6
+        ]
+      },
+      "review_items": [
+        "help text values (7)",
+        "README (7)",
+        "test coverage of 1-6 (8)",
+        "common acceptance"
+      ]
+    },
+    {
+      "id": "Q2",
+      "title": "logs --head as a bounded alternative to --tail",
+      "profile": "localized control",
+      "prompt": "Evaluation ticket (authored for this study; not an existing ProcLease issue).\n\n`proclease logs <id>` shows the last 50 lines by default (`--tail N`). Add `--head N` to show the first N lines instead, for example to read a service's startup banner after a long run.\n\nAcceptance criteria:\n1. `logs --head N` prints the first N lines of the captured output, using exactly the same line splitting, terminal-control escaping and 16 MiB read bound as `--tail`. When the log has fewer than N lines, all lines are printed.\n2. N accepts integers 1 to 500 inclusive; other values fail with a nonzero exit status and print no lines. Existing `--tail` bounds (1 to 500) are unchanged.\n3. `--head` and an explicitly supplied `--tail` conflict whatever the tail value, including 50: the command fails with a nonzero exit status and prints no lines. Without `--head`, the default remains the last 50 lines.\n4. Output is otherwise unchanged. The JSON envelope keeps exactly its current fields (`schema_version`, `id`, `lines`, `logs_truncated`), with `lines` holding the selected lines in log order. Human output prints one line per log line and keeps the stderr note when capture reached its byte cap.\n5. `logs` still refuses an `output.log` that is a symlink (exit status 1, none of the target's contents printed), with or without `--head`.\n6. README and help text document `--head` and the conflict.\n7. Tests with seeded finished job records and prepared logs cover selection, bounds, the conflict, escaping of control characters, the truncation note and symlink refusal with `--head`.\n\nScope: src/, tests/ and README.md only. Do not change Cargo.toml, Cargo.lock, dependencies, the shared skill, website, release or packaging files. Tests must be deterministic, honour PROCLEASE_TEST_ROOT like the existing fixtures and stop anything they start. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` must pass with CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT set outside the repository.",
+      "hidden_check_groups": {
+        "head-select": [
+          1,
+          2
+        ],
+        "envelope": [
+          4
+        ],
+        "truncation": [
+          4
+        ],
+        "escaping": [
+          1,
+          4
+        ],
+        "validation": [
+          2
+        ],
+        "conflict": [
+          3
+        ],
+        "compat": [
+          3,
+          4
+        ],
+        "symlink-disclosure": [
+          5
+        ],
+        "symlink-head-status": [
+          5
+        ],
+        "symlink-default-status": [
+          5
+        ]
+      },
+      "review_items": [
+        "README/help (6)",
+        "test coverage (7)",
+        "16 MiB bound shared with --tail (1, code review)",
+        "common acceptance"
+      ]
+    },
+    {
+      "id": "Q3",
+      "title": "Explicit list --sort created|finished",
+      "profile": "edge-case feature",
+      "prompt": "Evaluation ticket (authored for this study; not an existing ProcLease issue).\n\n`proclease list` orders jobs as active, then unverified, then finished, each group by creation time. Finished jobs are often more useful in completion order. Add `list --sort created|finished`.\n\nAcceptance criteria:\n1. Without `--sort`, order and output are unchanged.\n2. `--sort` accepts exactly `created` or `finished`; other values fail with a nonzero exit status and print no job list. It changes order only, never which jobs are shown: the default recent window and `--all` select exactly the same jobs as without `--sort`.\n3. With either value, active jobs come first, then unverified jobs (state `unknown`, or a finished state with no recorded finish time). Each of these two groups is ordered by creation time ascending, ties broken by job ID ascending. Unverified jobs therefore never take part in finish-time ordering.\n4. The remaining finished jobs (those with a recorded finish time) follow. For `created`: creation time ascending. For `finished`: most recently finished first (finish time descending). For both, ties on the sort time are broken by job ID ascending (lexicographic).\n5. Human and JSON output use the same order; job fields and the JSON envelope are unchanged. `--sort` works with `--all`, `--json` and `--resources`. `watch` gains no new option and is unchanged.\n6. Like `list` today, `--sort` adds no lease renewal, signal or record write.\n7. README `list` usage documents the option and the ordering rules.\n8. Tests with seeded records cover both orders, ties, the active and unverified groups, the default window with `--sort` and invalid values.\n\nScope: src/, tests/ and README.md only. Do not change Cargo.toml, Cargo.lock, dependencies, the shared skill, website, release or packaging files. Tests must be deterministic, honour PROCLEASE_TEST_ROOT like the existing fixtures and stop anything they start. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` must pass with CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT set outside the repository.",
+      "hidden_check_groups": {
+        "live-first": [
+          3
+        ],
+        "finished-order": [
+          4
+        ],
+        "created-order": [
+          4
+        ],
+        "tie-break": [
+          3,
+          4
+        ],
+        "window": [
+          2
+        ],
+        "compat": [
+          1,
+          5
+        ],
+        "human": [
+          5
+        ],
+        "envelope": [
+          5
+        ],
+        "validation": [
+          2
+        ],
+        "read-only": [
+          6
+        ]
+      },
+      "review_items": [
+        "README (7)",
+        "test coverage (8)",
+        "--resources combination (5, code review)",
+        "common acceptance"
+      ],
+      "semantics_note": "At the base commit, list sorts by (group, created_at_ms) with a stable sort over a scan pre-sorted by creation; equal creation times keep directory order. The ticket's ID tie-break applies only with --sort, so criterion 1 is not violated by adding it."
+    },
+    {
+      "id": "Q4",
+      "title": "Per-invocation prune --keep N",
+      "profile": "consequential storage logic",
+      "prompt": "Evaluation ticket (authored for this study; not an existing ProcLease issue).\n\n`proclease prune` collects confirmed finished history older than 24 hours or beyond the newest 100 collectable finished jobs. Add `prune --keep N` to apply a different count for one invocation, for example to tidy a crowded test state directory.\n\nAcceptance criteria:\n1. `--keep N` accepts integers 0 to 100 inclusive. Other values fail with a nonzero exit status before anything is deleted. Without `--keep`, behavior and output are unchanged.\n2. For that invocation only, N replaces the 100-job count limit: of the finished jobs that normal retention may collect, the newest N by finish time (same ordering and tie-breaking as today) are kept and older ones become candidates. The 24-hour rule still applies: a collectable job that finished 24 hours ago or earlier is a candidate whatever N is.\n3. `--keep` never widens what may be collected. Active jobs, unknown jobs, finished jobs without a recorded finish time and jobs whose supervisors cannot be verified absent are never candidates and do not count toward N. While a bulk stop holds retention protection, job collection is deferred exactly as today (`\"deferred\": true`, nothing deleted).\n4. `--dry-run --keep N` reports exactly the candidates that `prune --keep N` would remove from the same state, and deletes nothing.\n5. The setting is not persisted: later `prune`, `run`, `list`, `watch` and job completions use the normal limits.\n6. JSON output keeps its current fields; `max_finished` reports the count limit used by that invocation (N with `--keep`, otherwise 100). Human output keeps its current form.\n7. Help text and README document `--keep`.\n8. Tests use seeded finished records that need no process verification (for example never-supervised failed launches) and cover N = 0, a value below the collectable count, 100, the 24-hour rule, each protected class, deferral under retention protection, dry-run equivalence and invalid values.\n\nScope: src/, tests/ and README.md only. Do not change Cargo.toml, Cargo.lock, dependencies, the shared skill, website, release or packaging files. Tests must be deterministic, honour PROCLEASE_TEST_ROOT like the existing fixtures and stop anything they start. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` must pass with CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT set outside the repository.",
+      "hidden_check_groups": {
+        "compat": [
+          1
+        ],
+        "dry-run": [
+          2,
+          4
+        ],
+        "dry-run-safety": [
+          4
+        ],
+        "keep-count": [
+          2
+        ],
+        "dry-real-identity": [
+          4
+        ],
+        "age-rule": [
+          2
+        ],
+        "protection": [
+          3
+        ],
+        "per-invocation": [
+          5
+        ],
+        "in-progress-protection": [
+          3,
+          4
+        ],
+        "validation-safety": [
+          1
+        ],
+        "validation": [
+          1
+        ],
+        "envelope": [
+          6
+        ],
+        "human": [
+          6
+        ]
+      },
+      "review_items": [
+        "help/README (7)",
+        "test coverage (8)",
+        "no change to keeper/run/list collection call sites (5, code review)",
+        "common acceptance"
+      ]
+    },
+    {
+      "id": "Q5",
+      "title": "Bounded list --summary",
+      "profile": "aggregate output contract",
+      "prompt": "Evaluation ticket (authored for this study; not an existing ProcLease issue).\n\nAdd `list --summary`: a bounded, aggregate view of the jobs `list` considers, for dashboards and agents that only need counts.\n\nAcceptance criteria:\n1. `list --summary` prints counts instead of job rows, using the same scan, supervisor observation and opportunistic history collection as `list`. It adds no lease renewal, signal or record write.\n2. Categories are those of the existing human table summary: `active` (starting, running, stopping), `unverified` (unknown, or a finished state without a recorded finish time) and `finished` (all others). `selected` counts the jobs the same `list` invocation would show without `--summary` (the default recent window, or every retained job with `--all`). `retained` counts every readable job record in the state directory, regardless of `--all`. `total` is the sum of the three categories.\n3. `--json list --summary` prints one object with exactly these keys: `schema_version` (1), `selected` and `retained` (each an object with exactly the integer keys `total`, `active`, `unverified`, `finished`) and `warnings` (the same scan warnings `list` would report). There is no `jobs` key.\n4. Human output prints exactly two lines to stdout, `selected: T (active A, unverified U, finished F)` then `retained: T (active A, unverified U, finished F)`, and the usual `Warning: ...` lines to stderr. The exit status follows `list` (0 even when warnings are reported).\n5. Apart from warning text, output size does not grow with the number of jobs, and summary output contains no per-job data (IDs, argv, cwd, owner, task, name, URL, error text) and no environment values.\n6. `--summary` combines with `--all`; combining it with `--resources` fails with a nonzero exit status and prints no counts or job list. Without `--summary`, `list` output is unchanged; `watch` is unchanged.\n7. Help text and README document the option and the category definitions.\n8. Tests with seeded records (active, unknown, finished with and without a finish time, and an unreadable record) cover both output modes, `--all`, warnings and the `--resources` conflict.\n\nScope: src/, tests/ and README.md only. Do not change Cargo.toml, Cargo.lock, dependencies, the shared skill, website, release or packaging files. Tests must be deterministic, honour PROCLEASE_TEST_ROOT like the existing fixtures and stop anything they start. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` must pass with CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT set outside the repository.",
+      "hidden_check_groups": {
+        "shape": [
+          3
+        ],
+        "counts": [
+          1,
+          2
+        ],
+        "counts-all": [
+          2,
+          6
+        ],
+        "human": [
+          4
+        ],
+        "warnings": [
+          3
+        ],
+        "privacy-env": [
+          5
+        ],
+        "privacy-fields": [
+          5
+        ],
+        "bounded": [
+          5
+        ],
+        "validation": [
+          6
+        ],
+        "compat": [
+          6
+        ],
+        "read-only": [
+          1
+        ]
+      },
+      "review_items": [
+        "help/README (7)",
+        "test coverage (8)",
+        "no duplicated category logic diverging from the table summary (2, code review)",
+        "common acceptance"
+      ]
+    },
+    {
+      "id": "Q6",
+      "title": "Explicit run --cwd PATH",
+      "profile": "consequential multi-interface change",
+      "prompt": "Evaluation ticket (authored for this study; not an existing ProcLease issue).\n\n`proclease run` launches the command in the caller's current directory. Agents often cannot change directory between tool calls. Add `run --cwd PATH` to choose the launch directory explicitly.\n\nAcceptance criteria:\n1. `--cwd PATH` sets the directory in which the command starts. A relative PATH is resolved against the caller's current directory. The resolved path is canonicalized exactly as the inherited directory is today (symlinks resolved); that canonical path is recorded as `cwd` and used for retry identity.\n2. PATH must exist and be a directory. An empty, missing or non-directory PATH fails with a nonzero exit status before any job directory, record or process is created; missing and non-directory paths fail with exit status 1 and, with `--json`, the usual `error` field.\n3. Retry identity uses the canonical directory: launches whose canonical directories are equal have the same directory component, whether the directory was given through `--cwd` (absolute, relative or via a symlink) or inherited without `--cwd`. A keyed retry whose canonical directory differs from the retained launch is rejected as a different launch context, as today, even when the caller's own current directory equals the original one.\n4. A relative command path containing a slash (for example `./bin/server`) is resolved relative to the launch directory, not the caller's directory. Command names without a slash use PATH lookup as today.\n5. The ProcLease CLI does not change its own working directory (no process-wide `set_current_dir`); only the launched command starts in PATH. Supervision, leases and readiness waits are otherwise unchanged.\n6. Without `--cwd`, behavior and output are unchanged. The JSON envelope is unchanged; `job.cwd` shows the canonical directory.\n7. Help text and README document `--cwd`, its canonicalization and its effect on retry identity.\n8. Integration tests cover absolute, relative and symlinked `--cwd`, validation failures that leave no job, retry identity equivalence and mismatch, and relative command resolution. Tests launch only short-lived commands such as `/usr/bin/true` or `/bin/pwd`, or the existing fixture service, and stop anything they start.\n\nScope: src/, tests/ and README.md only. Do not change Cargo.toml, Cargo.lock, dependencies, the shared skill, website, release or packaging files. Tests must be deterministic, honour PROCLEASE_TEST_ROOT like the existing fixtures and stop anything they start. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and `cargo test` must pass with CARGO_TARGET_DIR and PROCLEASE_TEST_ROOT set outside the repository.",
+      "hidden_check_groups": {
+        "launch-dir": [
+          1,
+          6
+        ],
+        "relative-cwd": [
+          1
+        ],
+        "canonical": [
+          1
+        ],
+        "relative-command": [
+          4
+        ],
+        "validation": [
+          2
+        ],
+        "compat": [
+          6
+        ],
+        "retry-identity": [
+          3
+        ],
+        "retry-mismatch": [
+          3
+        ]
+      },
+      "review_items": [
+        "help/README (7)",
+        "test coverage and cleanup (8)",
+        "validation ordering before lock/reservation (2, code review)",
+        "common acceptance",
+        "no process-wide working-directory change (5; code review, not a token grep)"
+      ]
+    }
+  ]
+}

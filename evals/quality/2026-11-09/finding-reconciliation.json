@@ -1,0 +1,160 @@
+{
+  "status": "completed operator corroboration after anonymous grading",
+  "findings": [
+    {
+      "branch": "B",
+      "task": "Q4",
+      "id": "Q4-preview",
+      "classification": "unconfirmed_requirement_dispute",
+      "disposition": "Observed behavior retained; not counted as a settled defect or correction",
+      "evidence": "Recovered blind grading identifies conflicting exactly-as-today and exact-preview/nothing-deleted readings. Original probes establish behavior, not a unique interpretation of the criterion."
+    },
+    {
+      "branch": "B",
+      "task": "Q6",
+      "id": "Q6-script-name",
+      "classification": "true_positive",
+      "disposition": "corrected",
+      "evidence": "Supplementary shebang probe exercises the exact reported failure; base/B/C preserve ./probe; initial/A rewrite it."
+    },
+    {
+      "branch": "C",
+      "task": "Q4",
+      "id": "Q4-preview",
+      "classification": "unconfirmed_requirement_dispute",
+      "disposition": "Observed behavior retained; not counted as a settled defect or correction",
+      "evidence": "Recovered blind grading identifies conflicting exactly-as-today and exact-preview/nothing-deleted readings. Original probes establish behavior, not a unique interpretation of the criterion."
+    },
+    {
+      "branch": "C",
+      "task": "Q6",
+      "id": "Q6-script-name",
+      "classification": "true_positive",
+      "disposition": "corrected",
+      "evidence": "Supplementary shebang probe exercises the exact reported failure; base/B/C preserve ./probe; initial/A rewrite it."
+    },
+    {
+      "branch": "B",
+      "task": "Q4",
+      "id": "Q4-quarantine",
+      "classification": "unconfirmed_requirement_dispute",
+      "disposition": "Observed behavior retained; not counted as a settled defect or correction",
+      "evidence": "Recovered blind grading identifies conflicting exactly-as-today and exact-preview/nothing-deleted readings. Original probes establish behavior, not a unique interpretation of the criterion."
+    },
+    {
+      "branch": "C",
+      "task": "Q4",
+      "id": "Q4-guardian-test",
+      "classification": "true_positive",
+      "disposition": "corrected minor test weakness",
+      "evidence": "Keeper predicate masks guardian; C uses verified absent keeper. Frozen rubric counts weak-but-present tests minor; recovered grading notes the more precise fixture and final review confirms the code path."
+    },
+    {
+      "branch": "A",
+      "task": "Q6",
+      "id": "Q6-readme-format",
+      "classification": "true_positive",
+      "disposition": "corrected",
+      "evidence": "A review also identified missing blank line. Recovered blind grading flags lazy continuation; renderer confirms metadata paragraph inside final cwd bullet in I/B/C, separate in A. Inheritance qualifier is a clarification, not another defect."
+    },
+    {
+      "branch": "A",
+      "task": "Q2",
+      "id": "Q2-template-timing",
+      "classification": "unconfirmed",
+      "disposition": "fixture improved",
+      "evidence": "Criterion 7 asks for seeded records/prepared logs; initial does seed them using a completed template. It does not forbid constructing the template with a short process. No failing slow/restricted-host scenario reproduced. No counted defect correction."
+    },
+    {
+      "branch": "A",
+      "task": "Q3",
+      "id": "README-paragraph",
+      "classification": "scope_suggestion",
+      "disposition": "not changed: scratch-write permission denied",
+      "evidence": "Adding a blank line separates filesystem advice from sort prose; no inaccurate statement or numbered criterion failure demonstrated."
+    },
+    {
+      "branch": "A",
+      "task": "Q6",
+      "id": "README-paragraph",
+      "classification": "scope_suggestion",
+      "disposition": "changed",
+      "evidence": "Formatting separation only; not counted again as a defect."
+    },
+    {
+      "branch": "A",
+      "task": "Q6",
+      "id": "parser-boundary-test",
+      "classification": "scope_suggestion",
+      "disposition": "changed",
+      "evidence": "Adds missing-value/-- boundary case; existing trailing missing-value case already present. No initial runtime parser failure shown."
+    },
+    {
+      "branch": "A",
+      "task": "Q1",
+      "id": "README-paragraph",
+      "classification": "scope_suggestion",
+      "disposition": "not changed",
+      "evidence": "Paragraph separation style only."
+    },
+    {
+      "branch": "A",
+      "task": "Q1",
+      "id": "PID-reuse",
+      "classification": "unconfirmed",
+      "disposition": "not changed",
+      "evidence": "Hypothetical OS PID reuse in seeded fixture; not reproduced."
+    },
+    {
+      "branch": "A",
+      "task": "Q1",
+      "id": "recent-window-timing",
+      "classification": "unconfirmed",
+      "disposition": "not changed",
+      "evidence": "Exceptional >30s stall risk; not reproduced."
+    },
+    {
+      "branch": "A",
+      "task": "Q4",
+      "id": "smaller-wording",
+      "classification": "scope_suggestion",
+      "disposition": "not changed",
+      "evidence": "Range explicitly includes 100; no behavioral failure."
+    },
+    {
+      "branch": "A",
+      "task": "Q5",
+      "id": "help-backticks",
+      "classification": "scope_suggestion",
+      "disposition": "not changed",
+      "evidence": "Literal formatting cosmetic."
+    },
+    {
+      "branch": "A",
+      "task": "Q5",
+      "id": "recent-window-timing",
+      "classification": "unconfirmed",
+      "disposition": "not changed",
+      "evidence": "Exceptional >30s stall risk; not reproduced."
+    },
+    {
+      "branch": "B",
+      "task": "Q4",
+      "id": "Q4-deferral-test",
+      "classification": "true_positive",
+      "disposition": "corrected minor test weakness",
+      "evidence": "Original preview finding explicitly identifies missing candidate assertions. Runtime interpretation remains disputed, but absence of candidate assertions is a corroborated weak-test cause under rubric."
+    },
+    {
+      "branch": "C",
+      "task": "Q4",
+      "id": "Q4-deferral-test",
+      "classification": "true_positive",
+      "disposition": "corrected minor test weakness",
+      "evidence": "Original preview finding explicitly identifies missing candidate assertions. Runtime interpretation remains disputed, but absence of candidate assertions is a corroborated weak-test cause under rubric."
+    }
+  ],
+  "blind_grader_unique_confirmed_source_catches": [],
+  "limits": "Q4 runtime disputes stay unconfirmed. Two separate test weaknesses count minor under frozen rubric, without requiring a runtime failure or wholly absent criterion. Thin deferral coverage was already mentioned in B/C reviews, so it is not a blind-only unique catch.",
+  "interim_corrections": "Earlier operator-only counts treated Q4 behavior as unambiguous material defects; final grading exposes specification conflict. Those counts are superseded, with old observations retained in interruption/."
+}

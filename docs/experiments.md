@@ -7,6 +7,33 @@ under its published rule. Inputs, selected receipts, patches and every planned
 run status are public; raw executions are not fully independently auditable.
 No quality, speed or cost benefit was established.
 
+## Completed quality-first pilot (9 November 2026)
+
+The [six-task three-way pilot](../evals/quality/2026-11-09/report.md) now has all
+required anonymous assessments. A quota interruption left it unfinished; the
+interim presentation was withdrawn, then grading resumed on the same frozen
+outputs after a reviewed recovery amendment. No participant work was repeated.
+Original failed attempts, old observations and new grading remain visible.
+
+A was fresh same-model self-check, B manual independent review, and C explicit
+Agents Collab with matched models. Both review paths corrected a reproduced
+script-invocation regression missed by A. C also improved one guardian fixture
+that B retained. Two separate weak Q4 tests count minor under the frozen rubric.
+Conflicting Q4 runtime requirements remain unconfirmed; earlier operator-only
+certainty about a quarantine safety defect is explicitly superseded.
+
+Primary wins/losses/ties are B/A 2/0/4, C/A 2/0/4, C/B 1/0/5. The first two meet
+the frozen observed-acceptance rule; C/B does not establish a skill-specific
+advantage. Excluding untargeted failures of an existing test in a disclosed
+sensitivity retains two review-versus-A wins, but leaves only one initially
+material draft, below the frozen floor. The formal primary advantage is therefore
+not robust to those test outcomes. No general quality, speed, cost or equivalence
+claim follows. This was not a comparison of optimized communication methods.
+
+See the report for every source artifact, check, disposition, maintainability
+score, interruption/anonymity limit and criteria calculation. The separate
+failed automatic-routing gate and its cancelled comparison remain unchanged.
+
 ## Earlier private pilots
 
 The following entries summarize checks and trials run on 8 November 2026.
