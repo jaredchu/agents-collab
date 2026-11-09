@@ -9,3 +9,6 @@ __pycache__/
 profiles/
 *.local.json
 .local/
+
+# Build output for the separate source-only Rust prototype
+cli/target/

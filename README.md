@@ -71,6 +71,11 @@ lead assistant session:
 - hand only durable outcomes (decisions, verified behavior, risks, remaining
   work) back to the project.
 
+The separate, source-only [Rust CLI prototype](docs/cli.md) now records local
+handoffs and immutable packets. It is experimental, not installed with the skill,
+and dispatches no models. Its supported storage and offline validation limits
+are documented separately.
+
 ## What it is not
 
 Read these before relying on it:
@@ -109,7 +114,8 @@ Read these before relying on it:
 | [`docs/research.md`](docs/research.md) | Sanitized research notes |
 | [`docs/experiments.md`](docs/experiments.md) | Validation, earlier pilots and the public routing gate |
 | [`docs/history.md`](docs/history.md) | How the project emerged |
-| [`Rust CLI prototype plan`](docs/plans/rust-cli-prototype.md) | Proposed record-and-packet core, boundaries and validation; not implemented |
+| [`Rust CLI prototype`](docs/cli.md) | Source-only local records and packets; commands, checks and limits |
+| [`Rust CLI prototype plan`](docs/plans/rust-cli-prototype.md) | Original proposal, acceptance scope and implementation status |
 | [`docs/project-context.md`](docs/project-context.md) | Current facts, limits and progress |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution and evidence guidelines |
 | `tests/` | Dependency-free unit and repository checks |
@@ -123,6 +129,10 @@ Python 3.9+ with the standard library only; no network, credentials or model cal
 python3 -m unittest discover -s tests -v
 python3 scripts/build_website.py   # writes dist/ only
 ```
+
+The separate Rust crate has additional dependencies and checks described in
+[CLI build and checks](docs/cli.md#build-and-checks); it does not change the
+Python helpers or skill installation.
 
 Tests create temporary files in the system temporary area. Results are reported
 by whoever runs them; this README does not pre-claim a pass count.

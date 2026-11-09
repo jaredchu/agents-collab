@@ -14,8 +14,10 @@ guidelines describe how changes and evidence are handled.
   logs or transcripts, or details of private or client projects.
 - **One writer per change.** Review findings go to the author; reviewers do not
   silently rewrite the change.
-- **No new runtime dependencies.** The validator, setup wizard, tests and build
-  script use the Python 3.9+ standard library only.
+- **Keep the skill helpers dependency-free.** The validator, setup wizard, Python
+  tests and website build script use the Python 3.9+ standard library only. The
+  separate `cli/` Rust crate has its own locked dependencies, including bundled
+  SQLite, and is not distributed with the skill.
 
 ## Checks before proposing a change
 
@@ -23,6 +25,10 @@ guidelines describe how changes and evidence are handled.
 python3 -m unittest discover -s tests -v
 python3 scripts/build_website.py
 ```
+
+For Rust changes, also run the [CLI build and checks](docs/cli.md#build-and-checks)
+with external build/temporary directories. No provider, account or live model
+is needed for its offline suite.
 
 The repository tests include privacy guards for absolute home paths, e-mail
 addresses and credential-shaped strings. Maintainers can add private terms

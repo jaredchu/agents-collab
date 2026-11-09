@@ -52,7 +52,8 @@ were separated from project knowledge.
 | [Research](research.md) | Sanitized research notes |
 | [Experiments](experiments.md) | Validation and pilot summaries |
 | [History](history.md) | How the project emerged |
-| [Rust CLI prototype plan](plans/rust-cli-prototype.md) | Proposed implementation scope, alternatives and acceptance criteria |
+| [Rust CLI prototype](cli.md) | Source-only executable commands, storage bounds and offline checks |
+| [Rust CLI prototype plan](plans/rust-cli-prototype.md) | Original acceptance scope, rationale and implementation status |
 | [Contributing](../CONTRIBUTING.md) | Contribution and evidence guidelines |
 | [License](../LICENSE) | MIT License (identical copy in the skill package) |
 
@@ -176,19 +177,38 @@ This does not establish general gains, reliable implicit activation or optimized
 communication. Follow the [interruption policy](../CONTRIBUTING.md#interrupted-experiments)
 for future blocked work: final results wait for all required stages.
 
-## Proposed Rust CLI prototype (9 November 2026)
+## Rust CLI prototype (9 November 2026)
 
-The [draft plan](plans/rust-cli-prototype.md) proposes a local record-and-packet
-CLI, with per-task private SQLite state and immutable artifact files. Its first
-deliverable records host-driven work and imports findings; model dispatch, MCP
-and a persistent daemon are deferred. Rust/SQLite versus a smaller helper,
-supported storage and snapshot guarantees remain design decisions.
+The owner authorized the [plan's](plans/rust-cli-prototype.md) first local
+record-and-packet deliverable and meaningful offline fault/concurrency validation.
+The separate source-only `cli/` crate now implements per-task SQLite state,
+immutable selected artifacts/common packets, host receipt/result import,
+revision/idempotency gates, separate writer-context and review packets, review
+rounds, finding dispositions and checked completion. It neither dispatches models nor changes the distributable skill.
 
-The proposed comparison measures normal collaboration, duplicated context,
-correctness and recovery without artificial experiment usage budgets. Existing
-profile timing semantics and real access limits remain distinct from those
-measurements. Implementation and live comparisons have not started; this plan
-does not authorize them or change the distributed skill or installed profile.
+[CLI documentation](cli.md) is canonical for commands and current limits.
+The implementation chooses bundled SQLite and runtime-limited local APFS/macOS
+support; other storage is refused. Cooperative repeated-scan capture does not
+prove atomic multi-file snapshots. Imported identity, truth, independence and
+authority remain declarations; strong required timing/effort guarantees are
+refused without a validated supervisor. Recovery preserves uncertainty and
+original evidence, with no automatic retries, deadline resets or substitutions.
+
+Synthetic offline tests cover normal and repaired handoffs, two required initial
+reviewers, blocked/unknown recovery, invalid results, mixed Git state, concurrent
+calls, abrupt process exits, simulated write exhaustion and corrupted/unavailable
+storage. Independent review resolved five findings, including recovery-time
+writer exclusivity; all 24 offline integration tests pass. The local core's
+implementation review is complete. See [validation status](cli.md#validation-status)
+for coverage and limits.
+
+Only Rust/Cargo 1.99.1 on macOS/local APFS was exercised; process-crash checks are
+not power-loss testing. No model quality, usage savings or usefulness conclusion
+follows.
+
+Live comparisons, dispatch, MCP and a daemon remain unperformed and separately
+authorized work. No artificial experiment usage budget is imposed. Profile timing
+semantics and real access interruptions remain distinct from those measurements.
 
 ## Progress
 
@@ -215,3 +235,8 @@ does not authorize them or change the distributed skill or installed profile.
 
 - [x] Complete recovered quality grading and evidence reconciliation without participant rerolls.
 - [x] Publish primary criteria, sensitivity, corrected dispositions and interruption limits.
+
+- [x] Implement the source-only Rust local record-and-packet core.
+- [x] Exercise synthetic workflow, source identity, fault and concurrency cases.
+- [x] Complete independent implementation review and required focused corrections.
+- [ ] Assess usefulness only under separate authorization; no live comparison has run.

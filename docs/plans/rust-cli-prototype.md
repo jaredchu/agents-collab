@@ -4,6 +4,33 @@
 approved architecture, implemented feature or authorization to run experiments.
 Model and reasoning choices remain external preferences.
 
+## Implementation status (9 November 2026)
+
+The owner subsequently authorized the first local record-and-packet deliverable
+and offline fault/concurrency validation, without authorizing live comparisons.
+The separate source-only `cli/` crate implements that core; see the
+[executable contracts and limits](../cli.md). It uses bundled SQLite with a
+versioned enclosing state, immutable objects, revision/idempotency transactions,
+and cooperative snapshots. Runtime storage support is deliberately limited to
+local APFS on macOS. Interface and imported authority claims remain untrusted
+observations; record validation is not proof of their truth.
+
+Offline tests exercise synthetic handoffs, repair, interruption, malformed input,
+source identity, conflicts, abrupt process exits and object/storage failures.
+Independent review resolved five implementation findings; all 24 offline
+integration tests pass. See the canonical [validation status](../cli.md#validation-status)
+for review coverage and evidence limits. Process-crash checks do not establish
+power-loss guarantees.
+Initial-packet replacement/restart, restoration,
+independent timing/effort supervisors and other platforms are not implemented;
+stronger required timing/attestation and atomic-snapshot guarantees are refused.
+The CLI cannot prevent policy evasion through a newly named task or verify a
+human's authority from an actor string. No installed skill, profile, website,
+model transport or live experiment is changed by this implementation.
+
+The proposal below is retained as the original acceptance scope and rationale;
+its future-phase and authorization wording describes the original proposal.
+
 ## Problem and intended outcome
 
 The prompt-led skill leaves the lead responsible for freezing inputs, tracking
