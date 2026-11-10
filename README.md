@@ -17,7 +17,10 @@ plus the lab notebook of how it came about.
 > (`Use $agents-collab ...`) matched all three expected routes in that small
 > diagnostic and remains the supported fallback, not the target. A
 > [draft activation study](docs/plans/implicit-activation-study.md) defines the
-> next measurement; it is unreviewed and unexecuted and solves nothing yet.
+> proposed next measurement. Method review passed for the earlier draft; the
+> 18-run study remains unexecuted, unapproved and unpreregistered. The source
+> now carries the experimental activation description, which does not establish
+> dependable implicit activation.
 
 ## Quick start
 
@@ -85,7 +88,9 @@ The optional [Rust CLI backend](docs/cli.md) records local handoffs and immutabl
 packets. Install its separately packaged executable and explicitly enable it;
 installing the skill alone keeps the manual workflow. Backend preferences live
 in `~/.config/agents-collab/backend.json`, leaving `profile.json` unchanged.
-The CLI dispatches no models. Support is currently limited to macOS arm64 and
+The CLI dispatches no models. Explicit owner-approved [quota continuations](skills/agents-collab/references/backend.md#quota-aware-continuation)
+retain the same unfinished stage and history without changing profile defaults.
+Support is currently limited to macOS arm64 and
 local APFS; see [installation and use](docs/cli.md#optional-backend-installation).
 
 ## What it is not

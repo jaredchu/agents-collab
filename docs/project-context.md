@@ -15,9 +15,11 @@ achieved**: the [public routing gate](../evals/automatic-routing/2026-11-09/repo
 missed both required collaboration routes on ordinary prompts. Explicit
 invocation matched all three routes in that small diagnostic and remains the
 supported fallback. The [draft activation study](plans/implicit-activation-study.md)
-prepares the next measurement. It is a DRAFT; execution is not approved, inputs
-are not preregistered, and independent method review is required before any
-calls.
+prepares the proposed next measurement. Method review passed for the earlier
+draft at `51bb150`; the 18-run study remains unexecuted, unapproved and
+unpreregistered. Later source changes and prior exploratory exposure must be
+reconciled before any future execution. The source now includes the experimental
+activation description; dependable implicit activation remains unestablished.
 
 ## Boundaries
 
@@ -65,7 +67,7 @@ calls.
 | [History](history.md) | How the project emerged |
 | [Rust CLI backend](cli.md) | Optional installation, executable commands, storage bounds and checks |
 | [Rust CLI prototype plan](plans/rust-cli-prototype.md) | Retained original proposal: acceptance scope, rationale and implementation status |
-| [Implicit-activation study](plans/implicit-activation-study.md) | DRAFT protocol for the next activation measurement; needs passed method review, execution approval and preregistration |
+| [Implicit-activation study](plans/implicit-activation-study.md) | DRAFT; earlier method review passed, but current inputs, supervision, execution approval and preregistration remain prerequisites |
 | [Contributing](../CONTRIBUTING.md) | Contribution and evidence guidelines |
 | [License](../LICENSE) | MIT License (identical copy in the skill package) |
 
@@ -384,6 +386,58 @@ launches and mandatory launch supervision. These results cover the local
 implementation and draft method, not live supervisor feasibility, study
 execution, achieved implicit activation or a production release.
 
+## Quota-aware continuation source increment (10 November 2026)
+
+The source adds an explicit host-led interrupted Claude-to-Codex continuation.
+The skill presents Wait for Claude / Continue with an available configured Codex
+model; an unavailable Codex lead checkpoints and stops. The record-only engine
+requires retained decision evidence, latest reconciled original absence and the
+same sealed stage, preserves original observations/results and review accounting,
+and snapshots current partial writer source without restoring old files. Actual
+quota diagnosis, user prompting, dispatch, approval and absence verification stay
+with the host. See the [end-to-end contract](../skills/agents-collab/references/backend.md#quota-aware-continuation).
+
+A task-local explicit Codex identity can supplement the frozen profile without
+changing defaults. First handoff upgrades the record to format 2 so old CLIs
+refuse new semantics; ordinary format-1 records remain compatible. Original
+deadlines and review caps stay fixed. Frozen experiments remain interrupted or
+amended/separately labelled, never silently substituted matched results. This
+source increment does not establish publication, installation or provider runtime
+behavior; validation and independent review are reported separately.
+
+### Continuation session freshness correction (10 November 2026)
+
+Invocation observations now reject reuse across assignments whenever either
+assignment is a continuation, regardless of which records the invocation first.
+Repeated observations within the same assignment remain valid. This checks
+host-declared identities; it does not attest actual session independence.
+
+A regression exercises both reviewer orders, rejects shared identities without
+changing recorded state, and completes with distinct identities. It fails against
+the previous implementation. Local dirty-source validation passed formatting,
+locked offline build, Clippy with warnings denied, all 32 Rust integration tests
+and 140 Python tests, including all 11 real-engine cases without skips. This is
+not a clean-commit run of the maintained regression gate. The correction does
+not change saved configuration or establish installation or publication.
+
+## Skill parity and contract clarification (10 November 2026)
+
+The source skill now carries the experimental proactive activation description
+and the explicit backend-selector rule: a task-local profile does not select a
+different backend configuration, and an absent scratch selector must not be
+invented to enter manual mode. The description is an experimental routing
+instruction, not evidence of dependable activation or broader model support.
+
+The review packet template points to the canonical typed CLI return contract.
+It distinguishes string fields from arrays and ordinary session descriptions
+from the exact invocation string required by quota-continuation reviews. The
+backend guide also distinguishes the host's obligation to retain a real decision
+from the engine's check of registered object references. No engine, dispatcher,
+profile preference or execution permission changes follow from these wording
+clarifications. The activation draft retains its original descriptions and
+records that current source and prior exposure need reconciliation before any
+future preregistration. No experiment or publication is authorized here.
+
 ## Progress
 
 - [x] Preserve the eight-file validated package as the initial source.
@@ -425,3 +479,5 @@ execution, achieved implicit activation or a production release.
 - [x] Complete independent review and publish the validated skill package.
 - [x] Add the local CLI regression gate and backend evidence/completion clarifications.
 - [x] Complete independent review and a clean-checkout gate run for that increment.
+
+- [x] Implement explicit recorded quota continuation and host procedure in source.

@@ -368,7 +368,7 @@ class RealBackendTests(unittest.TestCase):
         text = (SCRIPTS.parent / "references/backend.md").read_text()
         for block in re.findall(r"```json\n(.*?)```", text, re.S):
             value = json.loads(block)
-            if key in value:
+            if key in value and (key != "decision" or "finding" in value):
                 return value
         self.fail("shipped backend reference lacks a JSON example with " + key)
 
@@ -406,6 +406,92 @@ class RealBackendTests(unittest.TestCase):
         self.assertEqual((retried["spec"]["id"], retried["launch_at"], retried["deadline"]),
                          (original["spec"]["id"], original["launch_at"], original["deadline"]))
         self.assertEqual(retried["state"], "completed")
+
+    def test_quota_writer_and_reviewer_continuations_use_explicit_local_selection(self):
+        for role in ("writer", "reviewer"):
+            with self.subTest(role=role):
+                profile = json.loads(self.profile.read_text())
+                self.use_profile(agents={**profile["agents"], "quota-worker": {
+                    "model": "synthetic-claude", "transport": "claude-cli", "reasoning": "inherit"}})
+                extra = ("--reviewer", "quota-worker") if role == "reviewer" else ()
+                # Writer must be explicitly assigned at start; avoid altering saved defaults.
+                start_args = ["start", "--repository", str(self.repo), "--project", "fixture", "--task", "quota-" + role,
+                              "--writer", "quota-worker" if role == "writer" else "current-session", "--scope", "source.txt",
+                              "--requirement", "R1=Preserve frozen contract", "--criterion", "C1=Offline checks pass",
+                              "--boundary", "No provider calls", "--check", "offline", *extra]
+                started = self.ok(self.invoke(*start_args))
+                record, host = started["record"], Path(started["host"])
+                initial = self.ok(self.context(record, host, "writer_context" if role == "writer" else "review", 0, role))
+                self.ok(self.invoke("assignment", "--record", record, "--id", "old", "--packet", initial["packet"],
+                                    "--agent", "quota-worker", "--role", role, "--output-destination", str(host / "old.json")))
+                boundary = ("--boundary-observations", "Synthetic quota failure; no provider ran")
+                self.ok(self.invoke("observe", "--record", record, "--assignment", "old", "--state", "unknown",
+                                    "--invocation", "old-session", *boundary))
+                evidence_file = host / "decision.txt"
+                evidence_file.write_text("Synthetic explicit owner choice: Continue with configured available Codex model; amend frozen condition.\n")
+                evidence = self.ok(self.invoke("evidence", "--record", record, "--input", str(evidence_file)))["evidence"]
+                h = {"assignment": "old", "replacement": "replacement", "packet": initial["packet"], "agent": "task-codex",
+                     "selection": {"model": "synthetic-codex", "transport": "codex-native", "reasoning": "inherit"},
+                     "output_destination": str(host / "replacement.json"), "decision": "continue_with_codex", "authority": "lead",
+                     "decision_evidence": [evidence], "reason": "Owner chose continuation after synthetic quota receipt",
+                     "previous_invocation": "old-session", "timing": "preserve_deadline",
+                     "instructions": "Continue current partial source; reviewer uses neutral frozen packet only in fresh session", "partial_work": None}
+                handoff_file = host / "handoff.json"
+                def handoff(value):
+                    handoff_file.write_text(json.dumps(value))
+                    return self.invoke("handoff", "--record", record, "--input", str(handoff_file))
+                code, out, err = handoff(h)
+                self.assertEqual(code, 1)
+                self.assertIn("only an interrupted", err)
+                self.ok(self.invoke("observe", "--record", record, "--assignment", "old", "--state", "interrupted",
+                                    "--invocation", "old-session", "--reconciled", "--reason", "Host checked quota failure", *boundary))
+                code, out, err = handoff(h)
+                self.assertEqual(code, 1)
+                self.assertIn("absence", err)
+                self.ok(self.invoke("observe", "--record", record, "--assignment", "old", "--state", "interrupted",
+                                    "--invocation", "old-session", "--reconciled", "--absence-established",
+                                    "--reason", "Synthetic supervisor confirms original worker exited and no worker remains", *boundary))
+                original = self.show(record)["record"]
+                self.assertIn("assignment old blocked", " ".join(self.show(record)["blockers"]))
+                code, out, err = handoff({**h, "decision_evidence": []})
+                self.assertEqual(code, 1)
+                self.assertIn("evidence references required", err)
+                if role == "writer":
+                    (self.repo / "source.txt").write_text("retained unfinished source\n")
+                    h["partial_work"] = {"paths": ["source.txt"], "omissions": {"other.txt": "outside writer scope"},
+                                         "acknowledged_sensitive": [], "quiescence": "Original invocation absent", "atomic_required": False, "base": "HEAD"}
+                result = self.ok(handoff(h))
+                self.assertEqual(result["result"]["result"]["logical_slot"], "quota-worker")
+                changed = self.show(record)["record"]
+                self.assertEqual(changed["schema_version"], 2)
+                self.assertEqual(changed["profile"], original["profile"])
+                self.assertEqual(changed["assignments"][0]["observations"], original["assignments"][0]["observations"])
+                self.assertEqual(changed["assignments"][0]["state"], "superseded")
+                self.assertEqual(changed["assignments"][1]["deadline"], original["assignments"][0]["deadline"])
+                self.assertEqual(self.profile.read_bytes(), self.original_profile)
+                code, out, err = handoff(h)
+                self.assertEqual(code, 1)
+                self.assertIn("replacement identity already used", err)
+                self.ok(self.invoke("observe", "--record", record, "--assignment", "replacement", "--state", "launching", *boundary))
+                self.ok(self.invoke("observe", "--record", record, "--assignment", "replacement", "--state", "completed",
+                                    "--invocation", "replacement-session-" + role, *boundary))
+                code, out, err = self.invoke("observe", "--record", record, "--assignment", "old", "--state", "running",
+                                             "--invocation", "old-session", "--reconciled", "--reason", "Cannot resume old worker", *boundary)
+                self.assertEqual(code, 1)
+                self.assertIn("superseded", err)
+                if role == "reviewer":
+                    review = self.shipped_example("verdict")
+                    review.update(assignment="replacement", artifact=initial["artifact"], packet=initial["packet"],
+                                  fresh_session="replacement-session-reviewer")
+                    review["verification"][0]["object"] = initial["artifact"]
+                    (host / "replacement.json").write_text(json.dumps(review))
+                    self.assertTrue(self.ok(self.invoke("import-review", "--record", record, "--input", str(host / "replacement.json")))["valid_review"])
+                    self.ok(self.invoke("complete", "--record", record, "--evidence", evidence, "--reason", "Same packet slot completed"))
+                else:
+                    self.assertEqual((self.repo / "source.txt").read_text(), "retained unfinished source\n")
+                    self.assertIsNotNone(changed["assignments"][1]["continuation"]["preserved_work"])
+                    # Restore the fixture source for the next independent role scenario.
+                    (self.repo / "source.txt").write_text("original frozen input\n")
 
     def test_required_timing_refuses_launch_intent_without_fallback(self):
         profile = json.loads(self.profile.read_text())

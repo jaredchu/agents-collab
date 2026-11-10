@@ -112,6 +112,33 @@ struct Assignment {
     launch_at: Option<u64>,
     deadline: Option<u64>,
     observations: Vec<Observation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    continuation: Option<Continuation>,
+}
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HandoffSpec {
+    assignment: String,
+    replacement: String,
+    packet: String,
+    agent: String,
+    // Only a missing frozen-profile identity may be explicitly selected locally.
+    selection: Option<profile::Agent>,
+    output_destination: String,
+    decision: String,
+    authority: String,
+    decision_evidence: Vec<String>,
+    reason: String,
+    previous_invocation: String,
+    timing: String,
+    instructions: String,
+    partial_work: Option<snapshot::Selection>,
+}
+#[derive(Clone, Serialize, Deserialize)]
+struct Continuation {
+    handoff: HandoffSpec,
+    original_requested: profile::Agent,
+    preserved_work: Option<String>,
 }
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -336,7 +363,7 @@ fn connection(root: &Path, create: bool) -> Result<Connection> {
                 "task missing or unsupported schema; preserve originals for explicit migration",
             )?;
         ensure!(
-            version == 1,
+            matches!(version, 1 | 2),
             "unsupported schema; explicit migration required"
         );
     }
@@ -359,11 +386,14 @@ fn load(c: &Connection) -> Result<State> {
         )
         .context("task missing or unsupported schema; explicit migration required")?;
     ensure!(
-        version == 1,
+        matches!(version, 1 | 2),
         "unsupported schema; explicit migration required"
     );
     let s: State = parse(body.as_bytes())?;
-    ensure!(s.schema_version == 1, "unsupported state schema");
+    ensure!(
+        matches!(s.schema_version, 1 | 2) && s.schema_version == version as u64,
+        "unsupported state schema"
+    );
     Ok(s)
 }
 fn outside_repository(root: &Path) -> Result<()> {
@@ -423,7 +453,10 @@ fn refs(s: &State, v: &[String]) -> Result<()> {
     Ok(())
 }
 fn terminal(a: &Assignment) -> bool {
-    matches!(a.state.as_str(), "completed" | "interrupted" | "blocked")
+    matches!(
+        a.state.as_str(),
+        "completed" | "interrupted" | "blocked" | "superseded"
+    )
 }
 fn round_complete(s: &State, p: &Packet) -> bool {
     s.spec.reviewers.iter().all(|n| {
@@ -459,7 +492,7 @@ fn blockers(s: &State) -> Vec<String> {
                 "assignment {} invocation {} requires reconciliation",
                 a.spec.id, a.state
             ));
-        } else if a.state == "blocked" {
+        } else if a.state == "blocked" || a.state == "interrupted" {
             b.push(format!(
                 "assignment {} blocked; authorized continuation/result required",
                 a.spec.id
@@ -495,7 +528,7 @@ fn blockers(s: &State) -> Vec<String> {
     b
 }
 fn summary(s: &State) -> Value {
-    json!({"schema_version":1,"task":s.spec.task,"revision":s.revision,"state":s.state,"blockers":blockers(s),"next_permitted_operations":if s.state=="completed"||s.state=="cancelled"{vec!["task show","task export","task check","task reconcile"]}else{vec!["task show","task check","task reconcile","artifact freeze","packet preview","packet seal","assignment prepare","assignment observe","review import","finding resolve","task block","task activate","task cancel","task complete"]},"record":s,"live_source":live_source(s)})
+    json!({"schema_version":1,"task":s.spec.task,"revision":s.revision,"state":s.state,"blockers":blockers(s),"next_permitted_operations":if s.state=="completed"||s.state=="cancelled"{vec!["task show","task export","task check","task reconcile"]}else{vec!["task show","task check","task reconcile","artifact freeze","packet preview","packet seal","assignment prepare","assignment handoff","assignment observe","review import","finding resolve","task block","task activate","task cancel","task complete"]},"record":s,"live_source":live_source(s)})
 }
 fn packet_validate(s: &State, p: &PacketSpec) -> Result<()> {
     ensure!(
@@ -628,6 +661,28 @@ fn observe(s: &mut State, r: Receipt, raw: String) -> Result<()> {
             "writer launch blocked: another writer is prepared/active/unknown; reconcile existing writers before new launch intent"
         );
     }
+    ensure!(
+        s.assignments[assignment_index].state != "superseded",
+        "superseded invocation cannot resume or produce a second result slot"
+    );
+    if let Some(invocation) = &r.invocation {
+        // A continuation's invocation is distinct from every other assignment,
+        // whichever side records it first. Repeated observations within the
+        // same assignment are allowed; ordinary-only records keep their rules.
+        ensure!(
+            !s.assignments
+                .iter()
+                .enumerate()
+                .any(|(i, other)| i != assignment_index
+                    && (s.assignments[assignment_index].continuation.is_some()
+                        || other.continuation.is_some())
+                    && other
+                        .observations
+                        .iter()
+                        .any(|o| o.receipt.invocation.as_ref() == Some(invocation))),
+            "continuation requires a fresh session, distinct from writer and previous invocations"
+        );
+    }
     let a = &mut s.assignments[assignment_index];
     ensure!(
         !s.reviews.iter().any(|v| v.spec.assignment == a.spec.id),
@@ -657,11 +712,13 @@ fn observe(s: &mut State, r: Receipt, raw: String) -> Result<()> {
             s.profile.bounds.reviewer_minutes
         };
         a.launch_at = Some(start);
-        a.deadline = Some(
-            start
-                .checked_add(minutes.checked_mul(60).context("deadline overflow")?)
-                .context("deadline overflow")?,
-        );
+        if a.continuation.is_none() {
+            a.deadline = Some(
+                start
+                    .checked_add(minutes.checked_mul(60).context("deadline overflow")?)
+                    .context("deadline overflow")?,
+            );
+        }
     } else {
         ensure!(
             a.launch_at.is_some(),
@@ -736,6 +793,15 @@ fn review_validate(s: &State, r: &ReviewSpec) -> Result<()> {
     );
     nonempty(&r.limits, "verification limits")?;
     nonempty(&r.fresh_session, "fresh-session observation")?;
+    if a.continuation.is_some() {
+        ensure!(
+            a.observations
+                .last()
+                .and_then(|o| o.receipt.invocation.as_ref())
+                == Some(&r.fresh_session),
+            "continuation review fresh_session must name the completed invocation"
+        );
+    }
     nonempty(&r.automatic_context, "automatic context observation")?;
     nonempty(&r.tool_boundary, "tool boundary observation")?;
     ensure!(
@@ -767,6 +833,190 @@ fn review_validate(s: &State, r: &ReviewSpec) -> Result<()> {
         "pass conflicts with material findings"
     );
     Ok(())
+}
+fn handoff(s: &mut State, root: &Path, input: &Value, actor: &str) -> Result<Value> {
+    let h: HandoffSpec = decode(input)?;
+    component(&h.replacement)?;
+    ensure!(
+        profile::name(&h.agent) && h.agent != "current-session",
+        "explicit replacement agent identity required"
+    );
+    ensure!(
+        h.decision == "continue_with_codex",
+        "explicit owner choice continue_with_codex required; waiting retains interruption"
+    );
+    ensure!(
+        s.spec.decision_authorities.contains(&h.authority) && actor == h.authority,
+        "declared decision authority/actor required; not authentication"
+    );
+    refs(s, &h.decision_evidence)?;
+    nonempty(&h.reason, "handoff reason")?;
+    nonempty(&h.instructions, "continuation instructions")?;
+    nonempty(&h.output_destination, "replacement output destination")?;
+    nonempty(&h.previous_invocation, "original invocation identity")?;
+    ensure!(
+        h.timing == "preserve_deadline",
+        "explicit preserve_deadline timing treatment required; no extension supported"
+    );
+    ensure!(
+        !s.assignments.iter().any(|a| a.spec.id == h.replacement),
+        "replacement identity already used"
+    );
+    let index = s
+        .assignments
+        .iter()
+        .position(|a| a.spec.id == h.assignment)
+        .context("unknown original assignment")?;
+    let old = s.assignments[index].clone();
+    ensure!(
+        h.output_destination != old.spec.output_destination,
+        "replacement needs a distinct output destination; preserve original partial outputs"
+    );
+    ensure!(
+        old.state == "interrupted",
+        "only an interrupted incomplete assignment can be handed off"
+    );
+    ensure!(
+        !s.reviews.iter().any(|r| r.spec.assignment == old.spec.id),
+        "valid review cannot be replaced, regardless of verdict"
+    );
+    ensure!(
+        old.requested.transport == "claude-cli",
+        "quota handoff requires a Claude collaborator; unavailable Codex lead checkpoints and stops"
+    );
+    let last = old
+        .observations
+        .last()
+        .context("host reconciliation required")?;
+    ensure!(
+        last.receipt.state == "interrupted"
+            && last.receipt.reconciled
+            && last.receipt.absence_established,
+        "latest interruption must explicitly reconcile original invocation absence; unknown liveness fails closed"
+    );
+    ensure!(
+        last.receipt.invocation.as_deref() == Some(&h.previous_invocation),
+        "original invocation identity mismatch"
+    );
+    ensure!(old.deadline.is_some(), "original timing required");
+    ensure!(
+        s.profile.bounds.enforcement != "required",
+        "record-only engine cannot validate required timing supervisor"
+    );
+    let packet = s
+        .packets
+        .iter()
+        .find(|p| p.id == h.packet)
+        .context("sealed handoff packet required")?;
+    ensure!(
+        old.spec.packet == h.packet && s.current_artifact.as_deref() == Some(&packet.spec.artifact),
+        "stale/mismatched handoff packet"
+    );
+    ensure!(
+        s.packets.last().is_some_and(|p| p.id == h.packet),
+        "handoff must continue the current sealed stage"
+    );
+    let requested = match &h.selection {
+        Some(selection) => {
+            ensure!(
+                !s.profile.agents.contains_key(&h.agent),
+                "task-local selection cannot redefine a frozen profile alias"
+            );
+            ensure!(
+                !s.assignments.iter().any(|a| a
+                    .continuation
+                    .as_ref()
+                    .is_some_and(|c| c.handoff.agent == h.agent)),
+                "task-local execution identity already used; choose a distinct identity"
+            );
+            let mut validation = s.profile.clone();
+            validation.agents.insert(h.agent.clone(), selection.clone());
+            validation.validate()?;
+            selection.clone()
+        }
+        None => s.profile.agent(&h.agent)?,
+    };
+    ensure!(
+        requested.transport == "codex-native",
+        "explicit available Codex model required; access is host-verified"
+    );
+    let preserved_work = if old.spec.role == "writer" {
+        ensure!(
+            s.assignments
+                .iter()
+                .enumerate()
+                .all(|(i, a)| i == index || a.spec.role != "writer" || terminal(a)),
+            "one writer at a time; reconcile other writers"
+        );
+        let selection = h
+            .partial_work
+            .as_ref()
+            .context("writer continuation requires a snapshot of current partial work")?;
+        let (id, manifest, objects) = snapshot::capture(&s.spec.repository, root, selection)?;
+        for scope in &s.spec.editable_scope {
+            // Capture validates complete Git inventory coverage. A directory
+            // scope covers its children; a future path need not exist yet.
+            ensure!(
+                !manifest
+                    .omissions
+                    .keys()
+                    .any(|path| path == scope || path.starts_with(&format!("{scope}/"))),
+                "partial work snapshot cannot omit scoped inventory"
+            );
+            // Ignored files are outside Git inventory. An existing exact scope
+            // must still be selected, even when Git would not list that input.
+            match fs::symlink_metadata(s.spec.repository.join(scope)) {
+                Ok(metadata) if !metadata.is_dir() => ensure!(
+                    selection.paths.contains(scope),
+                    "partial work snapshot must select existing exact scoped input"
+                ),
+                Ok(_) => {}
+                Err(error)
+                    if matches!(
+                        error.kind(),
+                        std::io::ErrorKind::NotFound | std::io::ErrorKind::NotADirectory
+                    ) => {}
+                Err(error) => return Err(error).context("cannot inspect exact writer scope"),
+            }
+        }
+        for object in objects {
+            register(s, object, "continuation/partial-source");
+        }
+        Some(id)
+    } else {
+        ensure!(
+            h.partial_work.is_none(),
+            "reviewer continuation receives neutral packet only, no writer partial work"
+        );
+        None
+    };
+    let mut spec = old.spec.clone();
+    spec.id = h.replacement.clone();
+    spec.output_destination = h.output_destination.clone();
+    // spec.agent remains the logical required slot, not the execution identity.
+    // requested and handoff.agent record the new execution without alias mutation.
+    s.assignments[index].state = "superseded".into();
+    s.assignments.push(Assignment {
+        spec,
+        created_at: now(),
+        actor: actor.into(),
+        requested,
+        state: "prepared".into(),
+        launch_at: None,
+        deadline: old.deadline,
+        observations: Vec::new(),
+        continuation: Some(Continuation {
+            handoff: h.clone(),
+            original_requested: old.requested,
+            preserved_work: preserved_work.clone(),
+        }),
+    });
+    s.schema_version = 2;
+    Ok(
+        json!({"assignment": h.replacement, "logical_slot": old.spec.agent, "execution_agent": h.agent,
+        "packet": h.packet, "deadline": old.deadline, "preserved_work": preserved_work,
+        "dispatch": "not performed; host must use retained continuation instructions and fresh session"}),
+    )
 }
 fn mutate(
     s: &mut State,
@@ -904,11 +1154,13 @@ fn mutate(
                 launch_at: None,
                 deadline: None,
                 observations: Vec::new(),
+                continuation: None,
             });
             Ok(
                 json!({"assignment":id,"state":"prepared","timing":s.profile.bounds.enforcement,"observed_effort":"unknown"}),
             )
         }
+        "assignment handoff" => handoff(s, root, input, actor),
         "assignment observe" => {
             let receipt: Receipt = decode(input)?;
             let id = put(root, raw)?;
@@ -1386,6 +1638,20 @@ pub fn run(req: Request) -> Result<Value> {
         input_hash: hash(&raw),
     });
     let response = json!({"revision":s.revision,"state":s.state,"result":result,"blockers":blockers(&s),"live_source":live_source(&s)});
+    if s.schema_version == 2
+        && tx.query_row(
+            "SELECT schema_version FROM state WHERE singleton=1",
+            [],
+            |r| r.get::<_, i64>(0),
+        )? == 1
+    {
+        // Version-1 databases have CHECK(schema_version=1). Rebuild only this
+        // singleton table inside the same transaction; receipts and CAS survive.
+        tx.execute_batch("ALTER TABLE state RENAME TO state_previous_format;
+            CREATE TABLE state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN (1,2)), revision INTEGER NOT NULL, body TEXT NOT NULL);
+            INSERT INTO state SELECT singleton,2,revision,body FROM state_previous_format;
+            DROP TABLE state_previous_format;")?;
+    }
     tx.execute(
         "UPDATE state SET revision=?,body=? WHERE singleton=1 AND revision=?",
         params![

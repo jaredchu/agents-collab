@@ -47,6 +47,16 @@ unrelated personal instructions and no other project's private context.>
 
 ## Output contract
 
+With the CLI backend, replace the prose contract below with the exact JSON
+contract from [the backend reference](../references/backend.md#review-contract)
+before sealing. Supply the returned artifact/packet hashes and assignment ID at
+dispatch; do not edit the sealed packet to insert its own hash. The helper does
+not append that schema automatically. Keep the string field types; a quota continuation's
+`fresh_session` must be the exact completed invocation string, with boundary
+observations in `limits` or `tool_boundary`. Return JSON only, without fences.
+
+For the manual workflow, use the following prose contract:
+
 Return:
 
 1. A verdict tied to the artifact identity above.

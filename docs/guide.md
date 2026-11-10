@@ -322,7 +322,13 @@ should never require changing global configuration or bypassing permissions.
 6. Private records go under `records_root`; the project receives durable outcomes.
 
 If a required model, effort or access path is unavailable, the lead reports it
-instead of silently substituting another model or paid access.
+instead of silently substituting another model or paid access. A quota-unavailable
+Codex lead checkpoints and stops. For an interrupted Claude collaborator, the
+host offers Wait for Claude / Continue with an available configured Codex model;
+only an explicit evidenced choice and confirmed original absence permit the
+[recorded continuation](../skills/agents-collab/references/backend.md#quota-aware-continuation).
+Waiting retains an unfinished stage; defaults and frozen experiment conditions
+never switch silently.
 
 ## Uninstall
 

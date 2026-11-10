@@ -1,6 +1,6 @@
 ---
 name: agents-collab
-description: Coordinate configured model collaboration and independent reviews in a Codex-led workflow, separating execution records from durable project knowledge. Use for requested multi-model work, independent review, or an applicable configured collaboration workflow. This draft targets a Codex-led pilot; other leads need adapter validation.
+description: Use proactively, without being asked, at the start of any coding task that is substantial (sustained multi-file implementation, shared logic or interface changes) or consequential (security, privacy, safety boundaries, data integrity, production behavior, external claims), and whenever multi-model work or independent review is requested. It routes the task through the user's configured collaboration profile, which selects a writer and/or a fresh independent reviewer. Skip it for small routine changes the lead can verify alone. This draft targets a Codex-led pilot; other leads need adapter validation.
 ---
 
 # Agents Collab
@@ -50,8 +50,16 @@ Explicit reviewer names override default selection, not independence.
 
 ## 3. Select the backend
 
-Run `python3 <skill-dir>/scripts/backend.py status`. Absent settings select the
-manual procedure in this skill; an enabled CLI selects the
+Backend configuration is separate from the collaboration profile. Unless the
+user or binding task/project instructions explicitly supply another backend
+configuration path, run `python3 <skill-dir>/scripts/backend.py status` without
+`--config`, using `~/.config/agents-collab/backend.json`. A task-local profile
+does not override that selector. Never invent an absent `--config` path or
+create a replacement selector to enter manual mode or avoid an enabled CLI.
+Reading the existing selector grants no permission to edit it.
+
+Absent settings at the selected path use the manual procedure in this skill;
+an enabled CLI selects the
 [backend procedure](references/backend.md), read before starting that task. Never
 install or enable a backend implicitly. A started task keeps its backend and
 record identity through completion. If the backend is unavailable or refuses an
@@ -74,6 +82,19 @@ tools; never a shared transcript, `--continue` or `--resume` for an initial
 review, and never global setting changes or permission bypasses. Follow the
 [CLI writer procedure](references/review-protocol.md#claude-cli-writer) for a
 Claude CLI writer. Similar model names do not make transports interchangeable.
+
+If the Codex lead is quota-unavailable, checkpoint the task and stop; never
+promote Claude automatically. If a Claude collaborator is quota-unavailable,
+preserve its unfinished stage and receipts. The lead presents the user choice
+**Wait for Claude / Continue with an available configured Codex model** through
+the host UI. Waiting retains an interruption, never a successful result. Continue
+only after explicit owner/user choice, retained decision evidence and confirmed
+absence of the old invocation. Unknown liveness or choice blocks dispatch. The
+CLI cannot detect quota, prompt, authenticate approval or launch a replacement.
+Use the [recorded continuation procedure](references/backend.md#quota-aware-continuation)
+with the enabled backend; keep the same safeguards in manual records. Do not
+silently change a frozen experiment's conditions: retain an interruption/amendment
+or label the continuation separately from the original matched result.
 
 Give each assignment scope, editable artifacts or read-only intent, acceptance
 criteria, neutral source references and a time bound under

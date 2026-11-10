@@ -389,7 +389,9 @@ cannot be reused to reset rounds. A writer cannot be assigned a review packet.
 
 A reviewer has no editable source scope. A writer assignment must name the
 registered writer and exact scope; only one writer can remain nonterminal.
-There is one assignment slot per agent/packet. No duplicate or retry slot exists.
+There is one logical assignment slot per agent/packet. An explicit interrupted
+backend handoff may create one linked replacement execution; it never adds a
+review slot.
 The requested model/effort is stored separately from later interface-accepted
 and observed values, which remain null/unknown until reported.
 
@@ -415,7 +417,9 @@ Before dispatch, record `receipt.json` with `state: "launching"` and
 
 Attach the host's session/invocation identity promptly with a new receipt and
 operation key. States are `launching`, `running`, `completed`, `interrupted`,
-`blocked` and `unknown`, in addition to the initial `prepared`. `running` and
+`blocked` and `unknown`, in addition to the initial `prepared`. An explicit
+handoff marks the original assignment `superseded`; it cannot receive further
+observations or valid results, even with reconciliation flags. `running` and
 `completed` require an invocation identity; PID alone is insufficient.
 `process_start` is optional supplementary evidence. Any uncertain, interrupted,
 blocked or terminal state needs an explicit `reconciled: true` receipt to change.
@@ -434,7 +438,9 @@ absence. Without such host bookkeeping or supervision, retry stays blocked. See
 the backend procedure's retry section.
 
 The first launch UTC time and absolute advisory deadline persist through every
-observation, interruption and recovery; they never reset. A follow-up is a new
+observation, interruption and recovery; they never reset. A handoff preserves
+that original assignment and deadline; its replacement records its own actual
+launch time while inheriting the original deadline. A follow-up is a new
 assignment within the existing cap. Required timing blocks launch because this
 record-only CLI cannot validate a supervisor. `runtime-attestation` likewise
 blocks launch, rather than accepting an imported model assertion as proof.
@@ -459,6 +465,14 @@ A review input has exactly these fields:
   "tool_boundary":"Actual restrictions; fresh context alone is not isolation"
 }
 ```
+
+`limits`, `fresh_session`, `automatic_context` and `tool_boundary` are nonempty
+strings, not arrays. For a quota-continuation review, `fresh_session` must equal
+the completed invocation string exactly; put explanatory boundary text in
+`limits` or `tool_boundary`. For ordinary reviews it remains a free-text session
+observation. The installed [backend review contract](../skills/agents-collab/references/backend.md#review-contract)
+describes the complete shape. Include it in the review instructions before
+sealing; the helper does not append it automatically.
 
 ```sh
 "$CLI" review import --record "$RECORD" --input "$INPUT/review.json" \
@@ -533,9 +547,21 @@ observations and moves incomplete staging files into quarantine. It never
 relaunches, deletes objects, resets deadlines or declares a worker stopped.
 
 Real access, subscription, quota or permission interruption leaves affected work
-blocked and unfinished. Preserve failed receipts and await restored authorized
-access. No automatic model substitution, alternate account, paid path or retry
-exists. Unknown provider usage remains unknown; the record imposes no experiment
+blocked and unfinished. Preserve failed receipts. If the Codex lead is
+unavailable, checkpoint and stop. For a Claude collaborator, the skill presents
+Wait for Claude / Continue with an available configured Codex model. The explicit
+`assignment handoff` contract and Python helper `handoff --input FILE` are
+specified end to end in [quota-aware continuation](../skills/agents-collab/references/backend.md#quota-aware-continuation).
+The host must retain the actual owner decision and establish original absence.
+The engine requires an interrupted unfinished slot, reconciled absence receipts
+and nonempty `decision_evidence` references to registered objects. It does not
+verify those objects' type, decision content or human authority; an unrelated
+artifact hash satisfies the reference check without proving consent. It can
+then record continuation on the exact packet. The operation
+preserves observations, results, current partial writer source, deadlines and
+review caps; it records a distinct requested model and execution identity.
+Waiting is not completion. No automatic substitution, alternate account, paid
+path or retry exists. Unknown provider usage remains unknown; the record imposes no experiment
 call, token, context or quota budgets.
 
 A completion input has the current artifact and exact evidence coverage:
@@ -553,7 +579,7 @@ A completion input has the current artifact and exact evidence coverage:
 Completion requires active state, required current-identity reviewer passes,
 resolved compatible material findings (a disposition never overrides a current
 `changes_required` verdict; only a changed artifact and passing follow-up can), no prepared/launching/running/unknown or
-blocked assignment, all declared criterion/check/approval references and unchanged
+blocked/interrupted assignment, all declared criterion/check/approval references and unchanged
 live source identity. Imported evidence may be false; structure cannot establish
 real authorization or truthful test outcomes. Evidence bytes should contain the
 actual check/approval, not merely a coordinator's assertion.
@@ -569,11 +595,16 @@ sharing; the binary cannot determine the intended audience.
 ## Storage and failure limits
 
 Each task has `state.sqlite3`, `objects/`, `staging/` and `quarantine/`.
-Schema 1 records include stable identifiers, actor/provenance and UTC times under
-a versioned enclosing task state. SQLite stores the complete typed state in one
-row with revision and operation-key constraints; references are checked in the
-application, not independent relational foreign-key tables. There is no automatic
-schema migration; preserve incompatible records and migrate explicitly later.
+Format 1 records include stable identifiers, actor/provenance and UTC times under
+a versioned enclosing task state. The first explicit `assignment handoff`
+transaction upgrades both SQL marker and enclosing state to format 2; ordinary
+records stay format 1. This engine reads both, while older engines refuse format
+2 before decoding new continuation semantics. JSON response envelopes remain
+schema 1. There is no downgrade or silent profile migration. SQLite stores the
+complete typed state in one row with revision and operation-key constraints; references are checked in the
+application, not independent relational foreign-key tables. Apart from the
+explicit handoff upgrade, incompatible formats require an explicit supported
+migration; preserve originals.
 
 Runtime checks currently allow only local APFS on macOS. Network storage, other
 filesystems and other platforms are refused. The configured root must exist;

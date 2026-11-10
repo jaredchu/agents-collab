@@ -354,6 +354,11 @@ def run_bound(backend, args, state):
         prepared = backend.mutation("assignment", "prepare", value)
         intent = backend.mutation("assignment", "observe", receipt(args, state, launching=True))
         return {"prepared": prepared, "launch_intent": intent, "dispatch": "Host may now dispatch the authorized assignment"}
+    if args.command == "handoff":
+        value = safe.strict_json(safe.read_regular(args.input, MAX_INPUT))
+        value["output_destination"] = str(backend.output_path(value["output_destination"]))
+        result = backend.mutation("assignment", "handoff", value)
+        return {"result": result, "dispatch": "None. Inspect show, then observe launching before host dispatch; use fresh execution identity and retained instructions."}
     if args.command == "observe":
         check_observation(args)
         return backend.mutation("assignment", "observe", receipt(args, state))
@@ -387,6 +392,7 @@ def run_bound(backend, args, state):
 HELP = {
     "context": "freeze selected source and seal a writer_context or review packet",
     "assignment": "prepare one writer/reviewer assignment and persist its launch intent",
+    "handoff": "record an explicitly approved interrupted Claude-to-Codex continuation from a JSON file; never dispatches",
     "observe": "attach a host observation to an existing assignment (flags default false)",
     "import-review": "import a reviewer JSON result; exit 1 unless valid_structure_only",
     "evidence": ("retain a UTF-8 check/disposition text file and return its object hash; runs task reconcile, "
@@ -421,7 +427,7 @@ def parser():
                                 ("check", "NAME", "required check covered at completion; repeat"),
                                 ("approval", "NAME", "required real approval; helper cannot complete such tasks")):
         start_parser.add_argument("--" + flag, action="append", default=[], metavar=metavar, help=text)
-    for name in ("context", "assignment", "observe", "import-review", "evidence", "complete", "show", "check", "packet", "command"):
+    for name in ("context", "assignment", "handoff", "observe", "import-review", "evidence", "complete", "show", "check", "packet", "command"):
         p = commands.add_parser(name, help=HELP[name])
         p.add_argument("--record", required=True, metavar="DIR", help="collaboration record returned by start")
         if name == "context":
@@ -454,8 +460,8 @@ def parser():
                            help="host asserts it checked this assignment's actual state (default false)")
             p.add_argument("--absence-established", action="store_true",
                            help="host asserts the previous invocation is actually absent; needs --reconciled and --reason; not proof (default false)")
-        elif name in ("import-review", "evidence", "command"):
-            kind = {"import-review": "review result JSON file", "evidence": "UTF-8 text file with actual output",
+        elif name in ("import-review", "evidence", "command", "handoff"):
+            kind = {"handoff": "explicit handoff JSON contract (see backend reference)", "import-review": "review result JSON file", "evidence": "UTF-8 text file with actual output",
                     "command": "low-level JSON input file"}[name]
             p.add_argument("--input", required=True, metavar="FILE", help=kind)
             if name == "evidence":

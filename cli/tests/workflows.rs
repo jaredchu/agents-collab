@@ -1378,3 +1378,536 @@ fn reattached_old_writer_blocks_prepared_replacement_launch_until_reconciled_ter
     assert_eq!(f.complete(&output)["state"], "completed");
     assert_eq!(f.show()["assignments"][0]["deadline"], original["deadline"]);
 }
+
+fn quota_fixture() -> Fixture {
+    let f = Fixture::new();
+    let mut profile: Value = serde_json::from_slice(&fs::read(&f.profile).unwrap()).unwrap();
+    for agent in ["writer", "alpha"] {
+        profile["agents"][agent]["transport"] = json!("claude-cli");
+    }
+    fs::write(&f.profile, serde_json::to_vec(&profile).unwrap()).unwrap();
+    f
+}
+fn handoff_spec(id: &str, replacement: &str, packet: &str, evidence: &str) -> Value {
+    json!({"assignment":id,"replacement":replacement,"packet":packet,"agent":"continuation-codex",
+        "selection":{"model":"synthetic-codex","transport":"codex-native","reasoning":"inherit"},
+        "output_destination":format!("private-{replacement}"),"decision":"continue_with_codex","authority":"owner",
+        "decision_evidence":[evidence],"reason":"Synthetic quota receipt; owner explicitly chose available Codex",
+        "previous_invocation":format!("host-session-{id}"),"timing":"preserve_deadline",
+        "instructions":"Continue the unfinished slot on the exact sealed contract. Writer: preserve current partial source; reviewer: fresh neutral packet only, no writer transcript.","partial_work":null})
+}
+fn interrupt_absent(f: &mut Fixture, id: &str) {
+    f.apply("assignment observe", f.receipt(id, "launching"));
+    let mut receipt = f.receipt(id, "interrupted");
+    receipt["absence_established"] = json!(true);
+    receipt["reason"] = json!(
+        "Synthetic quota failure; host reconciled original invocation exit and no remaining worker"
+    );
+    f.apply("assignment observe", receipt);
+}
+#[test]
+fn interrupted_reviewer_handoff_preserves_slot_round_history_and_format() {
+    let mut f = quota_fixture();
+    f.create();
+    f.apply("task activate", json!({"reason":"synthetic authorization"}));
+    let a = f.freeze();
+    let p = f.packet(&a, 0);
+    f.prepare("review-a", "alpha", &p);
+    interrupt_absent(&mut f, "review-a");
+    let before = f.show();
+    assert_eq!(before["schema_version"], 1);
+    let h = handoff_spec("review-a", "review-codex", &p, &a);
+    let response = f.apply("assignment handoff", h.clone());
+    assert_eq!(response["logical_slot"], "alpha");
+    let after = f.show();
+    assert_eq!(after["schema_version"], 2);
+    assert_eq!(after["profile"], before["profile"]);
+    assert_eq!(after["profile_hash"], before["profile_hash"]);
+    assert_eq!(
+        after["assignments"][0]["observations"],
+        before["assignments"][0]["observations"]
+    );
+    assert_eq!(after["assignments"][0]["state"], "superseded");
+    assert_eq!(
+        after["assignments"][0]["requested"]["transport"],
+        "claude-cli"
+    );
+    assert_eq!(
+        after["assignments"][1]["requested"]["model"],
+        "synthetic-codex"
+    );
+    assert_eq!(
+        after["assignments"][1]["deadline"],
+        before["assignments"][0]["deadline"]
+    );
+    f.reject("assignment handoff", h, "replacement identity already used");
+    f.reject(
+        "assignment observe",
+        f.receipt("review-a", "completed"),
+        "superseded",
+    );
+    let rejected = f.apply("review import", f.review_spec("review-a", &a, &p));
+    assert_eq!(rejected["validation"], "rejected");
+    f.finish_invocation("review-codex");
+    let mut review = f.review_spec("review-codex", &a, &p);
+    review["fresh_session"] = json!("host-session-review-codex");
+    assert_eq!(
+        f.apply("review import", review)["validation"],
+        "valid_structure_only"
+    );
+    f.prepare("review-b", "beta", &p);
+    f.finish_invocation("review-b");
+    f.apply("review import", f.review_spec("review-b", &a, &p));
+    f.complete(&a);
+    let record = f.show();
+    assert_eq!(record["state"], "completed");
+    assert_eq!(record["packets"].as_array().unwrap().len(), 1);
+    assert_eq!(record["reviews"].as_array().unwrap().len(), 2);
+    // Older CLIs check this durable SQL marker before interpreting the JSON.
+    let db = rusqlite::Connection::open(f.record.join("state.sqlite3")).unwrap();
+    let version: i64 = db
+        .query_row("SELECT schema_version FROM state", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(version, 2);
+}
+#[test]
+fn interrupted_writer_handoff_preserves_live_partial_work_and_original_deadline() {
+    let mut f = quota_fixture();
+    f.create();
+    let a = f.freeze();
+    let mut spec = f.packet_spec(&a, 0);
+    spec["purpose"] = json!("writer_context");
+    spec["neutral_initial"] = json!(false);
+    let p = f.apply("packet seal", spec)["packet"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    f.apply("assignment prepare", json!({"id":"write-a","packet":p,"agent":"writer","role":"writer","editable_scope":["file.txt"],"output_destination":"old-result"}));
+    interrupt_absent(&mut f, "write-a");
+    fs::write(f.repo.join("file.txt"), "unfinished partial changes\n").unwrap();
+    let mut h = handoff_spec("write-a", "write-codex", &p, &a);
+    f.reject(
+        "assignment handoff",
+        h.clone(),
+        "snapshot of current partial work",
+    );
+    h["partial_work"] = json!({"paths":[".gitignore","deleted.txt","file.txt"],"omissions":{},"acknowledged_sensitive":[],"quiescence":"original absent; source quiescent","atomic_required":false,"base":"HEAD"});
+    let before = f.show();
+    let result = f.apply("assignment handoff", h);
+    let preserved = result["preserved_work"].as_str().unwrap();
+    let manifest: Value =
+        serde_json::from_slice(&fs::read(f.record.join("objects").join(preserved)).unwrap())
+            .unwrap();
+    let partial = manifest["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["path"] == "file.txt")
+        .unwrap()["object"]
+        .as_str()
+        .unwrap();
+    assert_eq!(
+        fs::read_to_string(f.record.join("objects").join(partial)).unwrap(),
+        "unfinished partial changes\n"
+    );
+    assert_eq!(
+        fs::read_to_string(f.repo.join("file.txt")).unwrap(),
+        "unfinished partial changes\n"
+    );
+    assert_eq!(f.show()["current_artifact"], a);
+    f.finish_invocation("write-codex");
+    assert_eq!(
+        f.show()["assignments"][1]["deadline"],
+        before["assignments"][0]["deadline"]
+    );
+    assert_eq!(f.show()["assignments"][1]["state"], "completed");
+}
+#[test]
+fn handoff_fails_closed_on_decision_liveness_identity_timing_and_packet() {
+    let mut f = quota_fixture();
+    f.create();
+    let a = f.freeze();
+    let p = f.packet(&a, 0);
+    f.prepare("a", "alpha", &p);
+    f.apply("assignment observe", f.receipt("a", "launching"));
+    let mut h = handoff_spec("a", "replacement", &p, &a);
+    f.reject("assignment handoff", h.clone(), "only an interrupted");
+    f.apply("assignment observe", f.receipt("a", "unknown"));
+    f.reject("assignment handoff", h.clone(), "only an interrupted");
+    f.apply("assignment observe", f.receipt("a", "interrupted"));
+    f.reject("assignment handoff", h.clone(), "absence");
+    let mut receipt = f.receipt("a", "interrupted");
+    receipt["absence_established"] = json!(true);
+    f.apply("assignment observe", receipt);
+    for (key, value, message) in [
+        ("decision", json!("wait"), "explicit owner choice"),
+        (
+            "decision_evidence",
+            json!([]),
+            "evidence references required",
+        ),
+        ("authority", json!("stranger"), "authority/actor"),
+        (
+            "output_destination",
+            json!("private-result-a"),
+            "distinct output destination",
+        ),
+        (
+            "previous_invocation",
+            json!("wrong"),
+            "invocation identity mismatch",
+        ),
+        ("timing", json!("reset_deadline"), "preserve_deadline"),
+        ("packet", json!(a), "sealed handoff packet"),
+        ("agent", json!("alpha"), "cannot redefine"),
+    ] {
+        let mut bad = h.clone();
+        bad[key] = value;
+        f.reject("assignment handoff", bad, message);
+    }
+    h["selection"] = Value::Null;
+    h["agent"] = json!("beta");
+    f.apply("assignment handoff", h);
+    f.apply("assignment observe", f.receipt("replacement", "launching"));
+    let mut reused = f.receipt("replacement", "completed");
+    reused["invocation"] = json!("host-session-a");
+    f.reject("assignment observe", reused, "fresh session");
+}
+#[test]
+fn continuation_session_cannot_be_reused_by_another_reviewer_in_either_order() {
+    for continuation_first in [true, false] {
+        let mut f = quota_fixture();
+        f.create();
+        f.apply("task activate", json!({"reason":"synthetic authorization"}));
+        let a = f.freeze();
+        let p = f.packet(&a, 0);
+        f.prepare("review-a", "alpha", &p);
+        interrupt_absent(&mut f, "review-a");
+        let mut h = handoff_spec("review-a", "continuation", &p, &a);
+        // Both logical slots may use the same configured execution agent,
+        // but they must not use the same declared invocation.
+        h["agent"] = json!("beta");
+        h["selection"] = Value::Null;
+        f.apply("assignment handoff", h);
+        f.prepare("review-b", "beta", &p);
+        for id in ["continuation", "review-b"] {
+            f.apply("assignment observe", f.receipt(id, "launching"));
+        }
+        let (first, second) = if continuation_first {
+            ("continuation", "review-b")
+        } else {
+            ("review-b", "continuation")
+        };
+        // Repeated observations within one assignment remain valid.
+        for state in ["running", "running", "completed"] {
+            f.apply("assignment observe", f.receipt(first, state));
+        }
+        let mut review = f.review_spec(first, &a, &p);
+        review["fresh_session"] = json!(format!("host-session-{first}"));
+        f.apply("review import", review);
+        let before = f.show();
+        for state in ["running", "completed", "interrupted"] {
+            let mut reused = f.receipt(second, state);
+            reused["invocation"] = json!(format!("host-session-{first}"));
+            f.reject("assignment observe", reused, "fresh session");
+            assert_eq!(f.show(), before);
+        }
+        // The rejected identity does not poison recovery with a distinct one.
+        for state in ["running", "completed"] {
+            f.apply("assignment observe", f.receipt(second, state));
+        }
+        let mut review = f.review_spec(second, &a, &p);
+        review["fresh_session"] = json!(format!("host-session-{second}"));
+        f.apply("review import", review);
+        assert_eq!(f.complete(&a)["state"], "completed");
+    }
+}
+
+#[test]
+fn handoff_cannot_replace_completed_or_unfavorable_review() {
+    for verdict in ["pass", "changes_required", "blocked"] {
+        let mut f = quota_fixture();
+        f.create();
+        let a = f.freeze();
+        let p = f.packet(&a, 0);
+        f.prepare("a", "alpha", &p);
+        f.finish_invocation("a");
+        f.reject(
+            "assignment handoff",
+            handoff_spec("a", "b", &p, &a),
+            "only an interrupted",
+        );
+        let mut review = f.review_spec("a", &a, &p);
+        review["verdict"] = json!(verdict);
+        f.apply("review import", review);
+        f.reject(
+            "assignment handoff",
+            handoff_spec("a", "b", &p, &a),
+            "only an interrupted",
+        );
+        if verdict == "blocked" {
+            let mut receipt = f.receipt("a", "interrupted");
+            receipt["absence_established"] = json!(true);
+            f.apply("assignment observe", receipt);
+            f.apply("assignment handoff", handoff_spec("a", "b", &p, &a));
+            assert_eq!(f.show()["invalid_results"].as_array().unwrap().len(), 1);
+        } else {
+            let mut receipt = f.receipt("a", "interrupted");
+            receipt["absence_established"] = json!(true);
+            f.reject(
+                "assignment observe",
+                receipt,
+                "valid result already imported",
+            );
+        }
+    }
+}
+#[test]
+fn racing_handoffs_keep_cas_and_idempotency() {
+    let mut f = quota_fixture();
+    f.create();
+    let a = f.freeze();
+    let p = f.packet(&a, 0);
+    f.prepare("a", "alpha", &p);
+    interrupt_absent(&mut f, "a");
+    let input = f.file(handoff_spec("a", "b", &p, &a));
+    let other = f.file(handoff_spec("a", "c", &p, &a));
+    let barrier = Arc::new(Barrier::new(2));
+    let workers: Vec<_> = [(input.clone(), "handoff-1"), (other, "handoff-2")]
+        .into_iter()
+        .map(|(path, key)| {
+            let record = f.record.clone();
+            let expected = f.rev;
+            let gate = barrier.clone();
+            std::thread::spawn(move || {
+                gate.wait();
+                execute(
+                    "assignment handoff",
+                    &record,
+                    Some(&path),
+                    Some(key),
+                    Some(expected),
+                    None,
+                    None,
+                )
+            })
+        })
+        .collect();
+    let outputs: Vec<_> = workers.into_iter().map(|t| t.join().unwrap()).collect();
+    assert_eq!(outputs.iter().filter(|o| o.status.success()).count(), 1);
+    let winner = if outputs[0].status.success() { 0 } else { 1 };
+    let loser = 1 - winner;
+    assert!(
+        body(&outputs[loser])["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("stale revision")
+    );
+    // Replay the winner with exactly the original key, revision and input.
+    let path = if winner == 0 {
+        input
+    } else {
+        f.inputs.join(format!("{}.json", f.seq))
+    };
+    let replay = execute(
+        "assignment handoff",
+        &f.record,
+        Some(&path),
+        Some(if winner == 0 {
+            "handoff-1"
+        } else {
+            "handoff-2"
+        }),
+        Some(f.rev),
+        None,
+        None,
+    );
+    assert_eq!(good(&replay), good(&outputs[winner]));
+    assert_eq!(f.show()["assignments"].as_array().unwrap().len(), 2);
+}
+
+#[test]
+fn handoff_refuses_stale_writer_packet_and_writer_session_as_reviewer() {
+    let mut f = quota_fixture();
+    f.create();
+    let a = f.freeze();
+    let mut packet = f.packet_spec(&a, 0);
+    packet["purpose"] = json!("writer_context");
+    packet["neutral_initial"] = json!(false);
+    let p = f.apply("packet seal", packet)["packet"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    f.apply("assignment prepare", json!({"id":"w","packet":p,"agent":"writer","role":"writer","editable_scope":["file.txt"],"output_destination":"writer-result"}));
+    interrupt_absent(&mut f, "w");
+    fs::write(f.repo.join("file.txt"), "partial writer source\n").unwrap();
+    let changed = f.freeze();
+    assert_ne!(a, changed);
+    f.reject(
+        "assignment handoff",
+        handoff_spec("w", "replacement", &p, &a),
+        "stale/mismatched handoff packet",
+    );
+    // Reconcile the original writer to finish, then create a neutral review stage.
+    f.apply("assignment observe", f.receipt("w", "completed"));
+    let p = f.packet(&changed, 0);
+    f.prepare("review-a", "alpha", &p);
+    interrupt_absent(&mut f, "review-a");
+    f.apply(
+        "assignment handoff",
+        handoff_spec("review-a", "review-codex", &p, &changed),
+    );
+    f.apply("assignment observe", f.receipt("review-codex", "launching"));
+    let mut reused = f.receipt("review-codex", "completed");
+    reused["invocation"] = json!("host-session-w");
+    f.reject("assignment observe", reused, "fresh session");
+    f.apply("assignment observe", f.receipt("review-codex", "completed"));
+    let rejected = f.apply("review import", f.review_spec("review-codex", &changed, &p));
+    assert_eq!(rejected["validation"], "rejected");
+    assert!(
+        rejected["reason"]
+            .as_str()
+            .unwrap()
+            .contains("fresh_session")
+    );
+    let mut review = f.review_spec("review-codex", &changed, &p);
+    review["fresh_session"] = json!("host-session-review-codex");
+    assert_eq!(
+        f.apply("review import", review)["validation"],
+        "valid_structure_only"
+    );
+}
+
+#[test]
+fn writer_handoff_preserves_directory_partial_work_and_allows_absent_future_paths() {
+    let mut f = quota_fixture();
+    fs::create_dir(f.repo.join("src")).unwrap();
+    fs::write(f.repo.join("src/existing.txt"), "tracked baseline\n").unwrap();
+    fs::write(f.repo.join("src/deleted.txt"), "tracked before deletion\n").unwrap();
+    git(&f.repo, &["add", "src"]);
+    git(&f.repo, &["commit", "-qm", "directory fixture"]);
+    let mut task = f.task();
+    task["editable_scope"] = json!(["src", "future.txt", "ignored.txt"]);
+    let input = f.file(task);
+    f.rev = good(&execute(
+        "task create",
+        &f.record,
+        Some(&input),
+        Some("create"),
+        Some(0),
+        Some(&f.profile),
+        None,
+    ))["revision"]
+        .as_u64()
+        .unwrap();
+    let artifact = f.apply("artifact freeze", json!({"paths":[".gitignore", "file.txt", "deleted.txt", "src/existing.txt", "src/deleted.txt"], "omissions":{}, "acknowledged_sensitive":[], "quiescence":"no writer yet", "atomic_required":false, "base":"HEAD"}))["artifact"].as_str().unwrap().to_string();
+    let mut packet = f.packet_spec(&artifact, 0);
+    packet["purpose"] = json!("writer_context");
+    packet["neutral_initial"] = json!(false);
+    let packet = f.apply("packet seal", packet)["packet"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    f.apply("assignment prepare", json!({"id":"writer-old", "packet":packet, "agent":"writer", "role":"writer", "editable_scope":["src", "future.txt", "ignored.txt"], "output_destination":"old-output"}));
+    interrupt_absent(&mut f, "writer-old");
+    fs::write(
+        f.repo.join("src/existing.txt"),
+        "unfinished tracked edits\n",
+    )
+    .unwrap();
+    fs::write(f.repo.join("src/partial.txt"), "new unfinished source\n").unwrap();
+    fs::remove_file(f.repo.join("src/deleted.txt")).unwrap();
+    fs::write(
+        f.repo.join("ignored.txt"),
+        "explicit ignored partial source\n",
+    )
+    .unwrap();
+    let before = f.show();
+    let mut handoff = handoff_spec("writer-old", "writer-new", &packet, &artifact);
+    handoff["partial_work"] = json!({"paths":["src/existing.txt", "src/deleted.txt", "ignored.txt"], "omissions":{".gitignore":"unrelated", "file.txt":"unrelated", "deleted.txt":"unrelated", "src/partial.txt":"incorrect omission of partial source"}, "acknowledged_sensitive":[], "quiescence":"original worker absent", "atomic_required":false, "base":"HEAD"});
+    f.reject(
+        "assignment handoff",
+        handoff.clone(),
+        "cannot omit scoped inventory",
+    );
+    assert_eq!(f.show(), before);
+    handoff["partial_work"]["paths"] =
+        json!(["src/existing.txt", "src/partial.txt", "ignored.txt"]);
+    handoff["partial_work"]["omissions"]
+        .as_object_mut()
+        .unwrap()
+        .remove("src/partial.txt");
+    handoff["partial_work"]["omissions"]["src/deleted.txt"] =
+        json!("incorrect omission of tracked deletion");
+    f.reject(
+        "assignment handoff",
+        handoff.clone(),
+        "cannot omit scoped inventory",
+    );
+    assert_eq!(f.show(), before);
+    handoff["partial_work"]["paths"] =
+        json!(["src/existing.txt", "src/partial.txt", "src/deleted.txt"]);
+    handoff["partial_work"]["omissions"]
+        .as_object_mut()
+        .unwrap()
+        .remove("src/deleted.txt");
+    f.reject(
+        "assignment handoff",
+        handoff.clone(),
+        "select existing exact scoped input",
+    );
+    assert_eq!(f.show(), before);
+    handoff["partial_work"]["paths"] = json!([
+        "src/existing.txt",
+        "src/partial.txt",
+        "src/deleted.txt",
+        "ignored.txt"
+    ]);
+    let result = f.apply("assignment handoff", handoff);
+    let preserved = result["preserved_work"].as_str().unwrap();
+    let manifest: Value =
+        serde_json::from_slice(&fs::read(f.record.join("objects").join(preserved)).unwrap())
+            .unwrap();
+    for (path, content) in [
+        ("src/existing.txt", "unfinished tracked edits\n"),
+        ("src/partial.txt", "new unfinished source\n"),
+        ("ignored.txt", "explicit ignored partial source\n"),
+    ] {
+        let entry = manifest["entries"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|e| e["path"] == path)
+            .unwrap();
+        assert_eq!(
+            fs::read_to_string(
+                f.record
+                    .join("objects")
+                    .join(entry["object"].as_str().unwrap())
+            )
+            .unwrap(),
+            content
+        );
+        assert_eq!(fs::read_to_string(f.repo.join(path)).unwrap(), content);
+    }
+    let deleted = manifest["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["path"] == "src/deleted.txt")
+        .unwrap();
+    assert_eq!(deleted["kind"], "deleted");
+    assert!(!f.repo.join("future.txt").exists());
+    let after = f.show();
+    assert_eq!(after["current_artifact"], before["current_artifact"]);
+    assert_eq!(
+        after["assignments"][0]["observations"],
+        before["assignments"][0]["observations"]
+    );
+    assert_eq!(
+        after["assignments"][1]["deadline"],
+        before["assignments"][0]["deadline"]
+    );
+    assert_eq!(after["assignments"][0]["state"], "superseded");
+    assert_eq!(after["schema_version"], 2);
+}

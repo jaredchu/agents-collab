@@ -1,13 +1,21 @@
 # Implicit-activation study protocol
 
-**DRAFT (10 November 2026); execution not approved; inputs not preregistered;
-independent method review required before any calls.**
-No call described here has been made and none may be made yet. Before any lead
-or collaborator call, this protocol needs (1) a passed independent method
-review, (2) the owner's explicit execution approval and (3) an immutable public
-preregistration commit containing every frozen input listed below. Drafting it
-changes no installed skill, product description, profile or global setting,
-and it does not claim to solve activation.
+**DRAFT (10 November 2026); the proposed 18-run study is unexecuted, not approved
+and not preregistered. Method review passed for the earlier draft at `51bb150`.**
+That review covered the then-current method, including the launch-supervision
+correction; it did not establish supervisor feasibility or authorize calls.
+Later source changes require reconciling the conditions below and reviewing any
+method amendment before a future run. Execution also requires the owner's
+explicit approval and an immutable public preregistration containing every
+frozen input. Preparation changed no installed skill, profile or global setting;
+the later adoption of the candidate description is separate from this study.
+
+The proposed description and tickets have prior exploratory exposure in separate
+diagnostics. Those observations are not runs of this 18-run study. Any future
+preregistration must disclose that exposure and the adopted candidate description,
+separate earlier observations from prospective outcomes, and justify any claim
+that the resulting study is confirmatory. No raw private records are included
+here and no reliability conclusion follows from this documentation update.
 
 ## Why
 
@@ -30,11 +38,15 @@ an activation gate passes.
 
 ## Conditions
 
-Both conditions use the same skill package except one line.
+The following descriptions preserve the original draft conditions. The source
+now carries the candidate description, so "current product at preregistration"
+can no longer identify the baseline by itself. Before any preregistration,
+explicitly freeze two otherwise identical variant trees using these distinct
+descriptions, or adopt a separately reviewed amendment. This update selects no
+new baseline and changes no frozen historical experiment input.
 
-- **Baseline:** the product `skills/agents-collab/` package at the
-  preregistration commit. At drafting (commit `aa7b6bc`) its `SKILL.md`
-  frontmatter description is:
+- **Draft baseline:** the `SKILL.md` frontmatter description recorded from the
+  product package at drafting (commit `aa7b6bc`):
 
   > Coordinate configured model collaboration and independent reviews in a
   > Codex-led workflow, separating execution records from durable project
@@ -56,10 +68,11 @@ Both conditions use the same skill package except one line.
   > lead can verify alone. This draft targets a Codex-led pilot; other leads
   > need adapter validation.
 
-The candidate is a study variant only. It is not applied to the product skill,
-installed skill or website now. Preflight checks that the two variant trees
-differ in exactly that line, that both pass skill metadata validation, and
-records both tree hashes. `name`, body, references, scripts and
+The candidate began as a study-only variant and was subsequently adopted in the
+local skill and source. This source update establishes no website deployment.
+Preflight must check that the two explicitly constructed variant trees
+differ in exactly that line and that both pass skill metadata validation, then
+record both tree hashes. `name`, body, references, scripts and
 `agents/openai.yaml` stay byte-identical. If the product package changes before
 preregistration, the baseline text and hashes here must be updated and reviewed
 again. No other variant, wording or tuning is part of this protocol.
@@ -98,8 +111,10 @@ source snapshot and fresh collaborator sessions. Each invocation gets an
 invocation-local skill catalog containing **only** its assigned variant,
 installed under the name `agents-collab`; no other skill is enabled for it. No
 global instruction, installed skill, owner profile, `HOME` or `CODEX_HOME`
-changes. If the host cannot provide such a catalog per invocation, that is a
-preflight blocker, not a reason to edit global configuration.
+changes for the study. The invocation-local catalog must exclude any globally
+installed candidate from baseline runs. If the host cannot provide and verify
+such a catalog per invocation, that is a preflight blocker, not a reason to edit
+global configuration or reuse the live installation as a baseline.
 
 Fixed order, generated with Python 3.9.6 by
 `random.Random(f"20261110-block-{rep}").shuffle(block)` over each repeat's six
