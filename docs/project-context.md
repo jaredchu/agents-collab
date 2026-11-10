@@ -15,7 +15,9 @@ achieved**: the [public routing gate](../evals/automatic-routing/2026-11-09/repo
 missed both required collaboration routes on ordinary prompts. Explicit
 invocation matched all three routes in that small diagnostic and remains the
 supported fallback. The [draft activation study](plans/implicit-activation-study.md)
-prepares the next measurement; it is unreviewed and unexecuted.
+prepares the next measurement. It is a DRAFT; execution is not approved, inputs
+are not preregistered, and independent method review is required before any
+calls.
 
 ## Boundaries
 
@@ -63,7 +65,7 @@ prepares the next measurement; it is unreviewed and unexecuted.
 | [History](history.md) | How the project emerged |
 | [Rust CLI backend](cli.md) | Optional installation, executable commands, storage bounds and checks |
 | [Rust CLI prototype plan](plans/rust-cli-prototype.md) | Retained original proposal: acceptance scope, rationale and implementation status |
-| [Implicit-activation study](plans/implicit-activation-study.md) | DRAFT protocol for the next activation measurement; needs review, approval and preregistration |
+| [Implicit-activation study](plans/implicit-activation-study.md) | DRAFT protocol for the next activation measurement; needs passed method review, execution approval and preregistration |
 | [Contributing](../CONTRIBUTING.md) | Contribution and evidence guidelines |
 | [License](../LICENSE) | MIT License (identical copy in the skill package) |
 

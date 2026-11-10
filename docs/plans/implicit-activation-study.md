@@ -1,11 +1,12 @@
 # Implicit-activation study protocol
 
-**DRAFT — 10 November 2026. Not reviewed, not approved, not preregistered.**
+**DRAFT (10 November 2026); execution not approved; inputs not preregistered;
+independent method review required before any calls.**
 No call described here has been made and none may be made yet. Before any lead
-or collaborator call, this protocol needs (1) an independent method review,
-(2) the owner's explicit execution approval and (3) an immutable public
-preregistration commit containing every frozen input listed below. Drafting
-it changes no installed skill, product description, profile or global setting,
+or collaborator call, this protocol needs (1) a passed independent method
+review, (2) the owner's explicit execution approval and (3) an immutable public
+preregistration commit containing every frozen input listed below. Drafting it
+changes no installed skill, product description, profile or global setting,
 and it does not claim to solve activation.
 
 ## Why
@@ -83,8 +84,9 @@ again. No other variant, wording or tuning is part of this protocol.
   user-configured. The profile location reaches the lead through the same
   neutral per-invocation instruction in both conditions, as in 2026-11-09.
 - **Harness:** a new study-only directory under `evals/` derived from the
-  2026-11-09 recorder, adding variant catalogs and launch counting, with
-  offline checks. The 2026-11-09 files remain frozen and unchanged.
+  2026-11-09 recorder, adding variant catalogs and the mandatory launch
+  supervisor defined [below](#launch-supervision-and-limits), with offline
+  checks. The 2026-11-09 files remain frozen and unchanged.
 
 ## Design
 
@@ -113,10 +115,10 @@ runs listed as R1, S1, C1 × baseline, candidate:
 | 6 | C1-rep1-candidate | 12 | R1-rep2-candidate | 18 | S1-rep3-baseline |
 
 All 18 runs execute in this order regardless of earlier outcomes: no early
-stop, no added runs. No retries, rerolls or condition tuning. A run starts when
-the host returns a lead-session identity. A failure before that start (for
-example, snapshot construction) may be fixed and the row started once, with the
-fix logged, provided no frozen input changes; after start, a row is never rerun.
+stop, no added runs. No retries, rerolls or condition tuning. Launch identity,
+when a row counts as started, and the single permitted dispatch of an unstarted
+row are defined under [launch supervision](#launch-supervision-and-limits). A
+row whose lead invocation exists is never rerun.
 
 ## Freeze before outcomes
 
@@ -124,7 +126,9 @@ The preregistration commit records, before any run: lead host application/CLI
 version, lead model and reasoning request, writer and reviewer identities and
 transports, profile bytes, both variant tree hashes, ticket and seed hashes,
 the ProcLease commit, OS version, Rust/Cargo, Python and Git versions, harness
-commit and offline-check results, the schedule above and preflight receipts.
+commit and offline-check results, the launch supervisor's commit, counting and
+reconciliation rules and fault-check results, the schedule above and preflight
+receipts.
 A change to any of these after preregistration voids the affected runs and
 needs a reviewed amendment before further calls.
 
@@ -155,48 +159,151 @@ Per run, against the frozen benchmark profile:
 - **C1 passes** only with a discovery receipt and a configured independent
   reviewer dispatch on the frozen fix before completion, all required elements
   `yes`. A configured writer dispatch is permitted.
-- Any required element that is `no` or `unknown`, a non-configured collaborator,
-  or exceeding the collaborator bound fails the run. A participant timeout is
-  evaluated on its receipts.
+- In a completed run, any required element that is `no` or `unknown`, a
+  non-configured collaborator, or a collaborator launch request beyond the
+  limit fails the run. A participant timeout whose liveness reconciliation
+  succeeds is a completed run evaluated on its receipts. Incomplete rows are
+  defined under [interruptions](#interruptions-stops-and-liveness) and are not
+  scored as route failures.
 
 **Gate rule:** the candidate passes the activation gate if and only if all nine
-candidate runs pass. Any completed candidate run that fails makes the gate
-**fail**. If no completed candidate run failed but one or more candidate runs
-are access-interrupted, the gate is **incomplete**: neither passed nor a
+candidate runs are completed and pass. Any completed candidate run that fails
+makes the gate **fail**. If no completed candidate run failed but one or more
+candidate runs are incomplete (including access interruption, unknown liveness,
+an unresolved launch attempt or a prelaunch stop), the gate is **incomplete**: neither passed nor a
 negative result. Baseline runs are scored by the same criteria and reported
 descriptively. If both conditions pass 9/9, activation is observed in both and
 nothing is attributed to the description change. A failed candidate leaves
 implicit activation unachieved; a different candidate needs a new reviewed
 protocol, not a repeat of this one.
 
-## Collaborator bound and interruptions
+## Launch supervision and limits
 
-Each run allows one initial review plus at most one repair/follow-up, matching
-`max_followup_rounds: 1`: at most one writer, one initial review, one repair
-writer and one follow-up review, so **four collaborator invocations per run**.
-The total is at most 72 collaborator invocations plus 18 lead sessions. The
-lead under test chooses its own dispatches, so this bound is enforceable only
-with host launch supervision that counts native child starts and CLI writer
-processes and stops a run before a fifth launch. If the preregistration claims
-the bound as required, preflight must validate that supervision; otherwise the
-bound is advisory and any excess is a recorded deviation that fails the run.
-Each run also has a supervised 60-minute wall-clock stop. No other call, token
-or quota budget is imposed; usage is recorded where available and unknown
-usage stays unknown, never zero.
+**Lead launches.** Before requesting any lead invocation, the harness durably
+records (written and flushed before the request) a launch intent with a unique
+launch-attempt identity (row and attempt ordinal), the row's frozen-input
+hashes and the intent time. The row's 60-minute deadline is fixed at its first
+intent. If an earlier attempt is established as not launched, a later attempt
+retains that same deadline. The request carries that identity in a form the supervisor can later
+query on the host. A returned lead-session identity binds the attempt to an
+existing invocation. A missing, failed or ambiguous acknowledgement makes the
+attempt **unknown**; it is never permission to request another invocation.
+An unknown attempt is reconciled either to the existing invocation it created,
+which then continues as that row under the original deadline and receipts, or
+to `not launched`, which needs positive host evidence that no invocation was
+created and no process carrying the identity exists. A missing response is not
+such evidence. Until one of these holds, no lead is requested for that or any
+later row.
+
+A row is **unstarted** only if no lead launch request was issued for it, or
+every issued attempt is positively established as not launched. Only an
+unstarted row may be dispatched, with a fresh attempt identity. A failure
+before any launch request (for example, snapshot construction) may be fixed and
+the row dispatched, with the fix logged, provided no frozen input changes. A
+row whose invocation exists is never rerun, so each row has at most one lead
+session and the study at most 18. Every lead launch attempt and its
+reconciliation is reported.
+
+**Collaborator limits (required).** Each row allows at most **four admitted
+collaborator launch attempts** (slots reserved before forwarding to the host), and the study
+at most **72**. These are
+required launch limits enforced before a fifth child starts, not advisory
+bounds. They match `max_followup_rounds: 1`: one initial writer, one initial
+reviewer, one repair writer and one follow-up reviewer. What counts: every
+request by the lead, or by anything it starts, to start a collaborator (native
+child agent, CLI writer or reviewer process, or any other model-backed worker)
+is recorded, whatever its role, path or outcome. Reserving a slot admits one
+attempt; failure, host refusal or a lost acknowledgement still consumes that
+slot. A reserved attempt whose forwarding is unknown also consumes its slot;
+unknowns are
+retained in reporting, never dropped. The lead session is not one of the four.
+Roles are classified from receipts for scoring; the limit applies to the total
+regardless of role. Neither the harness nor the supervisor makes hidden
+transport retries: each launch request is forwarded at most once, and any
+re-request by the lead needs a new slot.
+
+The supervisor sits on every native and CLI launch path, keeps one counter per
+row across both paths, durably reserves a slot and records the child attempt
+identity before forwarding a request, and refuses any request once four are
+counted, so no fifth child starts. Concurrent requests are serialized and
+cannot share a slot. A refused request beyond four is recorded and fails the
+run as exceeding the limit; it is not forwarded or counted as a fifth admitted
+attempt. Incoming requests can exceed four: all are reported separately from
+the bounded admitted attempts and actual invocations. No other call, token or quota budget is imposed;
+usage is recorded where available and unknown usage stays unknown, never zero.
+
+**Mandatory supervisor preflight.** Before preregistration the supervisor must
+pass offline fault-injection checks, recorded in the preregistration, covering
+at least:
+
+- *lost acknowledgement:* a lead or child launch succeeds but its response is
+  lost; the supervisor reconciles to the existing invocation and issues no
+  second launch;
+- *uncertain launch:* without positive evidence the schedule stays blocked;
+  with positive not-launched evidence the row stays unstarted and may be
+  dispatched once;
+- *racing requests:* concurrent child requests for the last slot, across
+  native and CLI paths, grant at most one;
+- *blocked fifth launch* on each path, with no child session or process
+  created;
+- *interruption and timeout liveness:* a surviving lead, native child or CLI
+  process group after an interruption or timeout is detected, and unknown
+  liveness blocks the next row;
+- *receipt reconciliation:* after interrupted transport and recovery, receipts
+  bind to the original attempt identities, counts and deadline, none of which
+  is reset or extended;
+- *supervised wall stop:* at the deadline the lead, native children and CLI
+  process groups are stopped and confirmed terminal;
+- *no hidden retry:* an injected transport failure produces no second
+  forwarded request.
+
+If the host offers no point at which native child starts can be intercepted
+before they start, or any check fails or cannot be run, execution is refused.
+There is no advisory fallback. A design without these enforced limits would be
+a different protocol needing its own review and explicit approval.
+
+## Interruptions, stops and liveness
+
+After any access interruption, transport loss, participant timeout, wall stop
+or other stop, and before the next row is dispatched, the supervisor reconciles
+every lead, native child and CLI process group the row created or may have
+created. Each must be confirmed terminal, or definitely absent with positive
+host evidence. Unknown liveness blocks the schedule; no fallback route,
+duplicate or new lead may bypass it. Original attempt identities, launch
+counts, elapsed allowance, deadline and receipts are preserved through
+interrupted transport and recovery; recovery never resets the clock or the
+counts.
 
 A subscription, quota, rate or access interruption is recorded with its
 receipts, marks the run `interrupted_access` and **pauses** the schedule. No
-run starts until access returns; then the next unstarted row proceeds in order.
-The interrupted row is not rerun under this protocol. Any continuation of it
-needs a reviewed amendment fixed before the call, stating how preserved partial
-observations are treated. The study stays blocked and unfinished meanwhile,
-and final results wait until every required stage completes.
+run starts until access returns and the liveness reconciliation above
+succeeds; then the next unstarted row proceeds in order. The interrupted row
+is not rerun under this protocol. Any continuation of it needs a reviewed
+amendment fixed before the call, stating how preserved partial observations are
+treated. The study stays blocked and unfinished meanwhile, and final results
+wait until every required stage completes.
+
+A scored row must have a positively identified lead invocation that actually
+ran. An attempt proved not launched is not a completed row and cannot pass the
+routine-solo control. If its original deadline expires before a lead runs, retain
+the row as `incomplete_prelaunch_stop`; it cannot be restarted with a new clock.
+Any continuation needs a reviewed amendment before another call.
+
+A row is **completed** when its identified lead and every collaborator are confirmed
+terminal or absent (including after a participant timeout or wall stop) and its
+receipts are collected; it is then scored under the route criteria, and a
+completed row that fails is a **completed route failure**. An
+`interrupted_access` row, or a row with unknown liveness or an unresolved
+launch attempt, is **incomplete**: it is not a completed route failure merely
+because receipts are missing, and its partial observations are preserved.
 
 ## Reporting and limits
 
-Report all 18 rows, including interrupted or failed ones, with discovery and
-dispatch shown separately per route and condition, collaborator counts,
-interventions, wall time and usage completeness. Never pool these runs with the
+Report all 18 rows, including incomplete or failed ones, with completed and
+incomplete status kept distinct, discovery and dispatch shown separately per
+route and condition, lead launch attempts and their reconciliation,
+collaborator launch-attempt counts with unknowns retained, interventions, wall
+time and usage completeness. Never pool these runs with the
 2026-11-09 gate or diagnostic, or present an explicit-invocation result as
 implicit activation. Final-state checks may be noted for scope safety but are
 not graded outcomes.
