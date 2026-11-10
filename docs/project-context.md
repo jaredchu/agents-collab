@@ -375,6 +375,15 @@ for use and evidence limits. The backend reference and helper help now state tha
 launches) and that no finding disposition completes a task over a current
 `changes_required` verdict. Lifecycle semantics are unchanged.
 
+Local validation of `51bb150` passed on 10 November 2026: the maintained gate
+completed formatting, locked build, Clippy with warnings denied, all 24 Rust
+integration tests and all 139 Python tests, including ten real-engine cases.
+The website build and affected documentation links passed. Independent source
+and method review passed after a focused protocol correction for uncertain
+launches and mandatory launch supervision. These results cover the local
+implementation and draft method, not live supervisor feasibility, study
+execution, achieved implicit activation or a production release.
+
 ## Progress
 
 - [x] Preserve the eight-file validated package as the initial source.
@@ -399,7 +408,8 @@ launches) and that no finding disposition completes a task over a current
 - [ ] Establish implicit activation, the required product target. The cancelled 36 rows stay cancelled;
   any effectiveness comparison needs a new protocol after an activation gate passes.
 - [x] Draft the implicit-activation study protocol (DRAFT, no calls).
-- [ ] Independent method review, owner execution approval and immutable preregistration of that protocol.
+- [x] Complete independent method review of the activation protocol.
+- [ ] Obtain owner execution approval and freeze inputs through immutable preregistration.
 
 - [x] Complete recovered quality grading and evidence reconciliation without participant rerolls.
 - [x] Publish primary criteria, sensitivity, corrected dispositions and interruption limits.
@@ -414,4 +424,4 @@ launches) and that no finding disposition completes a task over a current
 - [x] Implement owner-approved skill clarity and helper observation fixes.
 - [x] Complete independent review and publish the validated skill package.
 - [x] Add the local CLI regression gate and backend evidence/completion clarifications.
-- [ ] Complete independent review and a clean-checkout gate run for that increment.
+- [x] Complete independent review and a clean-checkout gate run for that increment.
