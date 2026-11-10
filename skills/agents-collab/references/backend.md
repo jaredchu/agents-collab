@@ -268,8 +268,13 @@ to make it valid. Structural validity attests neither truth nor authority.
 
 `evidence --input FILE` retains actual UTF-8 check output or disposition text and
 returns its object hash (`EVIDENCE_HASH`). A stored assertion alone does not prove
-that a check ran. Record each finding decision through the generic command with
-this `disposition.json`:
+that a check ran. The helper stores the text as the reason of a `task reconcile`
+mutation, so the call is also a reconciliation: incomplete files in the record's
+`staging/` move to `quarantine/` (listed as `quarantined` in the result; nothing
+is deleted). Because reconcile would turn an unattached launch intent into
+`unknown`, `evidence` refuses while any assignment is still `launching`; attach
+the launched invocation with `observe` first. Record each finding decision
+through the generic command with this `disposition.json`:
 
 ```json
 {"finding":"F1","decision":"addressed","reason":"Follow-up review of the changed artifact passed","evidence":["EVIDENCE_HASH"],"authority":"lead","criterion_compatible":true}
@@ -287,6 +292,18 @@ declared criterion and check. Tasks with `--approval` need the low-level contrac
 via `command --entity task --action complete` and an input such as
 `{"artifact":"ARTIFACT_HASH","criteria":{"C1":["EVIDENCE_HASH"]},"checks":{"unit-tests":["EVIDENCE_HASH"]},"approvals":{"owner":["APPROVAL_EVIDENCE_HASH"]},"reason":"..."}`,
 where the approval object contains the person's actual approval.
+
+Completion follows verdicts, not dispositions. The latest review packet must name
+the current artifact, and every required reviewer's result on it must be `pass`.
+While any current result is `changes_required`, `complete` is refused even if
+every finding is `rejected` with evidence or compatibly `deferred`. The only path
+forward is a changed artifact and a follow-up round, within
+`max_followup_rounds`, in which all required reviewers pass. A follow-up packet
+on the same artifact is refused and there is no adjudication command for it. A
+disagreement with a finding therefore needs a changed artifact and new reviews,
+or the task stays blocked: report it, then block or cancel. Do not start a new
+task to reset rounds. Material findings also keep needing a resolved,
+criterion-compatible disposition after the follow-up passes.
 
 `task block`, `activate`, `cancel` and `reconcile` take `{"reason": "Concrete
 reason"}` through `command`. `reconcile` marks unattached launch intents

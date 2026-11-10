@@ -95,6 +95,68 @@ also invokes the unchanged Python profile validator for compatibility cases.
 These tests establish offline structural behavior, not real review quality,
 provider access, effort attestation, faster coordination or token savings.
 
+### Local regression gate
+
+`scripts/check_cli.py` (Python 3.9+, standard library) runs all of the above
+plus the full Python suite against the freshly built binary, from one pinned
+commit. It is a maintained local check, not CI and not a release. Only macOS
+arm64 with scratch on local APFS is supported; anything else is refused.
+
+Cargo runs offline. Fetch the locked public crates once beforehand, into a cache
+you select (setting `CARGO_HOME` per command changes no global configuration):
+
+```sh
+CARGO_HOME="$CARGO_CACHE" cargo fetch --locked --manifest-path cli/Cargo.toml
+```
+
+Then, from a **clean** checkout, name a new scratch directory whose parent exists:
+
+```sh
+CARGO_HOME="$CARGO_CACHE" python3 scripts/check_cli.py --scratch "$SCRATCH/gate-1"
+```
+
+`--revision REV` selects another commit (default `HEAD`). Before writing anything,
+the gate refuses a dirty working tree (tracked changes or nonignored untracked
+files), an unknown revision, a relative path, an existing scratch path, a
+missing parent, scratch overlapping the source or inside any Git repository, an
+unsupported platform and storage that `df`/`mount` do not report as local APFS.
+It never deletes or replaces caller files; remove old scratch yourself.
+
+The gate creates the scratch directory exclusively, writes `source.tar` with
+`git archive` and extracts it to `source/` (regular files and directories only).
+It then runs, in order and stopping at the first failure:
+
+1. `cargo fmt --check`;
+2. `cargo build --locked --offline`, then copies the binary to `bin/agents-collab`;
+3. `cargo clippy --locked --offline --all-targets -- -D warnings`;
+4. `cargo test --locked --offline`;
+5. `python3 -m unittest discover -s tests -v` in the snapshot, with
+   `AGENTS_COLLAB_TEST_BINARY` set to the frozen binary copy.
+
+`CARGO_TARGET_DIR`, `TMPDIR` and all logs stay in scratch, with
+`PYTHONDONTWRITEBYTECODE=1` and `CARGO_NET_OFFLINE=true`; test fault hooks are
+removed from the environment. A zero exit is not enough: Cargo test output must
+show passing tests, none failed or ignored. The Python suite must end with a
+plain `OK`, skip nothing and run `test_backend.RealBackendTests`, the real-engine
+cases. A missing binary or a binary changed during the run also fails.
+
+`result.json` records the status (`incomplete`, `passed`, `failed` or
+`interrupted`), failure reason, revision, tree, archive and binary SHA-256, tool
+versions, selected environment, each command with its exit status and times,
+and `logs/` paths. A step left `running` marks an interrupted run. Exit codes
+are 0 passed, 1 failed, 2 refused before writing and 130 interrupted.
+
+Limits: the snapshot contains committed files only, so uncommitted work is never
+checked. The debug binary hash identifies the bytes tested; it embeds build paths, so it
+is not a reproducible-build identity. Tool versions are recorded, not pinned; the environment (`PATH`,
+`CARGO_HOME`, toolchain manager settings) is inherited. Cargo may update its own
+cache metadata in `CARGO_HOME`. The storage preflight inspects mount metadata;
+the real-engine tests separately exercise the engine's runtime storage check in
+scratch `TMPDIR`. The gate makes no model, provider or API calls. The website
+build is a separate check. Results are unsigned local
+evidence reported by whoever runs the gate: they establish offline structural
+behavior on that machine, not provider access, review quality or other platforms.
+
 ## Invocation and output
 
 Every command takes two words (`task show`, for example). All record operations
@@ -489,7 +551,8 @@ A completion input has the current artifact and exact evidence coverage:
 ```
 
 Completion requires active state, required current-identity reviewer passes,
-resolved compatible material findings, no prepared/launching/running/unknown or
+resolved compatible material findings (a disposition never overrides a current
+`changes_required` verdict; only a changed artifact and passing follow-up can), no prepared/launching/running/unknown or
 blocked assignment, all declared criterion/check/approval references and unchanged
 live source identity. Imported evidence may be false; structure cannot establish
 real authorization or truthful test outcomes. Evidence bytes should contain the

@@ -8,6 +8,15 @@ https://agents-collab.com explaining Jared Chu's research, the earlier per-proje
 model-collaboration approach, the experiments and why personal workflow settings
 were separated from project knowledge.
 
+**Product target (owner-confirmed, 10 November 2026):** agents use Agents Collab
+for appropriate configured teamwork without the user naming the skill. Implicit
+activation is the required target, not an optional direction. It is **not yet
+achieved**: the [public routing gate](../evals/automatic-routing/2026-11-09/report.md)
+missed both required collaboration routes on ordinary prompts. Explicit
+invocation matched all three routes in that small diagnostic and remains the
+supported fallback. The [draft activation study](plans/implicit-activation-study.md)
+prepares the next measurement; it is unreviewed and unexecuted.
+
 ## Boundaries
 
 - The distributable skill is the curated file list in
@@ -53,13 +62,32 @@ were separated from project knowledge.
 | [Experiments](experiments.md) | Validation and pilot summaries |
 | [History](history.md) | How the project emerged |
 | [Rust CLI backend](cli.md) | Optional installation, executable commands, storage bounds and checks |
-| [Rust CLI prototype plan](plans/rust-cli-prototype.md) | Original acceptance scope, rationale and implementation status |
+| [Rust CLI prototype plan](plans/rust-cli-prototype.md) | Retained original proposal: acceptance scope, rationale and implementation status |
+| [Implicit-activation study](plans/implicit-activation-study.md) | DRAFT protocol for the next activation measurement; needs review, approval and preregistration |
 | [Contributing](../CONTRIBUTING.md) | Contribution and evidence guidelines |
 | [License](../LICENSE) | MIT License (identical copy in the skill package) |
 
 ## Current status
 
-Pre-release. On 2026-11-08 the owner selected the MIT License and
+### Current overview
+
+Pre-release; no versioned release. The distributable skill is the thirteen-file
+package listed in `scripts/build_website.py`, including the optional backend
+adapter and installer. The portable Python suite, the Rust crate's checks and the
+[local regression gate](cli.md#local-regression-gate) are the maintained checks;
+pass counts are reported by whoever runs them, with dates, in the sections
+below. Implicit activation remains the unachieved required product target;
+explicit invocation is the supported fallback. Experimental results stay as
+reported: two early pilots missed their thresholds, the quality pilot's review
+advantage is not robust, and the CLI comparison was inconclusive.
+
+### Historical record: publication, setup wizard and site (8–9 November 2026)
+
+The counts in this subsection and in the dated sections that follow describe the
+repository at each step. They are retained as historical evidence with their
+original qualifications, not as current totals.
+
+On 2026-11-08 the owner selected the MIT License and
 https://github.com/jaredchu/agents-collab as the public repository
 (license URL: https://github.com/jaredchu/agents-collab/blob/main/LICENSE).
 On the same date the repository was published publicly and GitHub recognized
@@ -206,8 +234,11 @@ Only Rust/Cargo 1.99.1 on macOS/local APFS was exercised; process-crash checks a
 not power-loss testing. No model quality, usage savings or usefulness conclusion
 follows.
 
-Live comparisons, dispatch, MCP and a daemon remain unperformed and separately
-authorized work. No artificial experiment usage budget is imposed. Profile timing
+At this prototype stage (9 November 2026), live comparisons, dispatch, MCP and a
+daemon remained unperformed and separately authorized work. The live comparison
+was later completed as the [CLI usefulness comparison](#cli-usefulness-comparison-9-november-2026);
+dispatch, MCP and a daemon remain unperformed. No artificial experiment usage
+budget is imposed. Profile timing
 semantics and real access interruptions remain distinct from those measurements.
 
 ## CLI usefulness comparison (9 November 2026)
@@ -322,6 +353,26 @@ up to twelve passes within a three-minute step limit, then fail the workflow.
 The Actions run, live-file check and Cloudflare deployment receipt establish each
 release outcome; this single-run check is not continuous availability monitoring.
 
+## Activation study draft, regression gate and backend clarifications (10 November 2026)
+
+The owner confirmed implicit activation as the required product target and
+authorized preparation, not execution. The [draft protocol](plans/implicit-activation-study.md)
+specifies one frozen baseline description and one description-only candidate on
+the original R1/S1/C1 tickets (18 lead runs). It requires independent method
+review, owner execution approval and immutable preregistration before any call.
+No installed skill, product description, profile or global instruction changed,
+and the cancelled 36 comparison rows stay cancelled.
+
+`scripts/check_cli.py` is a maintained local regression gate, not CI. From a
+clean checkout it archives one pinned commit into new caller-selected scratch
+outside Git, runs offline formatting, locked build, Clippy, Cargo tests and the
+full Python suite against a frozen copy of the fresh binary, and refuses skipped
+or missing real-engine coverage. See [the CLI guide](cli.md#local-regression-gate)
+for use and evidence limits. The backend reference and helper help now state that
+`evidence` runs a reconcile (quarantining incomplete staging, refusing unattached
+launches) and that no finding disposition completes a task over a current
+`changes_required` verdict. Lifecycle semantics are unchanged.
+
 ## Progress
 
 - [x] Preserve the eight-file validated package as the initial source.
@@ -343,7 +394,10 @@ release outcome; this single-run check is not continuous availability monitoring
 - [x] Publish a reviewed protocol before public routing measurements.
 - [x] Execute the routing gate and separately labelled explicit diagnostics.
 - [x] Record the failed gate and all 36 comparison runs as not started.
-- [ ] Establish reliable implicit activation before attempting the cancelled usefulness comparison.
+- [ ] Establish implicit activation, the required product target. The cancelled 36 rows stay cancelled;
+  any effectiveness comparison needs a new protocol after an activation gate passes.
+- [x] Draft the implicit-activation study protocol (DRAFT, no calls).
+- [ ] Independent method review, owner execution approval and immutable preregistration of that protocol.
 
 - [x] Complete recovered quality grading and evidence reconciliation without participant rerolls.
 - [x] Publish primary criteria, sensitivity, corrected dispositions and interruption limits.
@@ -357,3 +411,5 @@ release outcome; this single-run check is not continuous availability monitoring
 - [x] Add checked SEO/AI-search discovery resources and direct Cloudflare Pages hosting.
 - [x] Implement owner-approved skill clarity and helper observation fixes.
 - [x] Complete independent review and publish the validated skill package.
+- [x] Add the local CLI regression gate and backend evidence/completion clarifications.
+- [ ] Complete independent review and a clean-checkout gate run for that increment.

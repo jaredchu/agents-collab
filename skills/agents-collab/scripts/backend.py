@@ -389,8 +389,10 @@ HELP = {
     "assignment": "prepare one writer/reviewer assignment and persist its launch intent",
     "observe": "attach a host observation to an existing assignment (flags default false)",
     "import-review": "import a reviewer JSON result; exit 1 unless valid_structure_only",
-    "evidence": "retain a UTF-8 check/disposition text file and return its object hash",
-    "complete": "complete the task with evidence covering every declared criterion/check",
+    "evidence": ("retain a UTF-8 check/disposition text file and return its object hash; runs task reconcile, "
+                 "which also quarantines incomplete staging files; refused while any launch intent is unattached"),
+    "complete": ("complete the task with evidence covering every declared criterion/check; every required reviewer "
+                 "must pass the current artifact, and no finding disposition overrides a changes_required verdict"),
     "show": "read the current record (revision, assignments, packets, blockers)",
     "check": "verify record integrity and list completion blockers",
     "packet": "print one registered sealed packet",
@@ -456,11 +458,19 @@ def parser():
             kind = {"import-review": "review result JSON file", "evidence": "UTF-8 text file with actual output",
                     "command": "low-level JSON input file"}[name]
             p.add_argument("--input", required=True, metavar="FILE", help=kind)
+            if name == "evidence":
+                p.epilog = ("The text is stored as the reason of a task reconcile mutation. Reconcile also moves "
+                            "incomplete files from the record's staging/ to quarantine/ and would mark unattached "
+                            "launch intents unknown, so attach every launched invocation with observe first. "
+                            "Stored evidence is not proof that a check ran.")
             if name == "command":
                 p.add_argument("--entity", choices=("task", "finding"), required=True)
                 p.add_argument("--action", required=True, choices=("resolve", "block", "activate", "cancel", "reconcile", "complete"),
                                help="finding: resolve; task: block, activate, cancel, reconcile or complete")
         elif name == "complete":
+            p.epilog = ("Rejected or deferred findings cannot complete a task while any current review is "
+                        "changes_required. Only a changed artifact with a follow-up round in which every required "
+                        "reviewer passes can; the same artifact cannot be re-reviewed or adjudicated.")
             p.add_argument("--evidence", action="append", required=True, metavar="HASH",
                            help="known object covering all declared criteria/checks; repeat")
             p.add_argument("--reason", required=True, metavar="TEXT")

@@ -485,6 +485,74 @@ class RealBackendTests(unittest.TestCase):
         self.assertEqual(done["result"]["state"], "completed")
         self.assertEqual(self.profile.read_bytes(), self.original_profile)
 
+    def test_evidence_is_a_reconcile_that_quarantines_staging_and_refuses_unattached_launch(self):
+        record, host = self.begin_task()
+        packet = self.ok(self.context(record, host, "writer_context", 0, "writer"))["packet"]
+        self.ok(self.invoke("assignment", "--record", record, "--id", "write-1", "--packet", packet, "--agent",
+                            "current-session", "--role", "writer", "--output-destination", str(host / "w.txt")))
+        report = self.root / "check.txt"
+        report.write_text("offline check: PASS\n")
+        revision = self.show(record)["revision"]
+        code, out, err = self.invoke("evidence", "--record", record, "--input", str(report))
+        self.assertEqual(code, 1)
+        self.assertIn("unattached launches unknown", err)
+        state = self.show(record)
+        self.assertEqual((state["revision"], state["record"]["assignments"][0]["state"]), (revision, "launching"))
+        self.ok(self.invoke("observe", "--record", record, "--assignment", "write-1", "--state", "completed",
+                            "--invocation", "synthetic-host-session-1", "--boundary-observations", "Host session"))
+        leftover = Path(record) / "staging" / "interrupted-write.tmp"
+        leftover.write_bytes(b"partial object bytes")
+        result = self.ok(self.invoke("evidence", "--record", record, "--input", str(report)))
+        self.assertEqual(result["result"]["result"]["quarantined"], ["interrupted-write.tmp"])
+        self.assertFalse(leftover.exists())
+        self.assertEqual((Path(record) / "quarantine" / leftover.name).read_bytes(), b"partial object bytes")
+
+    def test_rejected_or_deferred_findings_cannot_complete_over_changes_required(self):
+        profile = json.loads(self.profile.read_text())
+        agents = {**profile["agents"], "reviewer": {"model": "synthetic-reviewer-1", "transport": "claude-cli",
+                                                    "reasoning": "inherit"}}
+        self.use_profile(agents=agents, review={**profile["review"], "on_consequential_work": "single",
+                                                "candidates": ["reviewer"], "max_followup_rounds": 1})
+        record, host = self.begin_task(extra=("--reviewer", "reviewer"))
+        initial = self.ok(self.context(record, host, "review", 0, "review-0"))
+        self.ok(self.invoke("assignment", "--record", record, "--id", "review-1", "--packet", initial["packet"],
+                            "--agent", "reviewer", "--role", "reviewer", "--output-destination", str(host / "r1.json")))
+        self.ok(self.invoke("observe", "--record", record, "--assignment", "review-1", "--state", "completed",
+                            "--invocation", "review-session-1", "--boundary-observations", "Fresh synthetic session"))
+        review = self.shipped_example("verdict")
+        review.update(assignment="review-1", artifact=initial["artifact"], packet=initial["packet"],
+                      verdict="changes_required")
+        review["verification"][0]["object"] = initial["artifact"]
+        review["findings"] = [{"id": "F1", "location": "source.txt", "scenario": "Disputed wording",
+                               "evidence": "Reviewer reading", "uncertainty": "Medium",
+                               "recommendation": "Reword", "material": True}]
+        (host / "r1.json").write_text(json.dumps(review))
+        self.assertTrue(self.ok(self.invoke("import-review", "--record", record, "--input", str(host / "r1.json")))["valid_review"])
+        report = self.root / "rebuttal.txt"
+        report.write_text("Owner evidence that the original wording satisfies R1\n")
+        evidence = self.ok(self.invoke("evidence", "--record", record, "--input", str(report)))["evidence"]
+        for decision in ("rejected", "deferred"):
+            with self.subTest(decision=decision):
+                disposition = self.shipped_example("decision")
+                disposition.update(finding="F1", decision=decision, evidence=[evidence], criterion_compatible=True,
+                                   reason=f"Lead {decision} F1 with retained evidence")
+                path = host / f"disposition-{decision}.json"
+                path.write_text(json.dumps(disposition))
+                self.ok(self.invoke("command", "--record", record, "--entity", "finding", "--action", "resolve",
+                                    "--input", str(path)))
+                revision = self.show(record)["revision"]
+                code, out, err = self.invoke("complete", "--record", record, "--evidence", evidence,
+                                             "--reason", "Attempted completion over changes_required")
+                self.assertEqual(code, 1)
+                self.assertIn("did not approve current artifact", err)
+                state = self.show(record)
+                self.assertEqual((state["state"], state["revision"]), ("active", revision))
+        # No same-artifact adjudication: a follow-up review of the unchanged source is refused.
+        code, out, err = self.context(record, host, "review", 1, "same-artifact")
+        self.assertEqual(code, 1)
+        self.assertIn("changed artifact", err)
+        self.assertEqual(self.show(record)["state"], "active")
+
     def test_invalid_review_is_not_success(self):
         record, host = self.begin_task()
         invalid = self.root / "invalid.json"

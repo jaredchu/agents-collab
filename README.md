@@ -9,6 +9,16 @@ plus the lab notebook of how it came about.
 > [Website and experiment journal](https://agents-collab.com).
 > No versioned release has been made.
 
+> **Product target and current limitation.** The goal is that a lead agent uses
+> Agents Collab for appropriate configured teamwork without the user naming the
+> skill. That implicit activation is **not achieved**: in the
+> [public routing gate](evals/automatic-routing/2026-11-09/report.md), ordinary
+> prompts missed both required collaboration routes. Explicit invocation
+> (`Use $agents-collab ...`) matched all three expected routes in that small
+> diagnostic and remains the supported fallback, not the target. A
+> [draft activation study](docs/plans/implicit-activation-study.md) defines the
+> next measurement; it is unreviewed and unexecuted and solves nothing yet.
+
 ## Quick start
 
 Install for Codex with [Vercel’s Skills CLI](https://github.com/vercel-labs/skills):
@@ -120,7 +130,8 @@ Read these before relying on it:
 | [`docs/experiments.md`](docs/experiments.md) | Validation, earlier pilots and the public routing gate |
 | [`docs/history.md`](docs/history.md) | How the project emerged |
 | [`Rust CLI prototype`](docs/cli.md) | Source-only local records and packets; commands, checks and limits |
-| [`Rust CLI prototype plan`](docs/plans/rust-cli-prototype.md) | Original proposal, acceptance scope and implementation status |
+| [`Rust CLI prototype plan`](docs/plans/rust-cli-prototype.md) | Retained original proposal, acceptance scope and implementation status |
+| [`Implicit-activation study`](docs/plans/implicit-activation-study.md) | Draft protocol for the next activation measurement; not executed |
 | [`docs/project-context.md`](docs/project-context.md) | Current facts, limits and progress |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution and evidence guidelines |
 | `tests/` | Dependency-free unit and repository checks |
@@ -137,7 +148,11 @@ python3 scripts/build_website.py   # writes dist/ only
 
 The separate Rust crate has additional dependencies and checks described in
 [CLI build and checks](docs/cli.md#build-and-checks); it does not change the
-Python helpers or skill installation.
+Python helpers or skill installation. The maintained
+[local regression gate](docs/cli.md#local-regression-gate),
+`scripts/check_cli.py`, runs the Rust checks and the full Python suite against a
+freshly built binary from a clean pinned commit, inside caller-selected scratch.
+It is a local macOS arm64 check, not CI.
 
 Tests create temporary files in the system temporary area. Results are reported
 by whoever runs them; this README does not pre-claim a pass count.
