@@ -39,6 +39,14 @@ def component(value):
     return value
 
 
+def project_component(value):
+    if (len(value) > 40 or not all(
+            re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", part)
+            for part in value.split("."))):
+        raise ValueError("project names must be 1-40 characters: dot-separated segments starting with a letter or digit and containing letters, digits, '_' or '-'")
+    return value
+
+
 def relative(value):
     if (not value or value.startswith("/") or "\\" in value
             or any(ord(c) < 32 or ord(c) == 127 for c in value)
@@ -78,7 +86,7 @@ def storage_paths(profile, project, task, repo):
     safe.safe_path(base)
     if not base.is_dir() or base == Path.home().resolve():
         raise ValueError("configured records root must already exist and be dedicated")
-    task_root = safe.safe_path(base / component(project) / component(task))
+    task_root = safe.safe_path(base / project_component(project) / component(task))
     if overlap(task_root, repo):
         raise ValueError("private task storage overlaps the source repository")
     ancestor = task_root
@@ -234,7 +242,7 @@ def start(backend, args):
         raise ValueError("reviewer must be a distinct saved non-host agent")
     if profile["review"]["on_consequential_work"] == "single" and not args.reviewer:
         raise ValueError("saved profile requires an independent reviewer")
-    spec = {"schema_version": 1, "project": component(args.project), "task": component(args.task),
+    spec = {"schema_version": 1, "project": project_component(args.project), "task": component(args.task),
             "repository": str(repo), "requirements": requirements,
             "authority_boundaries": [nonempty(x) for x in args.boundary], "writer": args.writer,
             "editable_scope": [relative(x) for x in args.scope], "reviewers": args.reviewer,

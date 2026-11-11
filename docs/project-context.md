@@ -85,6 +85,11 @@ explicit invocation is the supported fallback. Experimental results stay as
 reported: two early pilots missed their thresholds, the quality pilot's review
 advantage is not robust, and the CLI comparison was inconclusive.
 
+The [dotted-project correction](#dotted-project-names-11-november-2026) supports
+domain-style project names in source while preserving storage guards. Both the
+adapter and executable need that support; source validation is not installation
+or publication evidence.
+
 ### Historical record: publication, setup wizard and site (8–9 November 2026)
 
 The counts in this subsection and in the dated sections that follow describe the
@@ -438,6 +443,24 @@ clarifications. The activation draft retains its original descriptions and
 records that current source and prior exposure need reconciliation before any
 future preregistration. No experiment or publication is authorized here.
 
+## Dotted project names (11 November 2026)
+
+The adapter and Rust task validator now accept safe dot-separated project names
+as one exact storage directory. Task and other identifiers retain their previous
+rules. The [adapter contract](../skills/agents-collab/references/backend.md#identities-and-arguments)
+defines the grammar and compatibility requirement. Configured-root resolution,
+project/task symlink rejection, traversal checks and repository separation remain
+in place. No symlink workaround is required for domain-style names.
+
+Local source validation passed formatting, locked offline Cargo tests, Clippy
+with warnings denied and all 143 Python tests, including all 12 real-engine cases
+without skips. All 35 Rust integration tests passed. New coverage checks exact
+dotted layouts, record reopening and the complete adapter lifecycle, invalid
+names and the 40-character limit, and regular/dangling project and task symlink
+rejection before creation. The new dotted lifecycle regression fails against the
+previous executable at project validation. These results validate the source
+change; they do not establish installation or publication.
+
 ## Progress
 
 - [x] Preserve the eight-file validated package as the initial source.
@@ -481,3 +504,4 @@ future preregistration. No experiment or publication is authorized here.
 - [x] Complete independent review and a clean-checkout gate run for that increment.
 
 - [x] Implement explicit recorded quota continuation and host procedure in source.
+- [x] Support safe dotted project names in the adapter and CLI, preserving storage guards and validating the full lifecycle.

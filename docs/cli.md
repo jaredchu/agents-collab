@@ -194,6 +194,15 @@ claim establishes truthful evidence, identity, independence or authority.
 
 ## Task creation and profile
 
+Project names support nonempty dot-separated segments such as `example.com`,
+with a 40-character total limit. Each segment follows the existing name rule:
+start with an ASCII letter or digit, then use ASCII letters, digits, `_` or `-`.
+Leading, trailing and consecutive dots are rejected. Task, requirement, agent
+and assignment IDs keep their existing validation. The complete dotted project
+name remains one storage directory; symlink and traversal guards still apply.
+See the [adapter contract](../skills/agents-collab/references/backend.md#identities-and-arguments)
+for adapter/CLI compatibility and records-root handling.
+
 Create the configured `records_root` on the intended volume first. Supply the
 selected existing v1 profile explicitly; the CLI never writes it:
 
@@ -205,8 +214,9 @@ selected existing v1 profile explicitly; the CLI never writes it:
 The returned `record` is
 `records_root/{project}/{task}/collaboration`; use it as `$RECORD` below.
 `--record` is optional on creation and, if given, must match that exact target.
-`project` and `task` are safe 1–40-character names beginning with an ASCII
-letter/digit and containing only ASCII letters/digits, `_` or `-`.
+`task` is a safe 1–40-character name beginning with an ASCII letter/digit and
+containing only ASCII letters/digits, `_` or `-`; project names follow the dotted
+name rule above.
 An existing task cannot be overwritten. The CLI cannot detect a human creating
 a differently named task to evade policy; renamed tasks do not authorize resets.
 

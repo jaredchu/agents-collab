@@ -75,18 +75,40 @@ class BackendTests(unittest.TestCase):
             backend.storage_paths({"records_root": str(records)}, "project", "task", repo)
         self.assertEqual(list(records.iterdir()), [])
 
+    def test_dotted_project_names_preserve_exact_storage_layout(self):
+        records = self.root / "records"
+        records.mkdir()
+        for project in ("example.com", "api.example.co.uk", "A_b-1.example", "a" * 38 + ".b"):
+            with self.subTest(project=project):
+                record, host = backend.storage_paths({"records_root": str(records)}, project, "task", self.root / "repo")
+                self.assertEqual(record, records / project / "task/collaboration")
+                self.assertEqual(host, records / project / "task/host")
+        self.assertEqual(list(records.iterdir()), [])
+
+    def test_unsafe_dotted_project_names_rejected_before_writes(self):
+        records = self.root / "records"
+        records.mkdir()
+        for project in ("", ".", "..", ".hidden", "example.", "a..b", "a.-b", "a._b",
+                        "../example.com", "a/b.com", "a\\b.com", "/example.com", "a b.com",
+                        "a\nb.com", "a\x00b.com", "é.com", "a" * 39 + ".b"):
+            with self.subTest(project=project), self.assertRaises(ValueError):
+                backend.storage_paths({"records_root": str(records)}, project, "task", self.root / "repo")
+        with self.assertRaises(ValueError):
+            backend.storage_paths({"records_root": str(records)}, "example.com", "task.name", self.root / "repo")
+        self.assertEqual(list(records.iterdir()), [])
+
     def test_configured_symlink_root_resolves_but_task_symlink_is_rejected(self):
         actual = self.root / "records"
         actual.mkdir()
         alias = self.root / "alias"
         alias.symlink_to(actual, target_is_directory=True)
-        record, host = backend.storage_paths({"records_root": str(alias)}, "project", "task", self.root / "repo")
-        self.assertEqual(record, actual / "project/task/collaboration")
-        self.assertEqual(host, actual / "project/task/host")
+        record, host = backend.storage_paths({"records_root": str(alias)}, "example.com", "task", self.root / "repo")
+        self.assertEqual(record, actual / "example.com/task/collaboration")
+        self.assertEqual(host, actual / "example.com/task/host")
         self.assertEqual(list(actual.iterdir()), [])
-        (actual / "project").symlink_to(self.root, target_is_directory=True)
+        (actual / "example.com").symlink_to(self.root, target_is_directory=True)
         with self.assertRaisesRegex(ValueError, "symlink"):
-            backend.storage_paths({"records_root": str(alias)}, "project", "task", self.root / "repo")
+            backend.storage_paths({"records_root": str(alias)}, "example.com", "task", self.root / "repo")
 
     def test_source_output_cannot_escape_private_host(self):
         instance = object.__new__(backend.Backend)
@@ -248,8 +270,8 @@ class RealBackendTests(unittest.TestCase):
     def invoke(self, *args):
         return BackendTests.invoke(self, "--profile", str(self.profile), *args)
 
-    def begin_task(self, task="test", extra=()):
-        code, out, err = self.invoke("start", "--repository", str(self.repo), "--project", "fixture", "--task", task,
+    def begin_task(self, task="test", extra=(), project="fixture"):
+        code, out, err = self.invoke("start", "--repository", str(self.repo), "--project", project, "--task", task,
                                      "--writer", "current-session", "--scope", "source.txt",
                                      "--requirement", "R1=Preserve exact frozen source", "--criterion", "C1=Task check passes",
                                      "--boundary", "No external actions", "--check", "offline", *extra)
@@ -258,7 +280,14 @@ class RealBackendTests(unittest.TestCase):
         return result["record"], Path(result["host"])
 
     def test_real_frozen_context_assignment_evidence_completion(self):
-        record, host = self.begin_task()
+        self.assert_frozen_context_assignment_evidence_completion("fixture")
+
+    def test_real_dotted_project_frozen_context_assignment_evidence_completion(self):
+        self.assert_frozen_context_assignment_evidence_completion("example.com")
+
+    def assert_frozen_context_assignment_evidence_completion(self, project):
+        record, host = self.begin_task(project=project)
+        self.assertEqual(Path(record), self.records / project / "test/collaboration")
         instructions = self.root / "instructions.txt"
         instructions.write_text("Inspect the complete requirements and frozen source.")
         code, out, err = self.invoke("context", "--record", record, "--purpose", "writer_context", "--paths", "source.txt",

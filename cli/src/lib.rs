@@ -280,7 +280,7 @@ fn list_unique(v: &[String], label: &str) -> Result<()> {
 }
 fn validate_task(t: &TaskSpec, p: &Profile) -> Result<()> {
     ensure!(t.schema_version == 1, "unsupported task schema");
-    component(&t.project)?;
+    project_component(&t.project)?;
     component(&t.task)?;
     snapshot::repository(&t.repository)?;
     ensure!(

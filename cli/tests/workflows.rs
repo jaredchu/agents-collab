@@ -213,6 +213,160 @@ impl Fixture {
     }
 }
 #[test]
+fn dotted_projects_keep_exact_layout_and_can_be_reopened() {
+    for project in [
+        "example.com",
+        "api.example.co.uk",
+        "A_b-1.example",
+        &format!("{}.b", "a".repeat(38)),
+    ] {
+        let mut f = Fixture::new();
+        let records = f.record.ancestors().nth(3).unwrap().to_path_buf();
+        f.record = records.join(project).join("task/collaboration");
+        let mut spec = f.task();
+        spec["project"] = json!(project);
+        let input = f.file(spec);
+        let created = good(&execute(
+            "task create",
+            &f.record,
+            Some(&input),
+            Some("create"),
+            Some(0),
+            Some(&f.profile),
+            None,
+        ));
+        assert_eq!(created["record"], json!(f.record));
+        assert_eq!(f.show()["spec"]["project"], project);
+        assert_eq!(
+            good(&execute(
+                "task check",
+                &f.record,
+                None,
+                None,
+                None,
+                None,
+                None
+            ))["integrity"],
+            "verified"
+        );
+    }
+}
+
+#[test]
+fn unsafe_project_names_and_dotted_task_ids_fail_before_creation() {
+    for project in [
+        "",
+        ".",
+        "..",
+        ".hidden",
+        "example.",
+        "a..b",
+        "a.-b",
+        "a._b",
+        "../example.com",
+        "a/b.com",
+        "a\\b.com",
+        "/example.com",
+        "a b.com",
+        "a\nb.com",
+        "a\0b.com",
+        "é.com",
+        &format!("{}.b", "a".repeat(39)),
+    ] {
+        let mut f = Fixture::new();
+        let mut spec = f.task();
+        spec["project"] = json!(project);
+        let input = f.file(spec);
+        let out = execute(
+            "task create",
+            &f.record,
+            Some(&input),
+            Some("create"),
+            Some(0),
+            Some(&f.profile),
+            None,
+        );
+        assert!(!out.status.success(), "accepted {project:?}");
+        assert!(
+            body(&out)["error"]["message"]
+                .as_str()
+                .unwrap()
+                .contains("unsafe project component")
+        );
+        assert!(!f.record.parent().unwrap().exists());
+    }
+    let mut f = Fixture::new();
+    let mut spec = f.task();
+    spec["project"] = json!("example.com");
+    spec["task"] = json!("task.name");
+    let input = f.file(spec);
+    let out = execute(
+        "task create",
+        &f.record,
+        Some(&input),
+        Some("create"),
+        Some(0),
+        Some(&f.profile),
+        None,
+    );
+    assert!(!out.status.success());
+    assert!(
+        body(&out)["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("unsafe project/task component")
+    );
+    assert!(!f.record.parent().unwrap().exists());
+}
+
+#[test]
+fn dotted_project_storage_symlinks_fail_before_creation() {
+    for child in ["project", "task"] {
+        for dangling in [false, true] {
+            let mut f = Fixture::new();
+            let records = f.record.ancestors().nth(3).unwrap().to_path_buf();
+            let project = records.join("example.com");
+            let outside = f.inputs.join("outside");
+            if !dangling {
+                fs::create_dir(&outside).unwrap();
+            }
+            let alias = if child == "project" {
+                project.clone()
+            } else {
+                fs::create_dir(&project).unwrap();
+                project.join("task")
+            };
+            symlink(&outside, &alias).unwrap();
+            f.record = project.join("task/collaboration");
+            let mut spec = f.task();
+            spec["project"] = json!("example.com");
+            let input = f.file(spec);
+            let out = execute(
+                "task create",
+                &f.record,
+                Some(&input),
+                Some("create"),
+                Some(0),
+                Some(&f.profile),
+                None,
+            );
+            assert!(!out.status.success());
+            assert!(
+                body(&out)["error"]["message"]
+                    .as_str()
+                    .unwrap()
+                    .contains("symlink")
+            );
+            if dangling {
+                assert!(!outside.exists());
+            } else {
+                assert!(fs::read_dir(outside).unwrap().next().is_none());
+            }
+        }
+    }
+}
+
+#[test]
 fn complete_two_reviewer_workflow_and_explicit_export() {
     let mut f = Fixture::new();
     f.create();

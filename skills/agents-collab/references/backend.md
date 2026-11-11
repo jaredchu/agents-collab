@@ -51,6 +51,16 @@ task to a manual record, rename it or launch extra workers to get around it.
 
 ## Identities and arguments
 
+Project names may contain dots, for example `example.com`. They are 1–40 ASCII
+characters total, with nonempty dot-separated segments; each segment starts with
+a letter or digit and otherwise uses letters, digits, `_` or `-`. Leading,
+trailing and consecutive dots are rejected. Task and other IDs retain their
+existing letters/digits/underscore/hyphen rules. Dots do not create directories:
+the project name is one exact directory component. The configured records root
+may resolve through a symlink, but project/task paths beneath it must not contain
+symlinks, including dangling links. Both the adapter and CLI must support dotted
+projects; updating only the adapter leaves an older CLI unable to create them.
+
 `start` returns `record` (`records_root/{project}/{task}/collaboration`) and
 `host`, its private sibling for inputs, outputs, receipts and traces. Pass
 `--record` to every later command and keep all `--output`/`--output-destination`
