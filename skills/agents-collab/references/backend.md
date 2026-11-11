@@ -34,7 +34,8 @@ Once a task starts, it keeps this backend and record through completion. Where
 the CLI is stricter than the manual protocol, report the limit; do not switch the
 task to a manual record, rename it or launch extra workers to get around it.
 
-- `start` fixes the reviewer set. Reviewers cannot be added or replaced later.
+- `start` fixes logical reviewer slots. Completed results cannot be replaced;
+  an unfinished interrupted Claude slot may use the explicit continuation below.
 - If the profile's `review.on_consequential_work` is `single`, `start` requires a
   reviewer even for work not classified consequential. Include one or report the
   limit. Routine solo work needs no task record at all.
@@ -50,12 +51,23 @@ task to a manual record, rename it or launch extra workers to get around it.
 
 ## Identities and arguments
 
+Project names may contain dots, for example `example.com`. They are 1–40 ASCII
+characters total, with nonempty dot-separated segments; each segment starts with
+a letter or digit and otherwise uses letters, digits, `_` or `-`. Leading,
+trailing and consecutive dots are rejected. Task and other IDs retain their
+existing letters/digits/underscore/hyphen rules. Dots do not create directories:
+the project name is one exact directory component. The configured records root
+may resolve through a symlink, but project/task paths beneath it must not contain
+symlinks, including dangling links. Both the adapter and CLI must support dotted
+projects; updating only the adapter leaves an older CLI unable to create them.
+
 `start` returns `record` (`records_root/{project}/{task}/collaboration`) and
 `host`, its private sibling for inputs, outputs, receipts and traces. Pass
 `--record` to every later command and keep all `--output`/`--output-destination`
 files inside `host/`. `context` returns `artifact` and `packet` hashes; reviewers
 must echo both. Assignment IDs are new for every writing or review job; there is
-one assignment per agent and packet.
+one logical slot per agent and packet. Only the explicit handoff below can link
+a replacement execution to an unfinished slot.
 
 Global `--config`, `--profile` and `--actor` precede the subcommand. `--actor`
 (default `lead`) is attribution on every mutation and, at `start`, the task's
@@ -130,6 +142,109 @@ $B assignment --record "$RECORD" --id review-2 --packet "$PACKET" \
 `--instructions` choices. The fix is a new assignment; see
 [assignment timing](configuration.md#assignment-timing). A follow-up packet may
 include prior findings, labeled as follow-up input.
+
+## Quota-aware continuation
+
+The host owns quota diagnosis, the user prompt and actual dispatch. If the Codex
+lead lacks quota, checkpoint and stop; do not promote Claude. For an unavailable
+Claude collaborator, retain the packet, partial outputs and failed receipt and
+present **Wait for Claude / Continue with an available configured Codex model**.
+Waiting leaves the stage interrupted. Never silently substitute, use another
+account or select a paid access path. Required named models or diversity still
+need an explicit authorized amendment; a preference permits same-model fresh
+review. A frozen experiment remains interrupted/amended or gets a separately
+labelled continuation, never an original matched result.
+
+1. Reconcile the original invocation with the host/supervisor. If absence is
+   unknown, stop. Record `observe --state interrupted --invocation OLD_SESSION
+   --reconciled --absence-established --reason "Actual absence evidence"` with
+   the actual boundary observations. Preserve prior receipts and partial results.
+2. Retain the explicit owner/user decision (quote or receipt, chosen available
+   Codex identity/model/reasoning, reason, access check, condition amendment if
+   needed) in a private UTF-8 file. Use `evidence --input FILE` to get its object
+   hash. This retains evidence; it authenticates no human and proves no liveness.
+   The engine requires nonempty references to registered objects, but does not
+   check their type or whether their content records that decision. The host
+   must supply actual decision evidence; an unrelated artifact hash can pass
+   the structural reference check without establishing consent.
+3. Prepare the handoff JSON below. `authority` must equal the acting declared
+   decision authority (`lead` by default). `agent` is the execution identity;
+   choose an existing frozen-profile Codex entry with `selection: null`, or a
+   **new** task-local identity with explicit `selection`. The latter never
+   rewrites saved defaults, the frozen profile or an existing alias. Each new
+   task-local identity is unique; another handoff must not redefine it. Use a
+   distinct output destination to preserve every original partial result.
+4. Run `$B handoff --record "$RECORD" --input "$HOST/handoff.json"`. This is a
+   single CAS mutation and records a new assignment ID linked to the old logical
+   slot, original requested model, exact packet/artifact, evidence and timing.
+   Inspect `show` after any uncertain response; never repeat the whole workflow
+   blindly. The old assignment becomes `superseded` and cannot resume or import
+   a second result. A race loses through CAS or the already-used slot.
+5. Record `observe --assignment NEW_ID --state launching` before dispatch. Use a
+   fresh invocation with the chosen model/effort and attach its real identity.
+   A reviewer receives the same neutral frozen packet and no writer transcript;
+   it must not reuse the writer's or original reviewer's session. Its review
+   `fresh_session` must equal the completed invocation string exactly, with no
+   explanatory prefix or suffix. Put boundary observations in `limits` or
+   `tool_boundary`. The backend checks retained identities, not actual context
+   isolation.
+
+Example reviewer handoff (replace symbolic hashes and paths with actual values):
+
+```json
+{
+  "assignment": "review-1", "replacement": "review-1-continuation",
+  "packet": "PACKET", "agent": "continuation-reviewer",
+  "selection": {"model": "codex-model-id", "transport": "codex-native", "reasoning": "inherit"},
+  "output_destination": "HOST/review-1-continuation.json",
+  "decision": "continue_with_codex", "authority": "lead",
+  "decision_evidence": ["DECISION_OBJECT"],
+  "reason": "Owner explicitly chose available Codex after quota interruption",
+  "previous_invocation": "OLD_SESSION", "timing": "preserve_deadline",
+  "instructions": "Fresh review of the same neutral frozen packet; no writer transcript; report actual model and context limits",
+  "partial_work": null
+}
+```
+
+For a writer, `instructions` must say this is a continuation using **current
+partial source**, not fresh writing from an old snapshot. Supply `partial_work`
+as the existing artifact-selection contract, for example:
+
+```json
+{
+  "paths": ["source.txt"], "omissions": {"other.txt": "Outside this task"},
+  "acknowledged_sensitive": [], "quiescence": "Original invocation absent; source quiescent",
+  "atomic_required": false, "base": "HEAD"
+}
+```
+
+Select every Git inventory path within each editable scope, including tracked
+deletions and newly created partial files. Directory scopes cover descendants;
+a future path need not exist yet. Omitting any scoped inventory fails. Existing
+exact scoped inputs must be selected even if ignored by Git. Ignored descendants
+of a directory scope are outside inventory: the host must explicitly select any
+such partial inputs; this helper does not discover them or prove their absence.
+The engine snapshots that partial work into immutable objects without changing
+the current artifact or restoring files;
+retain any other partial outputs as well. Give the writer the snapshot reference,
+current working source and retained continuation instructions. A reviewer must
+have `partial_work: null`; do not attach writer continuation material to its packet.
+
+Only `interrupted`, incomplete Claude assignments qualify. A completed valid
+`pass` or `changes_required` review cannot be superseded; blocked/invalid receipts
+stay retained. Replacement fills the same unfinished slot and consumes no new
+review round or repair allowance. `spec.agent` is the original **logical slot**;
+`requested` and `continuation.handoff.agent` identify the actual replacement.
+The only supported timing treatment is explicit `preserve_deadline`: original
+deadline, retry timing and review cap stay unchanged. Required timing still
+blocks because this engine cannot validate a supervisor. An advisory overrun is
+reported and is not a stop condition on its own.
+
+The first handoff explicitly upgrades the task's SQL and enclosing state format
+to **2** in the same transaction. Ordinary records remain format 1; this CLI reads
+both. Older CLIs refuse format 2 before interpreting it. Keep using a compatible
+binary; no downgrade or automatic backend switch is supported. No quota API,
+dispatcher, GUI prompt, absence detection or authority attestation is provided.
 
 ## Observations and retries
 
@@ -233,8 +348,12 @@ assignment.
 
 ## Review contract
 
-The reviewer returns this JSON with the identities from `context` and
-`assignment`:
+Copy this contract, with identity placeholders, into the review instructions
+before sealing the packet. At dispatch, supply the actual artifact/packet hashes
+returned by `context` and the prepared assignment ID; do not edit a sealed packet
+to insert its own hash. The helper renders the supplied instructions and sources;
+it does not automatically add a return schema. The reviewer returns only this
+JSON, without prose or fences:
 
 ```json
 {
@@ -252,6 +371,18 @@ The reviewer returns this JSON with the identities from `context` and
 }
 ```
 
+All shown top-level fields are required and extra fields are refused.
+`schema_version` is integer `1`; `verification` is a nonempty array and `findings`
+is an array. `limits`, `fresh_session`, `automatic_context` and `tool_boundary`
+are nonempty **strings**, never lists. Each verification item has exactly the
+string fields `category`, `description` and `object`; its object must be a
+registered evidence hash, not an invented test-output hash.
+
+For an ordinary assignment, `fresh_session` describes the session boundary or
+uncertainty. For a quota-continuation assignment, replace it with the **exact
+completed invocation string**, with no surrounding explanation. Record the
+session-boundary narrative in `limits` or `tool_boundary` instead.
+
 Verdicts are `pass`, `changes_required` or `blocked`. Verification categories are
 `source_claim`, `verified_observation`, `interpretation`, `reviewer_opinion`,
 `unknown` and `unavailable`. Each finding has nonempty `id`, `location`,
@@ -268,8 +399,13 @@ to make it valid. Structural validity attests neither truth nor authority.
 
 `evidence --input FILE` retains actual UTF-8 check output or disposition text and
 returns its object hash (`EVIDENCE_HASH`). A stored assertion alone does not prove
-that a check ran. Record each finding decision through the generic command with
-this `disposition.json`:
+that a check ran. The helper stores the text as the reason of a `task reconcile`
+mutation, so the call is also a reconciliation: incomplete files in the record's
+`staging/` move to `quarantine/` (listed as `quarantined` in the result; nothing
+is deleted). Because reconcile would turn an unattached launch intent into
+`unknown`, `evidence` refuses while any assignment is still `launching`; attach
+the launched invocation with `observe` first. Record each finding decision
+through the generic command with this `disposition.json`:
 
 ```json
 {"finding":"F1","decision":"addressed","reason":"Follow-up review of the changed artifact passed","evidence":["EVIDENCE_HASH"],"authority":"lead","criterion_compatible":true}
@@ -287,6 +423,18 @@ declared criterion and check. Tasks with `--approval` need the low-level contrac
 via `command --entity task --action complete` and an input such as
 `{"artifact":"ARTIFACT_HASH","criteria":{"C1":["EVIDENCE_HASH"]},"checks":{"unit-tests":["EVIDENCE_HASH"]},"approvals":{"owner":["APPROVAL_EVIDENCE_HASH"]},"reason":"..."}`,
 where the approval object contains the person's actual approval.
+
+Completion follows verdicts, not dispositions. The latest review packet must name
+the current artifact, and every required reviewer's result on it must be `pass`.
+While any current result is `changes_required`, `complete` is refused even if
+every finding is `rejected` with evidence or compatibly `deferred`. The only path
+forward is a changed artifact and a follow-up round, within
+`max_followup_rounds`, in which all required reviewers pass. A follow-up packet
+on the same artifact is refused and there is no adjudication command for it. A
+disagreement with a finding therefore needs a changed artifact and new reviews,
+or the task stays blocked: report it, then block or cancel. Do not start a new
+task to reset rounds. Material findings also keep needing a resolved,
+criterion-compatible disposition after the follow-up passes.
 
 `task block`, `activate`, `cancel` and `reconcile` take `{"reason": "Concrete
 reason"}` through `command`. `reconcile` marks unattached launch intents

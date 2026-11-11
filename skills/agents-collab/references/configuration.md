@@ -179,6 +179,12 @@ if diversity is required by the task/project, stop. Explicit pairs retain the
 requested models. A same-model fresh review is session-independent, not evidence
 of model diversity. Do not count a writer's own session as independent review.
 
+Quota interruptions use the host choice and [recorded continuation](backend.md#quota-aware-continuation).
+An explicit task-local Codex selection may supplement an old frozen profile
+without editing it or changing an existing alias. Keep the logical slot, original
+selection and replacement identity distinct. This permission is not a default
+model change, access grant or experiment-condition waiver.
+
 ## Configuration versus native defaults
 
 Codex's native model/subagent settings and Claude's CLI flags set actual runtime
@@ -200,6 +206,7 @@ This section is the canonical timing definition; other files link here.
 | Assignment | One writer or reviewer job with a stable ID, packet and allowance (`writer_minutes` or `reviewer_minutes`) counted in wall-clock time from its first launch |
 | Invocation | One host session/process running an assignment |
 | Retry | A new invocation of the **same** assignment after the previous invocation is reconciled and actually absent; same ID, same original deadline, no new allowance |
+| Backend handoff | Explicitly approved replacement execution for an unfinished interrupted slot; new linked assignment ID, same sealed contract and original deadline; no new allowance |
 | Fix assignment | A **new** writer assignment for review-driven changes, started only after every required reviewer finished the current round; it gets its own allowance |
 | Follow-up round | Review of the changed artifact by the fixed reviewer set; consumes one of `max_followup_rounds`; each reviewer gets a new assignment and allowance |
 

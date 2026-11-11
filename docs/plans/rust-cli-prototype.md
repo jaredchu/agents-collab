@@ -1,8 +1,12 @@
 # Local Rust CLI prototype
 
-**PROPOSED — 9 November 2026.** This is an implementation proposal, not an
-approved architecture, implemented feature or authorization to run experiments.
-Model and reasoning choices remain external preferences.
+**Retained original proposal.** The current implementation, commands and limits
+are documented in the [CLI guide](../cli.md); the status below summarizes what
+was built. The proposal text was originally marked:
+
+> **PROPOSED — 9 November 2026.** This is an implementation proposal, not an
+> approved architecture, implemented feature or authorization to run experiments.
+> Model and reasoning choices remain external preferences.
 
 ## Implementation status (9 November 2026)
 
@@ -30,6 +34,11 @@ model transport or live experiment is changed by this implementation.
 
 The proposal below is retained as the original acceptance scope and rationale;
 its future-phase and authorization wording describes the original proposal.
+Phase 3 has since run as the separately authorized
+[CLI usefulness comparison](../../evals/cli-usefulness/2026-11-09/report.md)
+(inconclusive under its frozen rule). An optional skill adapter for local
+records now exists; it is not the model/host transport of phase 4. See the
+[CLI guide](../cli.md#optional-backend-installation).
 
 ## Problem and intended outcome
 

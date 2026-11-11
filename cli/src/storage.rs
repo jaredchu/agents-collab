@@ -109,6 +109,13 @@ pub fn component(s: &str) -> Result<()> {
     ensure!(crate::profile::name(s), "unsafe project/task component");
     Ok(())
 }
+pub fn project_component(s: &str) -> Result<()> {
+    ensure!(
+        s.len() <= 40 && s.split('.').all(crate::profile::name),
+        "unsafe project component: expected 1-40 characters in dot-separated name segments"
+    );
+    Ok(())
+}
 pub fn relative(s: &str) -> Result<()> {
     ensure!(
         !s.is_empty() && !s.contains('\\') && !s.chars().any(|c| c.is_control()),

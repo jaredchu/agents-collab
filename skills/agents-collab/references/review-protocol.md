@@ -193,6 +193,14 @@ An interrupted dispatch may retry the identical packet as the same assignment
 completed assessment or reset the task's limits. Expanded scope needs an
 explicit scope decision.
 
+An interrupted Claude reviewer may use the explicit owner-approved
+[quota continuation](backend.md#quota-aware-continuation), only after confirmed
+absence. It fills the same unfinished logical slot on the exact packet in a
+fresh session, without the writer transcript, and never replaces a completed
+valid review to seek a better verdict. Preserve blocked results and findings.
+A writer replacement preserves current partial source and is explicitly told it
+is continuing existing work. Preserve original deadlines and all review caps.
+
 At most one initial round plus `max_followup_rounds` is allowed per scoped cycle.
 Do not reset the counter by renaming the task or spawning replacement reviewers.
 One round may contain multiple required reviewers. A materially changed scope

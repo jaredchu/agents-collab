@@ -39,6 +39,14 @@ def component(value):
     return value
 
 
+def project_component(value):
+    if (len(value) > 40 or not all(
+            re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", part)
+            for part in value.split("."))):
+        raise ValueError("project names must be 1-40 characters: dot-separated segments starting with a letter or digit and containing letters, digits, '_' or '-'")
+    return value
+
+
 def relative(value):
     if (not value or value.startswith("/") or "\\" in value
             or any(ord(c) < 32 or ord(c) == 127 for c in value)
@@ -78,7 +86,7 @@ def storage_paths(profile, project, task, repo):
     safe.safe_path(base)
     if not base.is_dir() or base == Path.home().resolve():
         raise ValueError("configured records root must already exist and be dedicated")
-    task_root = safe.safe_path(base / component(project) / component(task))
+    task_root = safe.safe_path(base / project_component(project) / component(task))
     if overlap(task_root, repo):
         raise ValueError("private task storage overlaps the source repository")
     ancestor = task_root
@@ -234,7 +242,7 @@ def start(backend, args):
         raise ValueError("reviewer must be a distinct saved non-host agent")
     if profile["review"]["on_consequential_work"] == "single" and not args.reviewer:
         raise ValueError("saved profile requires an independent reviewer")
-    spec = {"schema_version": 1, "project": component(args.project), "task": component(args.task),
+    spec = {"schema_version": 1, "project": project_component(args.project), "task": component(args.task),
             "repository": str(repo), "requirements": requirements,
             "authority_boundaries": [nonempty(x) for x in args.boundary], "writer": args.writer,
             "editable_scope": [relative(x) for x in args.scope], "reviewers": args.reviewer,
@@ -354,6 +362,11 @@ def run_bound(backend, args, state):
         prepared = backend.mutation("assignment", "prepare", value)
         intent = backend.mutation("assignment", "observe", receipt(args, state, launching=True))
         return {"prepared": prepared, "launch_intent": intent, "dispatch": "Host may now dispatch the authorized assignment"}
+    if args.command == "handoff":
+        value = safe.strict_json(safe.read_regular(args.input, MAX_INPUT))
+        value["output_destination"] = str(backend.output_path(value["output_destination"]))
+        result = backend.mutation("assignment", "handoff", value)
+        return {"result": result, "dispatch": "None. Inspect show, then observe launching before host dispatch; use fresh execution identity and retained instructions."}
     if args.command == "observe":
         check_observation(args)
         return backend.mutation("assignment", "observe", receipt(args, state))
@@ -387,10 +400,13 @@ def run_bound(backend, args, state):
 HELP = {
     "context": "freeze selected source and seal a writer_context or review packet",
     "assignment": "prepare one writer/reviewer assignment and persist its launch intent",
+    "handoff": "record an explicitly approved interrupted Claude-to-Codex continuation from a JSON file; never dispatches",
     "observe": "attach a host observation to an existing assignment (flags default false)",
     "import-review": "import a reviewer JSON result; exit 1 unless valid_structure_only",
-    "evidence": "retain a UTF-8 check/disposition text file and return its object hash",
-    "complete": "complete the task with evidence covering every declared criterion/check",
+    "evidence": ("retain a UTF-8 check/disposition text file and return its object hash; runs task reconcile, "
+                 "which also quarantines incomplete staging files; refused while any launch intent is unattached"),
+    "complete": ("complete the task with evidence covering every declared criterion/check; every required reviewer "
+                 "must pass the current artifact, and no finding disposition overrides a changes_required verdict"),
     "show": "read the current record (revision, assignments, packets, blockers)",
     "check": "verify record integrity and list completion blockers",
     "packet": "print one registered sealed packet",
@@ -419,7 +435,7 @@ def parser():
                                 ("check", "NAME", "required check covered at completion; repeat"),
                                 ("approval", "NAME", "required real approval; helper cannot complete such tasks")):
         start_parser.add_argument("--" + flag, action="append", default=[], metavar=metavar, help=text)
-    for name in ("context", "assignment", "observe", "import-review", "evidence", "complete", "show", "check", "packet", "command"):
+    for name in ("context", "assignment", "handoff", "observe", "import-review", "evidence", "complete", "show", "check", "packet", "command"):
         p = commands.add_parser(name, help=HELP[name])
         p.add_argument("--record", required=True, metavar="DIR", help="collaboration record returned by start")
         if name == "context":
@@ -452,15 +468,23 @@ def parser():
                            help="host asserts it checked this assignment's actual state (default false)")
             p.add_argument("--absence-established", action="store_true",
                            help="host asserts the previous invocation is actually absent; needs --reconciled and --reason; not proof (default false)")
-        elif name in ("import-review", "evidence", "command"):
-            kind = {"import-review": "review result JSON file", "evidence": "UTF-8 text file with actual output",
+        elif name in ("import-review", "evidence", "command", "handoff"):
+            kind = {"handoff": "explicit handoff JSON contract (see backend reference)", "import-review": "review result JSON file", "evidence": "UTF-8 text file with actual output",
                     "command": "low-level JSON input file"}[name]
             p.add_argument("--input", required=True, metavar="FILE", help=kind)
+            if name == "evidence":
+                p.epilog = ("The text is stored as the reason of a task reconcile mutation. Reconcile also moves "
+                            "incomplete files from the record's staging/ to quarantine/ and would mark unattached "
+                            "launch intents unknown, so attach every launched invocation with observe first. "
+                            "Stored evidence is not proof that a check ran.")
             if name == "command":
                 p.add_argument("--entity", choices=("task", "finding"), required=True)
                 p.add_argument("--action", required=True, choices=("resolve", "block", "activate", "cancel", "reconcile", "complete"),
                                help="finding: resolve; task: block, activate, cancel, reconcile or complete")
         elif name == "complete":
+            p.epilog = ("Rejected or deferred findings cannot complete a task while any current review is "
+                        "changes_required. Only a changed artifact with a follow-up round in which every required "
+                        "reviewer passes can; the same artifact cannot be re-reviewed or adjudicated.")
             p.add_argument("--evidence", action="append", required=True, metavar="HASH",
                            help="known object covering all declared criteria/checks; repeat")
             p.add_argument("--reason", required=True, metavar="TEXT")

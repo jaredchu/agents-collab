@@ -95,6 +95,68 @@ also invokes the unchanged Python profile validator for compatibility cases.
 These tests establish offline structural behavior, not real review quality,
 provider access, effort attestation, faster coordination or token savings.
 
+### Local regression gate
+
+`scripts/check_cli.py` (Python 3.9+, standard library) runs all of the above
+plus the full Python suite against the freshly built binary, from one pinned
+commit. It is a maintained local check, not CI and not a release. Only macOS
+arm64 with scratch on local APFS is supported; anything else is refused.
+
+Cargo runs offline. Fetch the locked public crates once beforehand, into a cache
+you select (setting `CARGO_HOME` per command changes no global configuration):
+
+```sh
+CARGO_HOME="$CARGO_CACHE" cargo fetch --locked --manifest-path cli/Cargo.toml
+```
+
+Then, from a **clean** checkout, name a new scratch directory whose parent exists:
+
+```sh
+CARGO_HOME="$CARGO_CACHE" python3 scripts/check_cli.py --scratch "$SCRATCH/gate-1"
+```
+
+`--revision REV` selects another commit (default `HEAD`). Before writing anything,
+the gate refuses a dirty working tree (tracked changes or nonignored untracked
+files), an unknown revision, a relative path, an existing scratch path, a
+missing parent, scratch overlapping the source or inside any Git repository, an
+unsupported platform and storage that `df`/`mount` do not report as local APFS.
+It never deletes or replaces caller files; remove old scratch yourself.
+
+The gate creates the scratch directory exclusively, writes `source.tar` with
+`git archive` and extracts it to `source/` (regular files and directories only).
+It then runs, in order and stopping at the first failure:
+
+1. `cargo fmt --check`;
+2. `cargo build --locked --offline`, then copies the binary to `bin/agents-collab`;
+3. `cargo clippy --locked --offline --all-targets -- -D warnings`;
+4. `cargo test --locked --offline`;
+5. `python3 -m unittest discover -s tests -v` in the snapshot, with
+   `AGENTS_COLLAB_TEST_BINARY` set to the frozen binary copy.
+
+`CARGO_TARGET_DIR`, `TMPDIR` and all logs stay in scratch, with
+`PYTHONDONTWRITEBYTECODE=1` and `CARGO_NET_OFFLINE=true`; test fault hooks are
+removed from the environment. A zero exit is not enough: Cargo test output must
+show passing tests, none failed or ignored. The Python suite must end with a
+plain `OK`, skip nothing and run `test_backend.RealBackendTests`, the real-engine
+cases. A missing binary or a binary changed during the run also fails.
+
+`result.json` records the status (`incomplete`, `passed`, `failed` or
+`interrupted`), failure reason, revision, tree, archive and binary SHA-256, tool
+versions, selected environment, each command with its exit status and times,
+and `logs/` paths. A step left `running` marks an interrupted run. Exit codes
+are 0 passed, 1 failed, 2 refused before writing and 130 interrupted.
+
+Limits: the snapshot contains committed files only, so uncommitted work is never
+checked. The debug binary hash identifies the bytes tested; it embeds build paths, so it
+is not a reproducible-build identity. Tool versions are recorded, not pinned; the environment (`PATH`,
+`CARGO_HOME`, toolchain manager settings) is inherited. Cargo may update its own
+cache metadata in `CARGO_HOME`. The storage preflight inspects mount metadata;
+the real-engine tests separately exercise the engine's runtime storage check in
+scratch `TMPDIR`. The gate makes no model, provider or API calls. The website
+build is a separate check. Results are unsigned local
+evidence reported by whoever runs the gate: they establish offline structural
+behavior on that machine, not provider access, review quality or other platforms.
+
 ## Invocation and output
 
 Every command takes two words (`task show`, for example). All record operations
@@ -132,6 +194,15 @@ claim establishes truthful evidence, identity, independence or authority.
 
 ## Task creation and profile
 
+Project names support nonempty dot-separated segments such as `example.com`,
+with a 40-character total limit. Each segment follows the existing name rule:
+start with an ASCII letter or digit, then use ASCII letters, digits, `_` or `-`.
+Leading, trailing and consecutive dots are rejected. Task, requirement, agent
+and assignment IDs keep their existing validation. The complete dotted project
+name remains one storage directory; symlink and traversal guards still apply.
+See the [adapter contract](../skills/agents-collab/references/backend.md#identities-and-arguments)
+for adapter/CLI compatibility and records-root handling.
+
 Create the configured `records_root` on the intended volume first. Supply the
 selected existing v1 profile explicitly; the CLI never writes it:
 
@@ -143,8 +214,9 @@ selected existing v1 profile explicitly; the CLI never writes it:
 The returned `record` is
 `records_root/{project}/{task}/collaboration`; use it as `$RECORD` below.
 `--record` is optional on creation and, if given, must match that exact target.
-`project` and `task` are safe 1–40-character names beginning with an ASCII
-letter/digit and containing only ASCII letters/digits, `_` or `-`.
+`task` is a safe 1–40-character name beginning with an ASCII letter/digit and
+containing only ASCII letters/digits, `_` or `-`; project names follow the dotted
+name rule above.
 An existing task cannot be overwritten. The CLI cannot detect a human creating
 a differently named task to evade policy; renamed tasks do not authorize resets.
 
@@ -327,7 +399,9 @@ cannot be reused to reset rounds. A writer cannot be assigned a review packet.
 
 A reviewer has no editable source scope. A writer assignment must name the
 registered writer and exact scope; only one writer can remain nonterminal.
-There is one assignment slot per agent/packet. No duplicate or retry slot exists.
+There is one logical assignment slot per agent/packet. An explicit interrupted
+backend handoff may create one linked replacement execution; it never adds a
+review slot.
 The requested model/effort is stored separately from later interface-accepted
 and observed values, which remain null/unknown until reported.
 
@@ -353,7 +427,9 @@ Before dispatch, record `receipt.json` with `state: "launching"` and
 
 Attach the host's session/invocation identity promptly with a new receipt and
 operation key. States are `launching`, `running`, `completed`, `interrupted`,
-`blocked` and `unknown`, in addition to the initial `prepared`. `running` and
+`blocked` and `unknown`, in addition to the initial `prepared`. An explicit
+handoff marks the original assignment `superseded`; it cannot receive further
+observations or valid results, even with reconciliation flags. `running` and
 `completed` require an invocation identity; PID alone is insufficient.
 `process_start` is optional supplementary evidence. Any uncertain, interrupted,
 blocked or terminal state needs an explicit `reconciled: true` receipt to change.
@@ -372,7 +448,9 @@ absence. Without such host bookkeeping or supervision, retry stays blocked. See
 the backend procedure's retry section.
 
 The first launch UTC time and absolute advisory deadline persist through every
-observation, interruption and recovery; they never reset. A follow-up is a new
+observation, interruption and recovery; they never reset. A handoff preserves
+that original assignment and deadline; its replacement records its own actual
+launch time while inheriting the original deadline. A follow-up is a new
 assignment within the existing cap. Required timing blocks launch because this
 record-only CLI cannot validate a supervisor. `runtime-attestation` likewise
 blocks launch, rather than accepting an imported model assertion as proof.
@@ -397,6 +475,14 @@ A review input has exactly these fields:
   "tool_boundary":"Actual restrictions; fresh context alone is not isolation"
 }
 ```
+
+`limits`, `fresh_session`, `automatic_context` and `tool_boundary` are nonempty
+strings, not arrays. For a quota-continuation review, `fresh_session` must equal
+the completed invocation string exactly; put explanatory boundary text in
+`limits` or `tool_boundary`. For ordinary reviews it remains a free-text session
+observation. The installed [backend review contract](../skills/agents-collab/references/backend.md#review-contract)
+describes the complete shape. Include it in the review instructions before
+sealing; the helper does not append it automatically.
 
 ```sh
 "$CLI" review import --record "$RECORD" --input "$INPUT/review.json" \
@@ -471,9 +557,21 @@ observations and moves incomplete staging files into quarantine. It never
 relaunches, deletes objects, resets deadlines or declares a worker stopped.
 
 Real access, subscription, quota or permission interruption leaves affected work
-blocked and unfinished. Preserve failed receipts and await restored authorized
-access. No automatic model substitution, alternate account, paid path or retry
-exists. Unknown provider usage remains unknown; the record imposes no experiment
+blocked and unfinished. Preserve failed receipts. If the Codex lead is
+unavailable, checkpoint and stop. For a Claude collaborator, the skill presents
+Wait for Claude / Continue with an available configured Codex model. The explicit
+`assignment handoff` contract and Python helper `handoff --input FILE` are
+specified end to end in [quota-aware continuation](../skills/agents-collab/references/backend.md#quota-aware-continuation).
+The host must retain the actual owner decision and establish original absence.
+The engine requires an interrupted unfinished slot, reconciled absence receipts
+and nonempty `decision_evidence` references to registered objects. It does not
+verify those objects' type, decision content or human authority; an unrelated
+artifact hash satisfies the reference check without proving consent. It can
+then record continuation on the exact packet. The operation
+preserves observations, results, current partial writer source, deadlines and
+review caps; it records a distinct requested model and execution identity.
+Waiting is not completion. No automatic substitution, alternate account, paid
+path or retry exists. Unknown provider usage remains unknown; the record imposes no experiment
 call, token, context or quota budgets.
 
 A completion input has the current artifact and exact evidence coverage:
@@ -489,8 +587,9 @@ A completion input has the current artifact and exact evidence coverage:
 ```
 
 Completion requires active state, required current-identity reviewer passes,
-resolved compatible material findings, no prepared/launching/running/unknown or
-blocked assignment, all declared criterion/check/approval references and unchanged
+resolved compatible material findings (a disposition never overrides a current
+`changes_required` verdict; only a changed artifact and passing follow-up can), no prepared/launching/running/unknown or
+blocked/interrupted assignment, all declared criterion/check/approval references and unchanged
 live source identity. Imported evidence may be false; structure cannot establish
 real authorization or truthful test outcomes. Evidence bytes should contain the
 actual check/approval, not merely a coordinator's assertion.
@@ -506,11 +605,16 @@ sharing; the binary cannot determine the intended audience.
 ## Storage and failure limits
 
 Each task has `state.sqlite3`, `objects/`, `staging/` and `quarantine/`.
-Schema 1 records include stable identifiers, actor/provenance and UTC times under
-a versioned enclosing task state. SQLite stores the complete typed state in one
-row with revision and operation-key constraints; references are checked in the
-application, not independent relational foreign-key tables. There is no automatic
-schema migration; preserve incompatible records and migrate explicitly later.
+Format 1 records include stable identifiers, actor/provenance and UTC times under
+a versioned enclosing task state. The first explicit `assignment handoff`
+transaction upgrades both SQL marker and enclosing state to format 2; ordinary
+records stay format 1. This engine reads both, while older engines refuse format
+2 before decoding new continuation semantics. JSON response envelopes remain
+schema 1. There is no downgrade or silent profile migration. SQLite stores the
+complete typed state in one row with revision and operation-key constraints; references are checked in the
+application, not independent relational foreign-key tables. Apart from the
+explicit handoff upgrade, incompatible formats require an explicit supported
+migration; preserve originals.
 
 Runtime checks currently allow only local APFS on macOS. Network storage, other
 filesystems and other platforms are refused. The configured root must exist;

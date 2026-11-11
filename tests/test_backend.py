@@ -75,18 +75,40 @@ class BackendTests(unittest.TestCase):
             backend.storage_paths({"records_root": str(records)}, "project", "task", repo)
         self.assertEqual(list(records.iterdir()), [])
 
+    def test_dotted_project_names_preserve_exact_storage_layout(self):
+        records = self.root / "records"
+        records.mkdir()
+        for project in ("example.com", "api.example.co.uk", "A_b-1.example", "a" * 38 + ".b"):
+            with self.subTest(project=project):
+                record, host = backend.storage_paths({"records_root": str(records)}, project, "task", self.root / "repo")
+                self.assertEqual(record, records / project / "task/collaboration")
+                self.assertEqual(host, records / project / "task/host")
+        self.assertEqual(list(records.iterdir()), [])
+
+    def test_unsafe_dotted_project_names_rejected_before_writes(self):
+        records = self.root / "records"
+        records.mkdir()
+        for project in ("", ".", "..", ".hidden", "example.", "a..b", "a.-b", "a._b",
+                        "../example.com", "a/b.com", "a\\b.com", "/example.com", "a b.com",
+                        "a\nb.com", "a\x00b.com", "é.com", "a" * 39 + ".b"):
+            with self.subTest(project=project), self.assertRaises(ValueError):
+                backend.storage_paths({"records_root": str(records)}, project, "task", self.root / "repo")
+        with self.assertRaises(ValueError):
+            backend.storage_paths({"records_root": str(records)}, "example.com", "task.name", self.root / "repo")
+        self.assertEqual(list(records.iterdir()), [])
+
     def test_configured_symlink_root_resolves_but_task_symlink_is_rejected(self):
         actual = self.root / "records"
         actual.mkdir()
         alias = self.root / "alias"
         alias.symlink_to(actual, target_is_directory=True)
-        record, host = backend.storage_paths({"records_root": str(alias)}, "project", "task", self.root / "repo")
-        self.assertEqual(record, actual / "project/task/collaboration")
-        self.assertEqual(host, actual / "project/task/host")
+        record, host = backend.storage_paths({"records_root": str(alias)}, "example.com", "task", self.root / "repo")
+        self.assertEqual(record, actual / "example.com/task/collaboration")
+        self.assertEqual(host, actual / "example.com/task/host")
         self.assertEqual(list(actual.iterdir()), [])
-        (actual / "project").symlink_to(self.root, target_is_directory=True)
+        (actual / "example.com").symlink_to(self.root, target_is_directory=True)
         with self.assertRaisesRegex(ValueError, "symlink"):
-            backend.storage_paths({"records_root": str(alias)}, "project", "task", self.root / "repo")
+            backend.storage_paths({"records_root": str(alias)}, "example.com", "task", self.root / "repo")
 
     def test_source_output_cannot_escape_private_host(self):
         instance = object.__new__(backend.Backend)
@@ -248,8 +270,8 @@ class RealBackendTests(unittest.TestCase):
     def invoke(self, *args):
         return BackendTests.invoke(self, "--profile", str(self.profile), *args)
 
-    def begin_task(self, task="test", extra=()):
-        code, out, err = self.invoke("start", "--repository", str(self.repo), "--project", "fixture", "--task", task,
+    def begin_task(self, task="test", extra=(), project="fixture"):
+        code, out, err = self.invoke("start", "--repository", str(self.repo), "--project", project, "--task", task,
                                      "--writer", "current-session", "--scope", "source.txt",
                                      "--requirement", "R1=Preserve exact frozen source", "--criterion", "C1=Task check passes",
                                      "--boundary", "No external actions", "--check", "offline", *extra)
@@ -258,7 +280,14 @@ class RealBackendTests(unittest.TestCase):
         return result["record"], Path(result["host"])
 
     def test_real_frozen_context_assignment_evidence_completion(self):
-        record, host = self.begin_task()
+        self.assert_frozen_context_assignment_evidence_completion("fixture")
+
+    def test_real_dotted_project_frozen_context_assignment_evidence_completion(self):
+        self.assert_frozen_context_assignment_evidence_completion("example.com")
+
+    def assert_frozen_context_assignment_evidence_completion(self, project):
+        record, host = self.begin_task(project=project)
+        self.assertEqual(Path(record), self.records / project / "test/collaboration")
         instructions = self.root / "instructions.txt"
         instructions.write_text("Inspect the complete requirements and frozen source.")
         code, out, err = self.invoke("context", "--record", record, "--purpose", "writer_context", "--paths", "source.txt",
@@ -368,7 +397,7 @@ class RealBackendTests(unittest.TestCase):
         text = (SCRIPTS.parent / "references/backend.md").read_text()
         for block in re.findall(r"```json\n(.*?)```", text, re.S):
             value = json.loads(block)
-            if key in value:
+            if key in value and (key != "decision" or "finding" in value):
                 return value
         self.fail("shipped backend reference lacks a JSON example with " + key)
 
@@ -406,6 +435,92 @@ class RealBackendTests(unittest.TestCase):
         self.assertEqual((retried["spec"]["id"], retried["launch_at"], retried["deadline"]),
                          (original["spec"]["id"], original["launch_at"], original["deadline"]))
         self.assertEqual(retried["state"], "completed")
+
+    def test_quota_writer_and_reviewer_continuations_use_explicit_local_selection(self):
+        for role in ("writer", "reviewer"):
+            with self.subTest(role=role):
+                profile = json.loads(self.profile.read_text())
+                self.use_profile(agents={**profile["agents"], "quota-worker": {
+                    "model": "synthetic-claude", "transport": "claude-cli", "reasoning": "inherit"}})
+                extra = ("--reviewer", "quota-worker") if role == "reviewer" else ()
+                # Writer must be explicitly assigned at start; avoid altering saved defaults.
+                start_args = ["start", "--repository", str(self.repo), "--project", "fixture", "--task", "quota-" + role,
+                              "--writer", "quota-worker" if role == "writer" else "current-session", "--scope", "source.txt",
+                              "--requirement", "R1=Preserve frozen contract", "--criterion", "C1=Offline checks pass",
+                              "--boundary", "No provider calls", "--check", "offline", *extra]
+                started = self.ok(self.invoke(*start_args))
+                record, host = started["record"], Path(started["host"])
+                initial = self.ok(self.context(record, host, "writer_context" if role == "writer" else "review", 0, role))
+                self.ok(self.invoke("assignment", "--record", record, "--id", "old", "--packet", initial["packet"],
+                                    "--agent", "quota-worker", "--role", role, "--output-destination", str(host / "old.json")))
+                boundary = ("--boundary-observations", "Synthetic quota failure; no provider ran")
+                self.ok(self.invoke("observe", "--record", record, "--assignment", "old", "--state", "unknown",
+                                    "--invocation", "old-session", *boundary))
+                evidence_file = host / "decision.txt"
+                evidence_file.write_text("Synthetic explicit owner choice: Continue with configured available Codex model; amend frozen condition.\n")
+                evidence = self.ok(self.invoke("evidence", "--record", record, "--input", str(evidence_file)))["evidence"]
+                h = {"assignment": "old", "replacement": "replacement", "packet": initial["packet"], "agent": "task-codex",
+                     "selection": {"model": "synthetic-codex", "transport": "codex-native", "reasoning": "inherit"},
+                     "output_destination": str(host / "replacement.json"), "decision": "continue_with_codex", "authority": "lead",
+                     "decision_evidence": [evidence], "reason": "Owner chose continuation after synthetic quota receipt",
+                     "previous_invocation": "old-session", "timing": "preserve_deadline",
+                     "instructions": "Continue current partial source; reviewer uses neutral frozen packet only in fresh session", "partial_work": None}
+                handoff_file = host / "handoff.json"
+                def handoff(value):
+                    handoff_file.write_text(json.dumps(value))
+                    return self.invoke("handoff", "--record", record, "--input", str(handoff_file))
+                code, out, err = handoff(h)
+                self.assertEqual(code, 1)
+                self.assertIn("only an interrupted", err)
+                self.ok(self.invoke("observe", "--record", record, "--assignment", "old", "--state", "interrupted",
+                                    "--invocation", "old-session", "--reconciled", "--reason", "Host checked quota failure", *boundary))
+                code, out, err = handoff(h)
+                self.assertEqual(code, 1)
+                self.assertIn("absence", err)
+                self.ok(self.invoke("observe", "--record", record, "--assignment", "old", "--state", "interrupted",
+                                    "--invocation", "old-session", "--reconciled", "--absence-established",
+                                    "--reason", "Synthetic supervisor confirms original worker exited and no worker remains", *boundary))
+                original = self.show(record)["record"]
+                self.assertIn("assignment old blocked", " ".join(self.show(record)["blockers"]))
+                code, out, err = handoff({**h, "decision_evidence": []})
+                self.assertEqual(code, 1)
+                self.assertIn("evidence references required", err)
+                if role == "writer":
+                    (self.repo / "source.txt").write_text("retained unfinished source\n")
+                    h["partial_work"] = {"paths": ["source.txt"], "omissions": {"other.txt": "outside writer scope"},
+                                         "acknowledged_sensitive": [], "quiescence": "Original invocation absent", "atomic_required": False, "base": "HEAD"}
+                result = self.ok(handoff(h))
+                self.assertEqual(result["result"]["result"]["logical_slot"], "quota-worker")
+                changed = self.show(record)["record"]
+                self.assertEqual(changed["schema_version"], 2)
+                self.assertEqual(changed["profile"], original["profile"])
+                self.assertEqual(changed["assignments"][0]["observations"], original["assignments"][0]["observations"])
+                self.assertEqual(changed["assignments"][0]["state"], "superseded")
+                self.assertEqual(changed["assignments"][1]["deadline"], original["assignments"][0]["deadline"])
+                self.assertEqual(self.profile.read_bytes(), self.original_profile)
+                code, out, err = handoff(h)
+                self.assertEqual(code, 1)
+                self.assertIn("replacement identity already used", err)
+                self.ok(self.invoke("observe", "--record", record, "--assignment", "replacement", "--state", "launching", *boundary))
+                self.ok(self.invoke("observe", "--record", record, "--assignment", "replacement", "--state", "completed",
+                                    "--invocation", "replacement-session-" + role, *boundary))
+                code, out, err = self.invoke("observe", "--record", record, "--assignment", "old", "--state", "running",
+                                             "--invocation", "old-session", "--reconciled", "--reason", "Cannot resume old worker", *boundary)
+                self.assertEqual(code, 1)
+                self.assertIn("superseded", err)
+                if role == "reviewer":
+                    review = self.shipped_example("verdict")
+                    review.update(assignment="replacement", artifact=initial["artifact"], packet=initial["packet"],
+                                  fresh_session="replacement-session-reviewer")
+                    review["verification"][0]["object"] = initial["artifact"]
+                    (host / "replacement.json").write_text(json.dumps(review))
+                    self.assertTrue(self.ok(self.invoke("import-review", "--record", record, "--input", str(host / "replacement.json")))["valid_review"])
+                    self.ok(self.invoke("complete", "--record", record, "--evidence", evidence, "--reason", "Same packet slot completed"))
+                else:
+                    self.assertEqual((self.repo / "source.txt").read_text(), "retained unfinished source\n")
+                    self.assertIsNotNone(changed["assignments"][1]["continuation"]["preserved_work"])
+                    # Restore the fixture source for the next independent role scenario.
+                    (self.repo / "source.txt").write_text("original frozen input\n")
 
     def test_required_timing_refuses_launch_intent_without_fallback(self):
         profile = json.loads(self.profile.read_text())
@@ -484,6 +599,74 @@ class RealBackendTests(unittest.TestCase):
                                    "--reason", "Follow-up passed and criteria covered"))
         self.assertEqual(done["result"]["state"], "completed")
         self.assertEqual(self.profile.read_bytes(), self.original_profile)
+
+    def test_evidence_is_a_reconcile_that_quarantines_staging_and_refuses_unattached_launch(self):
+        record, host = self.begin_task()
+        packet = self.ok(self.context(record, host, "writer_context", 0, "writer"))["packet"]
+        self.ok(self.invoke("assignment", "--record", record, "--id", "write-1", "--packet", packet, "--agent",
+                            "current-session", "--role", "writer", "--output-destination", str(host / "w.txt")))
+        report = self.root / "check.txt"
+        report.write_text("offline check: PASS\n")
+        revision = self.show(record)["revision"]
+        code, out, err = self.invoke("evidence", "--record", record, "--input", str(report))
+        self.assertEqual(code, 1)
+        self.assertIn("unattached launches unknown", err)
+        state = self.show(record)
+        self.assertEqual((state["revision"], state["record"]["assignments"][0]["state"]), (revision, "launching"))
+        self.ok(self.invoke("observe", "--record", record, "--assignment", "write-1", "--state", "completed",
+                            "--invocation", "synthetic-host-session-1", "--boundary-observations", "Host session"))
+        leftover = Path(record) / "staging" / "interrupted-write.tmp"
+        leftover.write_bytes(b"partial object bytes")
+        result = self.ok(self.invoke("evidence", "--record", record, "--input", str(report)))
+        self.assertEqual(result["result"]["result"]["quarantined"], ["interrupted-write.tmp"])
+        self.assertFalse(leftover.exists())
+        self.assertEqual((Path(record) / "quarantine" / leftover.name).read_bytes(), b"partial object bytes")
+
+    def test_rejected_or_deferred_findings_cannot_complete_over_changes_required(self):
+        profile = json.loads(self.profile.read_text())
+        agents = {**profile["agents"], "reviewer": {"model": "synthetic-reviewer-1", "transport": "claude-cli",
+                                                    "reasoning": "inherit"}}
+        self.use_profile(agents=agents, review={**profile["review"], "on_consequential_work": "single",
+                                                "candidates": ["reviewer"], "max_followup_rounds": 1})
+        record, host = self.begin_task(extra=("--reviewer", "reviewer"))
+        initial = self.ok(self.context(record, host, "review", 0, "review-0"))
+        self.ok(self.invoke("assignment", "--record", record, "--id", "review-1", "--packet", initial["packet"],
+                            "--agent", "reviewer", "--role", "reviewer", "--output-destination", str(host / "r1.json")))
+        self.ok(self.invoke("observe", "--record", record, "--assignment", "review-1", "--state", "completed",
+                            "--invocation", "review-session-1", "--boundary-observations", "Fresh synthetic session"))
+        review = self.shipped_example("verdict")
+        review.update(assignment="review-1", artifact=initial["artifact"], packet=initial["packet"],
+                      verdict="changes_required")
+        review["verification"][0]["object"] = initial["artifact"]
+        review["findings"] = [{"id": "F1", "location": "source.txt", "scenario": "Disputed wording",
+                               "evidence": "Reviewer reading", "uncertainty": "Medium",
+                               "recommendation": "Reword", "material": True}]
+        (host / "r1.json").write_text(json.dumps(review))
+        self.assertTrue(self.ok(self.invoke("import-review", "--record", record, "--input", str(host / "r1.json")))["valid_review"])
+        report = self.root / "rebuttal.txt"
+        report.write_text("Owner evidence that the original wording satisfies R1\n")
+        evidence = self.ok(self.invoke("evidence", "--record", record, "--input", str(report)))["evidence"]
+        for decision in ("rejected", "deferred"):
+            with self.subTest(decision=decision):
+                disposition = self.shipped_example("decision")
+                disposition.update(finding="F1", decision=decision, evidence=[evidence], criterion_compatible=True,
+                                   reason=f"Lead {decision} F1 with retained evidence")
+                path = host / f"disposition-{decision}.json"
+                path.write_text(json.dumps(disposition))
+                self.ok(self.invoke("command", "--record", record, "--entity", "finding", "--action", "resolve",
+                                    "--input", str(path)))
+                revision = self.show(record)["revision"]
+                code, out, err = self.invoke("complete", "--record", record, "--evidence", evidence,
+                                             "--reason", "Attempted completion over changes_required")
+                self.assertEqual(code, 1)
+                self.assertIn("did not approve current artifact", err)
+                state = self.show(record)
+                self.assertEqual((state["state"], state["revision"]), ("active", revision))
+        # No same-artifact adjudication: a follow-up review of the unchanged source is refused.
+        code, out, err = self.context(record, host, "review", 1, "same-artifact")
+        self.assertEqual(code, 1)
+        self.assertIn("changed artifact", err)
+        self.assertEqual(self.show(record)["state"], "active")
 
     def test_invalid_review_is_not_success(self):
         record, host = self.begin_task()
