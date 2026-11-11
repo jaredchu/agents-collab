@@ -135,6 +135,22 @@ struct HandoffSpec {
     partial_work: Option<snapshot::Selection>,
 }
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReviewExtensionSpec {
+    packet: String,
+    previous_limit: u64,
+    new_limit: u64,
+    authority: String,
+    decision_evidence: Vec<String>,
+    reason: String,
+}
+#[derive(Clone, Serialize, Deserialize)]
+struct ReviewExtension {
+    spec: ReviewExtensionSpec,
+    at: u64,
+    actor: String,
+}
+#[derive(Clone, Serialize, Deserialize)]
 struct Continuation {
     handoff: HandoffSpec,
     original_requested: profile::Agent,
@@ -245,6 +261,8 @@ struct State {
     objects: BTreeMap<String, String>,
     events: Vec<Event>,
     completion: Option<Value>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    review_extensions: Vec<ReviewExtension>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -363,7 +381,7 @@ fn connection(root: &Path, create: bool) -> Result<Connection> {
                 "task missing or unsupported schema; preserve originals for explicit migration",
             )?;
         ensure!(
-            matches!(version, 1 | 2),
+            matches!(version, 1..=3),
             "unsupported schema; explicit migration required"
         );
     }
@@ -373,7 +391,7 @@ fn connection(root: &Path, create: bool) -> Result<Connection> {
     c.pragma_update(None, "journal_mode", "DELETE")?;
     c.pragma_update(None, "synchronous", "FULL")?;
     if create {
-        c.execute_batch("CREATE TABLE IF NOT EXISTS state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version=1), revision INTEGER NOT NULL, body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS operations (key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, response TEXT NOT NULL, revision INTEGER NOT NULL);")?;
+        c.execute_batch("CREATE TABLE IF NOT EXISTS state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN (1,2,3)), revision INTEGER NOT NULL, body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS operations (key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, response TEXT NOT NULL, revision INTEGER NOT NULL);")?;
     }
     Ok(c)
 }
@@ -386,12 +404,12 @@ fn load(c: &Connection) -> Result<State> {
         )
         .context("task missing or unsupported schema; explicit migration required")?;
     ensure!(
-        matches!(version, 1 | 2),
+        matches!(version, 1..=3),
         "unsupported schema; explicit migration required"
     );
     let s: State = parse(body.as_bytes())?;
     ensure!(
-        matches!(s.schema_version, 1 | 2) && s.schema_version == version as u64,
+        matches!(s.schema_version, 1..=3) && s.schema_version == version as u64,
         "unsupported state schema"
     );
     Ok(s)
@@ -527,8 +545,59 @@ fn blockers(s: &State) -> Vec<String> {
     }
     b
 }
+fn effective_review_limit(s: &State) -> u64 {
+    s.review_extensions
+        .last()
+        .map_or(s.profile.review.max_followup_rounds, |e| e.spec.new_limit)
+}
+fn extend_review(s: &mut State, input: &Value, actor: &str) -> Result<Value> {
+    let extension: ReviewExtensionSpec = decode(input)?;
+    ensure!(
+        s.spec.decision_authorities.contains(&extension.authority) && actor == extension.authority,
+        "declared decision authority/actor required; not authentication"
+    );
+    refs(s, &extension.decision_evidence)?;
+    nonempty(&extension.reason, "review extension reason")?;
+    let previous = effective_review_limit(s);
+    ensure!(
+        extension.previous_limit == previous,
+        "stale previous review limit"
+    );
+    ensure!(
+        previous.checked_add(1) == Some(extension.new_limit),
+        "new review limit must be exactly previous + 1"
+    );
+    let packet = latest_review_packet(s).context("latest reviewed packet required")?;
+    ensure!(
+        extension.packet == packet.id,
+        "stale latest reviewed packet"
+    );
+    ensure!(
+        packet.spec.round == previous,
+        "latest reviewed round must be at effective cap"
+    );
+    ensure!(
+        round_complete(s, packet),
+        "finish every required reviewer before extending review"
+    );
+    ensure!(
+        s.assignments.iter().all(terminal),
+        "nonterminal invocation blocks review extension"
+    );
+    s.review_extensions.push(ReviewExtension {
+        spec: extension,
+        at: now(),
+        actor: actor.into(),
+    });
+    s.schema_version = 3;
+    Ok(
+        json!({"baseline_review_limit":s.profile.review.max_followup_rounds,
+        "effective_review_limit":effective_review_limit(s), "amendment":s.review_extensions.last(),
+        "authority_limit":"host declaration only; no review pass, implementation, release, waiver or policy approval"}),
+    )
+}
 fn summary(s: &State) -> Value {
-    json!({"schema_version":1,"task":s.spec.task,"revision":s.revision,"state":s.state,"blockers":blockers(s),"next_permitted_operations":if s.state=="completed"||s.state=="cancelled"{vec!["task show","task export","task check","task reconcile"]}else{vec!["task show","task check","task reconcile","artifact freeze","packet preview","packet seal","assignment prepare","assignment handoff","assignment observe","review import","finding resolve","task block","task activate","task cancel","task complete"]},"record":s,"live_source":live_source(s)})
+    json!({"schema_version":1,"task":s.spec.task,"revision":s.revision,"state":s.state,"blockers":blockers(s),"next_permitted_operations":if s.state=="completed"||s.state=="cancelled"{vec!["task show","task export","task check","task reconcile"]}else{vec!["task show","task check","task reconcile","artifact freeze","packet preview","packet seal","assignment prepare","assignment handoff","assignment observe","review import","finding resolve","task extend-review","task block","task activate","task cancel","task complete"]},"baseline_review_limit":s.profile.review.max_followup_rounds,"effective_review_limit":effective_review_limit(s),"review_extensions":s.review_extensions,"record":s,"live_source":live_source(s)})
 }
 fn packet_validate(s: &State, p: &PacketSpec) -> Result<()> {
     ensure!(
@@ -538,7 +607,7 @@ fn packet_validate(s: &State, p: &PacketSpec) -> Result<()> {
     nonempty(&p.instructions, "instructions")?;
     nonempty(&p.access_policy, "access policy")?;
     ensure!(
-        p.round <= s.profile.review.max_followup_rounds,
+        p.round <= effective_review_limit(s),
         "follow-up round cap reached"
     );
     ensure!(
@@ -1011,7 +1080,7 @@ fn handoff(s: &mut State, root: &Path, input: &Value, actor: &str) -> Result<Val
             preserved_work: preserved_work.clone(),
         }),
     });
-    s.schema_version = 2;
+    s.schema_version = s.schema_version.max(2);
     Ok(
         json!({"assignment": h.replacement, "logical_slot": old.spec.agent, "execution_agent": h.agent,
         "packet": h.packet, "deadline": old.deadline, "preserved_work": preserved_work,
@@ -1027,6 +1096,7 @@ fn mutate(
     actor: &str,
 ) -> Result<Value> {
     match command {
+        "task extend-review" => extend_review(s, input, actor),
         "artifact freeze" => {
             if let Some(p) = latest_review_packet(s) {
                 ensure!(
@@ -1038,7 +1108,7 @@ fn mutate(
                     "reconcile active/unknown invocations before repair"
                 );
                 ensure!(
-                    p.spec.round < s.profile.review.max_followup_rounds,
+                    p.spec.round < effective_review_limit(s),
                     "round cap reached; changed artifact cannot receive required review"
                 );
             }
@@ -1447,6 +1517,7 @@ fn create(req: &Request, raw: &[u8], actor: &str, key: &str, expected: u64) -> R
         objects: BTreeMap::new(),
         events: vec![],
         completion: None,
+        review_extensions: vec![],
     };
     let id = put(&root, &profile_raw)?;
     register(&mut s, id, "profile/private-resolved-preferences");
@@ -1552,7 +1623,8 @@ pub fn run(req: Request) -> Result<Value> {
                             "findings",
                             "invalid_results",
                             "events",
-                            "completion"
+                            "completion",
+                            "review_extensions"
                         ]
                         .contains(&f.as_str()),
                         "export field not allowed; profile/raw storage exports unavailable"
@@ -1638,23 +1710,23 @@ pub fn run(req: Request) -> Result<Value> {
         input_hash: hash(&raw),
     });
     let response = json!({"revision":s.revision,"state":s.state,"result":result,"blockers":blockers(&s),"live_source":live_source(&s)});
-    if s.schema_version == 2
-        && tx.query_row(
-            "SELECT schema_version FROM state WHERE singleton=1",
-            [],
-            |r| r.get::<_, i64>(0),
-        )? == 1
-    {
-        // Version-1 databases have CHECK(schema_version=1). Rebuild only this
-        // singleton table inside the same transaction; receipts and CAS survive.
+    let stored_version: i64 = tx.query_row(
+        "SELECT schema_version FROM state WHERE singleton=1",
+        [],
+        |r| r.get(0),
+    )?;
+    if i64::try_from(s.schema_version)? > stored_version {
+        // Rebuild historical CHECK constraints transactionally. Keep the old
+        // row intact until the final update; rollback preserves its marker/body.
         tx.execute_batch("ALTER TABLE state RENAME TO state_previous_format;
-            CREATE TABLE state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN (1,2)), revision INTEGER NOT NULL, body TEXT NOT NULL);
-            INSERT INTO state SELECT singleton,2,revision,body FROM state_previous_format;
+            CREATE TABLE state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN (1,2,3)), revision INTEGER NOT NULL, body TEXT NOT NULL);
+            INSERT INTO state SELECT * FROM state_previous_format;
             DROP TABLE state_previous_format;")?;
     }
     tx.execute(
-        "UPDATE state SET revision=?,body=? WHERE singleton=1 AND revision=?",
+        "UPDATE state SET schema_version=?,revision=?,body=? WHERE singleton=1 AND revision=?",
         params![
+            i64::try_from(s.schema_version)?,
             i64::try_from(s.revision)?,
             serde_json::to_string(&s)?,
             i64::try_from(expected)?

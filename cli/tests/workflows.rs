@@ -2065,3 +2065,341 @@ fn writer_handoff_preserves_directory_partial_work_and_allows_absent_future_path
     assert_eq!(after["assignments"][0]["state"], "superseded");
     assert_eq!(after["schema_version"], 2);
 }
+
+fn review_at_cap(f: &mut Fixture, finish_last: bool) -> (String, String) {
+    let mut artifact = f.freeze();
+    let mut packet = String::new();
+    for round in 0..=1 {
+        if round > 0 {
+            fs::write(f.repo.join("file.txt"), "first repair\n").unwrap();
+            artifact = f.freeze();
+        }
+        packet = f.packet(&artifact, round);
+        for (prefix, agent) in [("A", "alpha"), ("B", "beta")] {
+            let id = format!("{prefix}{round}");
+            f.prepare(&id, agent, &packet);
+            if finish_last || round == 0 || prefix == "A" {
+                f.finish_invocation(&id);
+                let mut review = f.review_spec(&id, &artifact, &packet);
+                if round == 1 && prefix == "A" {
+                    review["verdict"] = json!("changes_required");
+                }
+                f.apply("review import", review);
+            }
+        }
+    }
+    (artifact, packet)
+}
+fn extension(packet: &str, evidence: &str, previous: u64) -> Value {
+    json!({"packet":packet,"previous_limit":previous,"new_limit":previous+1,
+        "authority":"owner","decision_evidence":[evidence],
+        "reason":"Owner explicitly permits one additional review after the retained capped result"})
+}
+#[test]
+fn explicit_review_extension_preserves_contract_history_and_requires_fresh_review() {
+    let mut f = Fixture::new();
+    f.create();
+    f.apply("task activate", json!({"reason":"start"}));
+    let (artifact, packet) = review_at_cap(&mut f, true);
+    let before = f.show();
+    let profile_bytes = fs::read(&f.profile).unwrap();
+    fs::write(f.repo.join("file.txt"), "second repair\n").unwrap();
+    let selection = json!({"paths":[".gitignore","deleted.txt","file.txt"],"omissions":{},"acknowledged_sensitive":[],"quiescence":"writer stopped","atomic_required":false,"base":"HEAD"});
+    f.reject("artifact freeze", selection.clone(), "round cap");
+    let mut next_context = f.packet_spec(&artifact, 2);
+    next_context["purpose"] = json!("writer_context");
+    f.reject("packet seal", next_context.clone(), "round cap");
+    let result = f.apply("task extend-review", extension(&packet, &artifact, 1));
+    assert_eq!(result["effective_review_limit"], 2);
+    let after = f.show();
+    for field in [
+        "spec",
+        "profile",
+        "profile_hash",
+        "state",
+        "reason",
+        "artifacts",
+        "current_artifact",
+        "packets",
+        "assignments",
+        "reviews",
+        "findings",
+        "invalid_results",
+        "completion",
+    ] {
+        assert_eq!(after[field], before[field], "changed {field}");
+    }
+    for (id, kind) in before["objects"].as_object().unwrap() {
+        assert_eq!(&after["objects"][id], kind);
+    }
+    assert_eq!(fs::read(&f.profile).unwrap(), profile_bytes);
+    assert_eq!(after["schema_version"], 3);
+    assert_eq!(after["review_extensions"].as_array().unwrap().len(), 1);
+    // An amendment grants no pass and cannot rewrite the existing verdict.
+    f.reject("task complete", json!({"artifact":artifact,"criteria":{"C1":[artifact]},"checks":{"offline":[artifact]},"approvals":{"owner":[artifact]},"reason":"extension is not approval"}), "completion blocked");
+    f.apply("packet seal", next_context);
+    let repaired = f.apply("artifact freeze", selection)["artifact"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert_ne!(artifact, repaired);
+    f.reject(
+        "packet seal",
+        f.packet_spec(&repaired, 1),
+        "rounds must be sequential",
+    );
+    let next = f.packet(&repaired, 2);
+    for (id, agent) in [("A2", "alpha"), ("B2", "beta")] {
+        f.prepare(id, agent, &next);
+        f.finish_invocation(id);
+        f.review(id, &repaired, &next);
+    }
+    f.reject("artifact freeze", json!({}), "round cap");
+    let first_amendment = f.show()["review_extensions"][0].clone();
+    f.apply("task extend-review", extension(&next, &repaired, 2));
+    assert_eq!(f.show()["review_extensions"][0], first_amendment);
+    assert_eq!(f.show()["review_extensions"].as_array().unwrap().len(), 2);
+    assert_eq!(f.complete(&repaired)["state"], "completed");
+    f.reject(
+        "task extend-review",
+        extension(&next, &repaired, 3),
+        "terminal",
+    );
+}
+#[test]
+fn review_extension_rejects_unauthorized_stale_incomplete_and_live_requests() {
+    let mut f = Fixture::new();
+    f.create();
+    let a = f.freeze();
+    let p = f.packet(&a, 0);
+    f.reject(
+        "task extend-review",
+        extension(&p, &a, 1),
+        "at effective cap",
+    );
+    for (id, agent) in [("A", "alpha"), ("B", "beta")] {
+        f.prepare(id, agent, &p);
+        f.finish_invocation(id);
+        f.review(id, &a, &p);
+    }
+    fs::write(f.repo.join("file.txt"), "repair\n").unwrap();
+    let a = f.freeze();
+    let p = f.packet(&a, 1);
+    f.prepare("A1", "alpha", &p);
+    f.prepare("B1", "beta", &p);
+    f.finish_invocation("A1");
+    f.review("A1", &a, &p);
+    let spec = extension(&p, &a, 1);
+    f.reject(
+        "task extend-review",
+        spec.clone(),
+        "finish every required reviewer",
+    );
+    f.finish_invocation("B1");
+    f.reject(
+        "task extend-review",
+        spec.clone(),
+        "finish every required reviewer",
+    );
+    f.review("B1", &a, &p);
+    let before = f.show();
+    let mut missing = spec.clone();
+    missing.as_object_mut().unwrap().remove("decision_evidence");
+    f.reject("task extend-review", missing, "missing field");
+    for (field, value, error) in [
+        (
+            "decision_evidence",
+            json!([]),
+            "evidence references required",
+        ),
+        ("decision_evidence", json!(["unknown"]), "unknown evidence"),
+        ("authority", json!("intruder"), "authority/actor"),
+        ("previous_limit", json!(0), "stale previous"),
+        ("packet", json!("old-packet"), "stale latest"),
+        ("new_limit", json!(1), "exactly previous + 1"),
+        ("new_limit", json!(0), "exactly previous + 1"),
+        ("new_limit", json!(3), "exactly previous + 1"),
+        ("reason", json!("  "), "reason must be nonempty"),
+    ] {
+        let mut bad = spec.clone();
+        bad[field] = value;
+        f.reject("task extend-review", bad, error);
+    }
+    let path = f.file(spec.clone());
+    let unauthorized = Command::new(env!("CARGO_BIN_EXE_agents-collab"))
+        .args([
+            "task",
+            "extend-review",
+            "--json",
+            "--actor",
+            "intruder",
+            "--key",
+            "bad-actor",
+            "--expect",
+            &f.rev.to_string(),
+        ])
+        .arg("--record")
+        .arg(&f.record)
+        .arg("--input")
+        .arg(path)
+        .output()
+        .unwrap();
+    assert!(!unauthorized.status.success());
+    assert!(
+        body(&unauthorized)["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("authority/actor")
+    );
+    assert_eq!(f.show(), before);
+    // Legitimately recorded live work on an older writer blocks even a completed capped round.
+    // Use the engine's observation support for newly discovered liveness on a historical writer.
+    let mut g = Fixture::new();
+    g.create();
+    let a0 = g.freeze();
+    let mut context = g.packet_spec(&a0, 0);
+    context["purpose"] = json!("writer_context");
+    let wp = g.apply("packet seal", context)["packet"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    g.apply("assignment prepare", json!({"id":"W","packet":wp,"agent":"writer","role":"writer","editable_scope":["file.txt"],"output_destination":"private-writer"}));
+    g.finish_invocation("W");
+    let (a, p) = review_at_cap(&mut g, true);
+    g.apply("assignment observe", g.receipt("W", "running"));
+    g.reject(
+        "task extend-review",
+        extension(&p, &a, 1),
+        "nonterminal invocation",
+    );
+    g.apply("task cancel", json!({"reason":"owner cancels"}));
+    g.reject("task extend-review", extension(&p, &a, 1), "terminal");
+}
+#[test]
+fn review_extension_upgrade_faults_idempotency_and_handoff_never_downgrade() {
+    for prior_version in [1, 2] {
+        let mut f = quota_fixture();
+        f.create();
+        let (a, p) = review_at_cap(&mut f, true);
+        // Exercise the actual historical SQL constraints and state bodies.
+        let db = rusqlite::Connection::open(f.record.join("state.sqlite3")).unwrap();
+        let mut state = f.show();
+        state["schema_version"] = json!(prior_version);
+        db.execute_batch(&format!("ALTER TABLE state RENAME TO old_state; CREATE TABLE state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN ({})), revision INTEGER NOT NULL, body TEXT NOT NULL); INSERT INTO state SELECT singleton,{},revision,body FROM old_state; DROP TABLE old_state;", if prior_version == 1 { "1" } else { "1,2" }, prior_version)).unwrap();
+        db.execute(
+            "UPDATE state SET body=?",
+            [serde_json::to_string(&state).unwrap()],
+        )
+        .unwrap();
+        let before = f.show();
+        let input = f.file(extension(&p, &a, 1));
+        let expected = f.rev;
+        let failed = execute(
+            "task extend-review",
+            &f.record,
+            Some(&input),
+            Some("extension"),
+            Some(expected),
+            None,
+            Some("before-commit"),
+        );
+        assert!(!failed.status.success());
+        assert_eq!(f.show(), before);
+        let version: i64 = db
+            .query_row("SELECT schema_version FROM state", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(version, prior_version);
+        let committed = execute(
+            "task extend-review",
+            &f.record,
+            Some(&input),
+            Some("extension"),
+            Some(expected),
+            None,
+            Some("after-commit"),
+        );
+        assert!(!committed.status.success());
+        assert_eq!(f.show()["schema_version"], 3);
+        let replay = good(&execute(
+            "task extend-review",
+            &f.record,
+            Some(&input),
+            Some("extension"),
+            Some(expected),
+            None,
+            None,
+        ));
+        f.rev = replay["revision"].as_u64().unwrap();
+        assert_eq!(f.show()["review_extensions"].as_array().unwrap().len(), 1);
+        let version: i64 = db
+            .query_row("SELECT schema_version FROM state", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(version, 3); // prior engines admit only 1/2 before decoding state
+        if let Some(old_binary) = std::env::var_os("AGENTS_COLLAB_OLD_TEST_BINARY") {
+            let before_bytes = fs::read(f.record.join("state.sqlite3")).unwrap();
+            let old = Command::new(old_binary)
+                .args(["task", "show", "--json", "--record"])
+                .arg(&f.record)
+                .output()
+                .unwrap();
+            assert!(!old.status.success());
+            assert!(
+                body(&old)["error"]["message"]
+                    .as_str()
+                    .unwrap()
+                    .contains("unsupported schema")
+            );
+            assert_eq!(
+                fs::read(f.record.join("state.sqlite3")).unwrap(),
+                before_bytes
+            );
+        }
+        let stale = execute(
+            "task extend-review",
+            &f.record,
+            Some(&input),
+            Some("different-key"),
+            Some(expected),
+            None,
+            None,
+        );
+        assert!(
+            body(&stale)["error"]["message"]
+                .as_str()
+                .unwrap()
+                .contains("stale revision")
+        );
+        let mut altered = extension(&p, &a, 1);
+        altered["reason"] = json!("different decision");
+        let changed_input = f.file(altered);
+        let conflict = execute(
+            "task extend-review",
+            &f.record,
+            Some(&changed_input),
+            Some("extension"),
+            Some(expected),
+            None,
+            None,
+        );
+        assert!(
+            body(&conflict)["error"]["message"]
+                .as_str()
+                .unwrap()
+                .contains("idempotency key conflicts")
+        );
+        fs::write(f.repo.join("file.txt"), "additional repair\n").unwrap();
+        let new_artifact = f.freeze();
+        let packet = f.packet(&new_artifact, 2);
+        f.prepare("A2", "alpha", &packet);
+        interrupt_absent(&mut f, "A2");
+        f.apply(
+            "assignment handoff",
+            handoff_spec("A2", "new-codex", &packet, &new_artifact),
+        );
+        assert_eq!(f.show()["schema_version"], 3);
+        let version: i64 = db
+            .query_row("SELECT schema_version FROM state", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(version, 3);
+    }
+}

@@ -461,6 +461,22 @@ rejection before creation. The new dotted lifecycle regression fails against the
 previous executable at project validation. These results validate the source
 change; they do not establish installation or publication.
 
+## Task review allowance source increment (11 November 2026)
+
+The source adds explicit owner-authorized task review amendments through
+`task extend-review` and helper `extend-review`. At-cap reporting remains the
+default. Each retained amendment adds exactly one round after every required
+reviewer finishes the capped round and no invocation remains nonterminal.
+The engine preserves the frozen profile/hash and prior history, derives both
+packet and capture ceilings from the amendments, and retains existing approval
+and completion gates. Authority/evidence are host declarations, not human
+authentication. See the [operation contract](../skills/agents-collab/references/backend.md#task-review-allowance-amendment).
+
+First amendment upgrades SQL and state to format 3 so previous engines refuse
+new semantics; later quota handoffs preserve that format. Unamended format-1/2
+records remain readable. This is a source increment, not evidence of installation,
+publication, owner authentication or provider runtime behavior.
+
 ## Progress
 
 - [x] Preserve the eight-file validated package as the initial source.

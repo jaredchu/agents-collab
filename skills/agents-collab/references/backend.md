@@ -79,7 +79,9 @@ the low-level completion contract below; the helper never infers them.
 `-`). `--instructions` is a UTF-8 **file**, not inline text. `--round` is `0` for
 initial writing and the initial review; `N` for the repair `writer_context` and
 follow-up review after every reviewer finished round `N-1`. The profile's
-`max_followup_rounds` caps `N`; a follow-up review must name a changed artifact.
+`max_followup_rounds` supplies the baseline cap for `N`; only an explicit
+[task review amendment](#task-review-allowance-amendment) changes the effective
+cap. A follow-up review must name a changed artifact.
 `<command> --help` shows every flag.
 
 ## Initial cycle
@@ -142,6 +144,58 @@ $B assignment --record "$RECORD" --id review-2 --packet "$PACKET" \
 `--instructions` choices. The fix is a new assignment; see
 [assignment timing](configuration.md#assignment-timing). A follow-up packet may
 include prior findings, labeled as follow-up input.
+
+## Task review allowance amendment
+
+At the cap, report unresolved issues and keep the task blocked by default. Only
+an explicit owner-authorized task amendment can add exactly one follow-up round.
+Never extend automatically, reset round numbers, rename the task or relabel its
+scope to bypass the ceiling. This operation grants no review pass,
+implementation, release, waiver or policy approval.
+
+Retain the actual owner decision as evidence first (`evidence --input FILE`),
+then provide explicit JSON using the latest **review** packet identity and the
+current effective limit reported by `show`:
+
+```json
+{
+  "packet": "LATEST_REVIEW_PACKET_HASH",
+  "previous_limit": 1,
+  "new_limit": 2,
+  "authority": "lead",
+  "decision_evidence": ["REGISTERED_OWNER_DECISION_OBJECT_HASH"],
+  "reason": "Owner explicitly permits one further review to resolve the retained capped findings."
+}
+```
+
+```sh
+$B --actor lead extend-review --record "$RECORD" --input "$HOST/extension.json"
+```
+
+The low-level command is `task extend-review` with the ordinary `--actor`,
+`--key`, `--expect` and `--input` mutation arguments. `authority` must be a
+`spec.decision_authorities` identity and equal `--actor`. The engine checks
+nonempty registered `decision_evidence` references and a nonempty reason;
+these are host declarations, not human authentication or proof of consent.
+The host must retain a concrete decision and verify its scope.
+
+The latest reviewed round must be complete for every fixed reviewer and equal
+the effective cap. Every invocation must be terminal; completed/cancelled tasks
+refuse amendments. A stale packet, stale previous limit or any increase other
+than exactly one fails. Normal CAS and idempotency rules apply. The helper
+retains one operation receipt and never retries a conflict automatically.
+
+`show` reports `baseline_review_limit`, `effective_review_limit` and the retained
+`review_extensions`. The engine derives the effective ceiling from append-only
+amendments while preserving the frozen profile/hash, requirements, approvals,
+safeguards, reviewer set and all earlier assignments, deadlines and results.
+After extension use the next sequential round, changed source and fresh review
+through the ordinary workflow. Existing completion gates still apply.
+
+The first amendment upgrades SQL marker and state body to **format 3** in the
+same transaction, so older CLIs refuse it before interpreting the new allowance.
+A later quota handoff preserves format 3. This engine also reads unchanged
+format-1/2 records. No saved profile or backend selector is written.
 
 ## Quota-aware continuation
 
@@ -241,8 +295,9 @@ blocks because this engine cannot validate a supervisor. An advisory overrun is
 reported and is not a stop condition on its own.
 
 The first handoff explicitly upgrades the task's SQL and enclosing state format
-to **2** in the same transaction. Ordinary records remain format 1; this CLI reads
-both. Older CLIs refuse format 2 before interpreting it. Keep using a compatible
+to **2** in the same transaction (or retains format 3 after a review amendment).
+Ordinary records remain format 1; this CLI reads formats 1–3. Older CLIs refuse
+unsupported formats before interpreting them. Keep using a compatible
 binary; no downgrade or automatic backend switch is supported. No quota API,
 dispatcher, GUI prompt, absence detection or authority attestation is provided.
 
@@ -428,8 +483,10 @@ Completion follows verdicts, not dispositions. The latest review packet must nam
 the current artifact, and every required reviewer's result on it must be `pass`.
 While any current result is `changes_required`, `complete` is refused even if
 every finding is `rejected` with evidence or compatibly `deferred`. The only path
-forward is a changed artifact and a follow-up round, within
-`max_followup_rounds`, in which all required reviewers pass. A follow-up packet
+forward is a changed artifact and a follow-up round, within the
+effective task review limit, in which all required reviewers pass. Its baseline
+is `max_followup_rounds`; only an explicit [task amendment](#task-review-allowance-amendment)
+can increase it. A follow-up packet
 on the same artifact is refused and there is no adjudication command for it. A
 disagreement with a finding therefore needs a changed artifact and new reviews,
 or the task stays blocked: report it, then block or cancel. Do not start a new

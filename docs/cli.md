@@ -351,7 +351,12 @@ reports a blocker instead of implementing initial-round restart. All required
 reviewers receive this same identity. After every required review result is
 recorded, repair creates a new artifact and the next sequential packet round.
 Each follow-up requires the full fixed reviewer set and a changed artifact.
-The profile follow-up cap is retained; no replacement reviewer resets it.
+The frozen profile supplies the baseline follow-up cap; no replacement reviewer
+resets it. Only an explicit owner-authorized [task review amendment](../skills/agents-collab/references/backend.md#task-review-allowance-amendment)
+adds exactly one round through `task extend-review` (helper `extend-review`).
+`task show` reports the baseline, effective limit and retained amendments.
+Both packet validation and artifact capture use that effective limit. Round
+numbers, existing results and completion safeguards remain unchanged.
 
 ## Recorded writing before initial review
 
@@ -597,7 +602,7 @@ actual check/approval, not merely a coordinator's assertion.
 `export.json` is, for example, `{ "fields": ["state", "revision", "reviews"] }`.
 Allowed explicit fields are `spec`, `state`, `revision`, `artifacts`,
 `current_artifact`, `packets`, `assignments`, `reviews`, `findings`,
-`invalid_results`, `events`, `completion`. Profiles and raw object directories
+`invalid_results`, `events`, `completion`, `review_extensions`. Profiles and raw object directories
 are not exported automatically. **Selection is not sanitization:** these records
 can contain private paths, model preferences and text. Inspect/redact them before
 sharing; the binary cannot determine the intended audience.
@@ -608,12 +613,15 @@ Each task has `state.sqlite3`, `objects/`, `staging/` and `quarantine/`.
 Format 1 records include stable identifiers, actor/provenance and UTC times under
 a versioned enclosing task state. The first explicit `assignment handoff`
 transaction upgrades both SQL marker and enclosing state to format 2; ordinary
-records stay format 1. This engine reads both, while older engines refuse format
-2 before decoding new continuation semantics. JSON response envelopes remain
+records stay format 1. The first explicit `task extend-review` upgrades SQL and
+enclosing state to format 3, retaining append-only review allowances separately
+from the frozen profile. Later handoffs preserve format 3. This engine reads
+formats 1–3; older engines refuse unsupported formats before decoding their
+semantics. JSON response envelopes remain
 schema 1. There is no downgrade or silent profile migration. SQLite stores the
 complete typed state in one row with revision and operation-key constraints; references are checked in the
 application, not independent relational foreign-key tables. Apart from the
-explicit handoff upgrade, incompatible formats require an explicit supported
+explicit handoff/review-amendment upgrades, incompatible formats require an explicit supported
 migration; preserve originals.
 
 Runtime checks currently allow only local APFS on macOS. Network storage, other

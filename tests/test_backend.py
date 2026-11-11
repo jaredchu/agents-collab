@@ -522,6 +522,54 @@ class RealBackendTests(unittest.TestCase):
                     # Restore the fixture source for the next independent role scenario.
                     (self.repo / "source.txt").write_text("original frozen input\n")
 
+    def test_explicit_review_extension_helper_retains_decision_without_global_writes(self):
+        profile = json.loads(self.profile.read_text())
+        agents = {**profile["agents"], "reviewer": {"model": "synthetic-reviewer", "transport": "codex-native",
+                                                    "reasoning": "inherit"}}
+        self.use_profile(agents=agents, review={**profile["review"], "on_consequential_work": "single",
+                                                "candidates": ["reviewer"], "max_followup_rounds": 0})
+        selector_bytes = self.config.read_bytes()
+        record, host = self.begin_task(extra=("--reviewer", "reviewer"))
+        initial = self.ok(self.context(record, host, "review", 0, "review-zero"))
+        self.ok(self.invoke("assignment", "--record", record, "--id", "review-zero", "--packet", initial["packet"],
+                            "--agent", "reviewer", "--role", "reviewer", "--output-destination", str(host / "r0.json")))
+        self.ok(self.invoke("observe", "--record", record, "--assignment", "review-zero", "--state", "completed",
+                            "--invocation", "fresh-review-zero", "--boundary-observations", "Fresh synthetic session"))
+        review = self.shipped_example("verdict")
+        review.update(assignment="review-zero", artifact=initial["artifact"], packet=initial["packet"],
+                      verdict="changes_required")
+        review["verification"][0]["object"] = initial["artifact"]
+        (host / "r0.json").write_text(json.dumps(review))
+        self.assertTrue(self.ok(self.invoke("import-review", "--record", record, "--input", str(host / "r0.json")))["valid_review"])
+        decision = host / "owner-decision.txt"
+        decision.write_text("Synthetic owner explicitly permits exactly one further review; no implementation or release approval.")
+        evidence = self.ok(self.invoke("evidence", "--record", record, "--input", str(decision)))["evidence"]
+        before = self.show(record)["record"]
+        amendment = self.shipped_example("previous_limit")
+        amendment.update(packet=initial["packet"], previous_limit=0, new_limit=1, decision_evidence=[evidence])
+        amendment_file = host / "extension.json"
+        amendment_file.write_text(json.dumps(amendment))
+        result = self.ok(self.invoke("extend-review", "--record", record, "--input", str(amendment_file)))
+        self.assertEqual(result["result"]["effective_review_limit"], 1)
+        workflow = json.loads(Path(result["workflow"]).read_text())
+        self.assertEqual([(s["command"], s["status"]) for s in workflow["steps"]],
+                         [("task extend-review", "committed")])
+        state = self.show(record)
+        self.assertEqual((state["baseline_review_limit"], state["effective_review_limit"]), (0, 1))
+        for field in ("spec", "profile", "profile_hash", "assignments", "reviews", "findings", "state"):
+            self.assertEqual(state["record"][field], before[field])
+        self.assertEqual(state["record"]["schema_version"], 3)
+        self.assertEqual(self.profile.read_bytes(), self.original_profile)
+        self.assertEqual(self.config.read_bytes(), selector_bytes)
+        # The helper keeps raw contract bytes and uses the ordinary CAS mutation.
+        trace = Path(workflow["steps"][0]["trace"])
+        self.assertEqual((trace / "input.json").read_bytes(), amendment_file.read_bytes())
+        (self.repo / "source.txt").write_text("repaired after explicit extension\n")
+        followup = self.ok(self.context(record, host, "review", 1, "review-one"))
+        self.assertNotEqual(followup["artifact"], initial["artifact"])
+        self.assertEqual(self.profile.read_bytes(), self.original_profile)
+        self.assertEqual(self.config.read_bytes(), selector_bytes)
+
     def test_required_timing_refuses_launch_intent_without_fallback(self):
         profile = json.loads(self.profile.read_text())
         self.use_profile(bounds={**profile["bounds"], "enforcement": "required"})
