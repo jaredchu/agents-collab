@@ -477,6 +477,27 @@ new semantics; later quota handoffs preserve that format. Unamended format-1/2
 records remain readable. This is a source increment, not evidence of installation,
 publication, owner authentication or provider runtime behavior.
 
+## Reviewed commit acceptance source increment (13 November 2026)
+
+The low-level CLI adds explicit `task accept-commit` for approved staged work
+that has subsequently been committed. It verifies the full frozen index against
+the complete current commit tree, including omitted paths, checks tracked
+working bytes directly and preserves selected bytes/types/modes. The original
+artifact, review identity, history and caps remain intact. It appends a binding;
+ordinary strict checks remain unchanged without that explicit operation.
+
+The [CLI operation contract](cli.md#explicit-acceptance-of-a-reviewed-commit)
+defines decision declarations, source checks, rejected cases and coordinated-scan
+limits. Acceptance permits active/blocked tasks with passing required reviews and
+resolved gates; it neither activates nor completes them. Bound lifecycle checks
+reject subsequent source drift. New artifacts invalidate the active binding
+without removing its history or transferring approval.
+
+First acceptance upgrades SQL and enclosing state transactionally to format 4.
+Formats 1–3 remain readable; prior binaries refuse format 4, and subsequent review
+amendments or quota handoffs cannot downgrade it. This source increment does not
+establish installation, publication, atomic capture or authenticated authority.
+
 ## Progress
 
 - [x] Preserve the eight-file validated package as the initial source.

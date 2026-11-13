@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
-    os::unix::{ffi::OsStrExt, fs::PermissionsExt},
+    os::unix::{
+        ffi::OsStrExt,
+        fs::{MetadataExt, PermissionsExt},
+    },
     path::Path,
     process::Command,
 };
@@ -315,4 +318,179 @@ pub fn unchanged(repo: &Path, manifest: &Manifest) -> Result<()> {
         "live source identity changed after freeze; old review is retained only for old artifact"
     );
     Ok(())
+}
+
+// Git status alone can conceal skip-worktree/assume-unchanged files. Compare
+// every index entry directly with its blob, including omitted review paths.
+fn committed_tree(repo: &Path, commit: &str, frozen_index: &str) -> Result<()> {
+    let index = git(repo, &["ls-files", "--stage", "-z"])?;
+    ensure!(
+        hash(&index) == frozen_index,
+        "complete frozen index changed"
+    );
+    let mut staged = BTreeMap::new();
+    let mut aliases = BTreeSet::new();
+    let mut filesystem_names = BTreeMap::new();
+    for row in index.split(|b| *b == 0).filter(|b| !b.is_empty()) {
+        let tab = row
+            .iter()
+            .position(|b| *b == b'\t')
+            .ok_or_else(|| anyhow::anyhow!("invalid Git index row"))?;
+        let fields: Vec<_> = std::str::from_utf8(&row[..tab])?.split(' ').collect();
+        ensure!(
+            fields.len() == 3 && fields[2] == "0",
+            "unmerged index unsupported"
+        );
+        ensure!(
+            ["100644", "100755", "120000"].contains(&fields[0]),
+            "submodule or unsupported index mode"
+        );
+        let path = std::str::from_utf8(&row[tab + 1..])?;
+        relative(path)?;
+        ensure!(
+            aliases.insert(path.to_lowercase()),
+            "unsafe case-aliased index paths"
+        );
+        let full = repo.join(path);
+        no_links(full.parent().unwrap())?;
+        // Distinct Git spellings must not resolve to one filesystem object,
+        // including case/Unicode aliases in directory ancestry and hardlinks.
+        let mut prefix = String::new();
+        for part in path.split('/') {
+            if !prefix.is_empty() {
+                prefix.push('/');
+            }
+            prefix.push_str(part);
+            let m = fs::symlink_metadata(repo.join(&prefix))?;
+            if let Some(previous) = filesystem_names.insert((m.dev(), m.ino()), prefix.clone()) {
+                ensure!(previous == prefix, "unsafe filesystem path alias");
+            }
+        }
+        let meta = fs::symlink_metadata(&full)?;
+        let bytes = if fields[0] == "120000" {
+            ensure!(
+                meta.file_type().is_symlink(),
+                "tracked symlink type changed"
+            );
+            fs::read_link(&full)?.as_os_str().as_bytes().to_vec()
+        } else {
+            ensure!(
+                meta.is_file() && !meta.file_type().is_symlink(),
+                "tracked file type changed"
+            );
+            let mode = if meta.permissions().mode() & 0o100 != 0 {
+                "100755"
+            } else {
+                "100644"
+            };
+            ensure!(mode == fields[0], "tracked executable mode changed");
+            read(&full, u64::MAX - 1)?
+        };
+        ensure!(
+            bytes == git(repo, &["cat-file", "blob", fields[1]])?,
+            "tracked working bytes differ from committed index"
+        );
+        ensure!(
+            staged
+                .insert(
+                    path.to_owned(),
+                    (fields[0].to_owned(), fields[1].to_owned())
+                )
+                .is_none(),
+            "duplicate index path"
+        );
+    }
+    ensure!(
+        staged == tree(repo, commit)?,
+        "entire committed tree differs from frozen index"
+    );
+    ensure!(
+        git(
+            repo,
+            &["status", "--porcelain=v1", "-z", "--untracked-files=all"]
+        )?
+        .is_empty(),
+        "commit acceptance requires clean tracked and nonignored untracked worktree"
+    );
+    Ok(())
+}
+
+fn commit_scan(repo: &Path, frozen: &Manifest, commit: &str) -> Result<Manifest> {
+    repository(repo)?;
+    ensure!(
+        commit.len() == frozen.head.len()
+            && commit
+                .bytes()
+                .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()),
+        "exact full commit hash required"
+    );
+    ensure!(
+        text(git(repo, &["rev-parse", "--verify", "HEAD"])?)? == commit,
+        "requested commit must be current HEAD"
+    );
+    ensure!(
+        commit != frozen.head,
+        "commit must be a strict descendant of frozen HEAD"
+    );
+    git(repo, &["merge-base", "--is-ancestor", &frozen.head, commit])?;
+    committed_tree(repo, commit, &frozen.index)?;
+    let selection = Selection {
+        paths: frozen.entries.iter().map(|e| e.path.clone()).collect(),
+        omissions: frozen.omissions.clone(),
+        acknowledged_sensitive: frozen.entries.iter().map(|e| e.path.clone()).collect(),
+        quiescence: frozen.quiescence.clone(),
+        atomic_required: false,
+        base: frozen.base.clone(),
+    };
+    let (current, _) = scan(repo, &selection)?;
+    ensure!(
+        current.head == commit && current.index == frozen.index && current.status == hash(b""),
+        "commit source changed during verification"
+    );
+    for (old, new) in frozen.entries.iter().zip(&current.entries) {
+        ensure!(
+            old.path == new.path
+                && old.kind == new.kind
+                && old.mode == new.mode
+                && old.size == new.size
+                && old.object == new.object
+                && old.index_object == new.index_object
+                && old.index_mode == new.index_mode,
+            "selected reviewed working bytes/types/modes changed"
+        );
+        ensure!(
+            old.object == old.index_object,
+            "selected reviewed work was not staged"
+        );
+        let expected_mode = match old.kind.as_str() {
+            "deleted" => None,
+            "symlink" => Some("120000"),
+            "file" if old.mode & 0o100 != 0 => Some("100755"),
+            "file" => Some("100644"),
+            _ => anyhow::bail!("unsupported selected working type"),
+        };
+        ensure!(
+            old.index_mode.as_deref() == expected_mode
+                && new.head_object == old.object
+                && new.head_mode == old.index_mode,
+            "selected working version is not represented by committed staged version"
+        );
+    }
+    Ok(current)
+}
+
+pub fn accept_commit(repo: &Path, frozen: &Manifest, commit: &str) -> Result<Manifest> {
+    let before = commit_scan(repo, frozen, commit)?;
+    fault("accept-commit-scanned")?;
+    if std::env::var("AGENTS_COLLAB_ACCEPT_COMMIT_PAUSE")
+        .ok()
+        .as_deref()
+        == Some("test")
+    {
+        eprintln!("accept-commit-scanned-test-gate");
+        std::thread::sleep(std::time::Duration::from_millis(500));
+    }
+    let after = commit_scan(repo, frozen, commit)?;
+    ensure!(before == after, "source drift during commit acceptance");
+    Ok(before)
 }

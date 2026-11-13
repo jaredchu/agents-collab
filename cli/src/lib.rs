@@ -151,6 +151,23 @@ struct ReviewExtension {
     actor: String,
 }
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CommitAcceptanceSpec {
+    artifact: String,
+    commit: String,
+    authority: String,
+    decision_evidence: Vec<String>,
+    reason: String,
+}
+#[derive(Clone, Serialize, Deserialize)]
+struct CommitAcceptance {
+    id: String,
+    spec: CommitAcceptanceSpec,
+    at: u64,
+    actor: String,
+    manifest: snapshot::Manifest,
+}
+#[derive(Clone, Serialize, Deserialize)]
 struct Continuation {
     handoff: HandoffSpec,
     original_requested: profile::Agent,
@@ -263,6 +280,10 @@ struct State {
     completion: Option<Value>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     review_extensions: Vec<ReviewExtension>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    commit_acceptances: Vec<CommitAcceptance>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    current_commit_acceptance: Option<String>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -381,7 +402,7 @@ fn connection(root: &Path, create: bool) -> Result<Connection> {
                 "task missing or unsupported schema; preserve originals for explicit migration",
             )?;
         ensure!(
-            matches!(version, 1..=3),
+            matches!(version, 1..=4),
             "unsupported schema; explicit migration required"
         );
     }
@@ -391,7 +412,7 @@ fn connection(root: &Path, create: bool) -> Result<Connection> {
     c.pragma_update(None, "journal_mode", "DELETE")?;
     c.pragma_update(None, "synchronous", "FULL")?;
     if create {
-        c.execute_batch("CREATE TABLE IF NOT EXISTS state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN (1,2,3)), revision INTEGER NOT NULL, body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS operations (key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, response TEXT NOT NULL, revision INTEGER NOT NULL);")?;
+        c.execute_batch("CREATE TABLE IF NOT EXISTS state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN (1,2,3,4)), revision INTEGER NOT NULL, body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS operations (key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, response TEXT NOT NULL, revision INTEGER NOT NULL);")?;
     }
     Ok(c)
 }
@@ -404,12 +425,12 @@ fn load(c: &Connection) -> Result<State> {
         )
         .context("task missing or unsupported schema; explicit migration required")?;
     ensure!(
-        matches!(version, 1..=3),
+        matches!(version, 1..=4),
         "unsupported schema; explicit migration required"
     );
     let s: State = parse(body.as_bytes())?;
     ensure!(
-        matches!(s.schema_version, 1..=3) && s.schema_version == version as u64,
+        matches!(s.schema_version, 1..=4) && s.schema_version == version as u64,
         "unsupported state schema"
     );
     Ok(s)
@@ -589,15 +610,108 @@ fn extend_review(s: &mut State, input: &Value, actor: &str) -> Result<Value> {
         at: now(),
         actor: actor.into(),
     });
-    s.schema_version = 3;
+    s.schema_version = s.schema_version.max(3);
     Ok(
         json!({"baseline_review_limit":s.profile.review.max_followup_rounds,
         "effective_review_limit":effective_review_limit(s), "amendment":s.review_extensions.last(),
         "authority_limit":"host declaration only; no review pass, implementation, release, waiver or policy approval"}),
     )
 }
+fn current_source(s: &State, artifact: &Artifact) -> Result<()> {
+    if let Some(id) = &s.current_commit_acceptance {
+        let binding = s
+            .commit_acceptances
+            .iter()
+            .find(|b| &b.id == id)
+            .context("missing commit acceptance binding")?;
+        ensure!(
+            binding.spec.artifact == artifact.id,
+            "commit acceptance artifact mismatch"
+        );
+        let current =
+            snapshot::accept_commit(&s.spec.repository, &artifact.manifest, &binding.spec.commit)?;
+        ensure!(
+            current == binding.manifest,
+            "bound post-commit source identity changed"
+        );
+        Ok(())
+    } else {
+        snapshot::unchanged(&s.spec.repository, &artifact.manifest)
+    }
+}
+fn check_bound_source(s: &State) -> Result<()> {
+    if s.current_commit_acceptance.is_some() {
+        let artifact = s
+            .artifacts
+            .iter()
+            .find(|a| s.current_artifact.as_deref() == Some(&a.id))
+            .context("missing bound artifact")?;
+        current_source(s, artifact)?;
+    }
+    Ok(())
+}
+fn accept_commit(s: &mut State, root: &Path, input: &Value, actor: &str) -> Result<Value> {
+    let spec: CommitAcceptanceSpec = decode(input)?;
+    ensure!(
+        ["active", "blocked"].contains(&s.state.as_str()),
+        "only active/blocked task can accept commit"
+    );
+    ensure!(
+        s.current_commit_acceptance.is_none(),
+        "current artifact already has a commit acceptance"
+    );
+    ensure!(
+        s.spec.decision_authorities.contains(&spec.authority) && actor == spec.authority,
+        "declared decision authority/actor required; not authentication"
+    );
+    nonempty(&spec.reason, "commit acceptance reason")?;
+    refs(s, &spec.decision_evidence)?;
+    ensure!(
+        s.current_artifact.as_deref() == Some(&spec.artifact),
+        "commit acceptance artifact mismatch"
+    );
+    let gates: Vec<_> = blockers(s)
+        .into_iter()
+        .filter(|b| b != "task is blocked")
+        .collect();
+    ensure!(
+        gates.is_empty(),
+        "commit acceptance blocked: {}",
+        gates.join("; ")
+    );
+    let artifact = s
+        .artifacts
+        .iter()
+        .find(|a| a.id == spec.artifact)
+        .context("missing frozen artifact")?;
+    let manifest = snapshot::accept_commit(&s.spec.repository, &artifact.manifest, &spec.commit)?;
+    // Retain the only new source object referenced by the post-commit manifest:
+    // all selected content and index/base objects already belong to the artifact.
+    let status = put(root, b"")?;
+    ensure!(status == manifest.status, "accepted status must be clean");
+    register(s, status, "task/accepted-clean-status");
+    let at = now();
+    let id = put(
+        root,
+        &encoded(&json!({"spec":spec,"at":at,"actor":actor,"manifest":manifest}))?,
+    )?;
+    register(s, id.clone(), "task/commit-acceptance");
+    s.commit_acceptances.push(CommitAcceptance {
+        id: id.clone(),
+        spec,
+        at,
+        actor: actor.into(),
+        manifest,
+    });
+    s.current_commit_acceptance = Some(id.clone());
+    s.schema_version = s.schema_version.max(4);
+    Ok(
+        json!({"commit_acceptance":id,"binding":s.commit_acceptances.last(),
+        "validation":"coordinated repeated source verification; declared authority only; no automatic activation or completion"}),
+    )
+}
 fn summary(s: &State) -> Value {
-    json!({"schema_version":1,"task":s.spec.task,"revision":s.revision,"state":s.state,"blockers":blockers(s),"next_permitted_operations":if s.state=="completed"||s.state=="cancelled"{vec!["task show","task export","task check","task reconcile"]}else{vec!["task show","task check","task reconcile","artifact freeze","packet preview","packet seal","assignment prepare","assignment handoff","assignment observe","review import","finding resolve","task extend-review","task block","task activate","task cancel","task complete"]},"baseline_review_limit":s.profile.review.max_followup_rounds,"effective_review_limit":effective_review_limit(s),"review_extensions":s.review_extensions,"record":s,"live_source":live_source(s)})
+    json!({"schema_version":1,"task":s.spec.task,"revision":s.revision,"state":s.state,"blockers":blockers(s),"next_permitted_operations":if s.state=="completed"||s.state=="cancelled"{vec!["task show","task export","task check","task reconcile"]}else{vec!["task show","task check","task reconcile","artifact freeze","packet preview","packet seal","assignment prepare","assignment handoff","assignment observe","review import","finding resolve","task extend-review","task accept-commit","task block","task activate","task cancel","task complete"]},"baseline_review_limit":s.profile.review.max_followup_rounds,"effective_review_limit":effective_review_limit(s),"review_extensions":s.review_extensions,"record":s,"live_source":live_source(s)})
 }
 fn packet_validate(s: &State, p: &PacketSpec) -> Result<()> {
     ensure!(
@@ -1097,6 +1211,7 @@ fn mutate(
 ) -> Result<Value> {
     match command {
         "task extend-review" => extend_review(s, input, actor),
+        "task accept-commit" => accept_commit(s, root, input, actor),
         "artifact freeze" => {
             if let Some(p) = latest_review_packet(s) {
                 ensure!(
@@ -1129,6 +1244,9 @@ fn mutate(
                     actor: actor.into(),
                     manifest,
                 });
+            }
+            if s.current_artifact.as_deref() != Some(&id) {
+                s.current_commit_acceptance = None;
             }
             s.current_artifact = Some(id.clone());
             Ok(json!({"artifact":id}))
@@ -1317,6 +1435,7 @@ fn mutate(
             Ok(json!({"recorded":true}))
         }
         "task activate" => {
+            check_bound_source(s)?;
             let reason: Lifecycle = decode(input)?;
             nonempty(&reason.reason, "reason")?;
             ensure!(
@@ -1374,7 +1493,7 @@ fn mutate(
                 .iter()
                 .find(|a| a.id == completion.artifact)
                 .context("missing completion artifact")?;
-            snapshot::unchanged(&s.spec.repository, &a.manifest)?;
+            current_source(s, a)?;
             let v = serde_json::to_value(&completion)?;
             s.completion = Some(v.clone());
             s.state = "completed".into();
@@ -1383,6 +1502,7 @@ fn mutate(
             )
         }
         "task reconcile" => {
+            check_bound_source(s)?;
             let reason: Lifecycle = decode(input)?;
             nonempty(&reason.reason, "reconciliation reason")?;
             for a in &mut s.assignments {
@@ -1518,6 +1638,8 @@ fn create(req: &Request, raw: &[u8], actor: &str, key: &str, expected: u64) -> R
         events: vec![],
         completion: None,
         review_extensions: vec![],
+        commit_acceptances: vec![],
+        current_commit_acceptance: None,
     };
     let id = put(&root, &profile_raw)?;
     register(&mut s, id, "profile/private-resolved-preferences");
@@ -1590,7 +1712,7 @@ pub fn run(req: Request) -> Result<Value> {
                     .artifacts
                     .iter()
                     .find(|a| s.current_artifact.as_deref() == Some(&a.id))
-                    && let Err(e) = snapshot::unchanged(&s.spec.repository, &a.manifest)
+                    && let Err(e) = current_source(&s, a)
                 {
                     b.push(format!("live source verification: {e}"));
                 }
@@ -1624,7 +1746,9 @@ pub fn run(req: Request) -> Result<Value> {
                             "invalid_results",
                             "events",
                             "completion",
-                            "review_extensions"
+                            "review_extensions",
+                            "commit_acceptances",
+                            "current_commit_acceptance"
                         ]
                         .contains(&f.as_str()),
                         "export field not allowed; profile/raw storage exports unavailable"
@@ -1715,11 +1839,15 @@ pub fn run(req: Request) -> Result<Value> {
         [],
         |r| r.get(0),
     )?;
+    ensure!(
+        i64::try_from(s.schema_version)? >= stored_version,
+        "record format cannot downgrade"
+    );
     if i64::try_from(s.schema_version)? > stored_version {
         // Rebuild historical CHECK constraints transactionally. Keep the old
         // row intact until the final update; rollback preserves its marker/body.
         tx.execute_batch("ALTER TABLE state RENAME TO state_previous_format;
-            CREATE TABLE state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN (1,2,3)), revision INTEGER NOT NULL, body TEXT NOT NULL);
+            CREATE TABLE state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN (1,2,3,4)), revision INTEGER NOT NULL, body TEXT NOT NULL);
             INSERT INTO state SELECT * FROM state_previous_format;
             DROP TABLE state_previous_format;")?;
     }

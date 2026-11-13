@@ -2403,3 +2403,657 @@ fn review_extension_upgrade_faults_idempotency_and_handoff_never_downgrade() {
         assert_eq!(version, 3);
     }
 }
+
+fn head(repo: &Path) -> String {
+    let out = Command::new("git")
+        .arg("-C")
+        .arg(repo)
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    String::from_utf8(out.stdout).unwrap().trim().to_owned()
+}
+fn accept_spec(f: &Fixture, artifact: &str) -> Value {
+    json!({"artifact":artifact,"commit":head(&f.repo),"authority":"owner",
+        "decision_evidence":[artifact],"reason":"Explicitly bind reviewed staged work to its descendant commit"})
+}
+fn passing_pair(f: &mut Fixture, artifact: &str, round: u64) -> String {
+    let packet = f.packet(artifact, round);
+    for (prefix, agent) in [("A", "alpha"), ("B", "beta")] {
+        let id = format!("{prefix}{round}");
+        f.prepare(&id, agent, &packet);
+        f.finish_invocation(&id);
+        f.review(&id, artifact, &packet);
+    }
+    packet
+}
+fn staged_review(omitted: bool) -> (Fixture, String) {
+    let mut f = Fixture::new();
+    f.create();
+    f.apply("task activate", json!({"reason":"start"}));
+    fs::write(f.repo.join("file.txt"), "reviewed staged change\n").unwrap();
+    git(&f.repo, &["add", "file.txt"]);
+    let a = if omitted {
+        f.apply("artifact freeze", json!({"paths":["file.txt"],"omissions":{".gitignore":"unchanged infrastructure","deleted.txt":"unchanged fixture"},"acknowledged_sensitive":[],"quiescence":"writer stopped","atomic_required":false,"base":"HEAD"}))["artifact"].as_str().unwrap().to_owned()
+    } else {
+        f.freeze()
+    };
+    passing_pair(&mut f, &a, 0);
+    (f, a)
+}
+fn completion_spec(a: &str) -> Value {
+    json!({"artifact":a,"criteria":{"C1":[a]},"checks":{"offline":[a]},"approvals":{"owner":[a]},"reason":"Complete reviewed work"})
+}
+#[test]
+fn explicit_commit_acceptance_preserves_history_and_closes_blocked_task() {
+    let (mut f, a) = staged_review(true);
+    git(&f.repo, &["commit", "-qm", "reviewed change"]);
+    f.reject(
+        "task complete",
+        completion_spec(&a),
+        "live source identity changed",
+    );
+    f.apply("task block", json!({"reason":"post-commit identity drift"}));
+    let before = f.show();
+    let original_objects: Vec<_> = before["objects"]
+        .as_object()
+        .unwrap()
+        .keys()
+        .map(|id| {
+            (
+                id.clone(),
+                fs::read(f.record.join("objects").join(id)).unwrap(),
+            )
+        })
+        .collect();
+    let accepted = f.apply("task accept-commit", accept_spec(&f, &a));
+    assert!(accepted["commit_acceptance"].is_string());
+    let after = f.show();
+    for field in [
+        "spec",
+        "profile",
+        "profile_hash",
+        "created_at",
+        "state",
+        "reason",
+        "artifacts",
+        "current_artifact",
+        "packets",
+        "assignments",
+        "reviews",
+        "findings",
+        "invalid_results",
+        "completion",
+        "review_extensions",
+    ] {
+        assert_eq!(after[field], before[field], "changed {field}");
+    }
+    assert_eq!(
+        &after["events"].as_array().unwrap()[..before["events"].as_array().unwrap().len()],
+        before["events"].as_array().unwrap()
+    );
+    for (id, bytes) in original_objects {
+        assert_eq!(after["objects"][&id], before["objects"][&id]);
+        assert_eq!(fs::read(f.record.join("objects").join(id)).unwrap(), bytes);
+    }
+    assert_eq!(after["schema_version"], 4);
+    assert_eq!(after["commit_acceptances"].as_array().unwrap().len(), 1);
+    f.reject("task accept-commit", accept_spec(&f, &a), "already has");
+    f.reject("task complete", completion_spec(&a), "only active");
+    f.apply(
+        "task reconcile",
+        json!({"reason":"verify retained binding"}),
+    );
+    f.apply(
+        "task activate",
+        json!({"reason":"explicitly resume after acceptance"}),
+    );
+    let checked = good(&execute(
+        "task check",
+        &f.record,
+        None,
+        None,
+        None,
+        None,
+        None,
+    ));
+    assert_eq!(checked["completion_blockers"], json!([]));
+    assert_eq!(f.complete(&a)["state"], "completed");
+    f.reject("task accept-commit", accept_spec(&f, &a), "terminal");
+}
+
+#[test]
+fn commit_acceptance_rejects_omitted_tree_drift_unstaged_work_and_hidden_dirty_files() {
+    for scenario in [
+        "omitted-commit",
+        "unstaged-review",
+        "unstaged-mode",
+        "dirty",
+        "untracked",
+        "assume-unchanged",
+        "skip-worktree",
+        "wrong-head",
+        "unrelated",
+        "changed-stage",
+        "missing-source",
+        "ignored-selected",
+    ] {
+        let (mut f, a) = if ["unstaged-review", "unstaged-mode", "ignored-selected"]
+            .contains(&scenario)
+        {
+            let mut f = Fixture::new();
+            f.create();
+            f.apply("task activate", json!({"reason":"start"}));
+            if scenario == "unstaged-review" {
+                fs::write(f.repo.join("file.txt"), "reviewed but not staged\n").unwrap();
+            } else if scenario == "unstaged-mode" {
+                fs::set_permissions(f.repo.join("file.txt"), fs::Permissions::from_mode(0o755))
+                    .unwrap();
+            } else {
+                fs::write(f.repo.join("ignored.txt"), "ignored evidence\n").unwrap();
+            }
+            let a = if scenario == "ignored-selected" {
+                f.apply("artifact freeze", json!({"paths":[".gitignore","deleted.txt","file.txt","ignored.txt"],"omissions":{},"acknowledged_sensitive":[],"quiescence":"writer stopped","atomic_required":false,"base":"HEAD"}))["artifact"].as_str().unwrap().to_owned()
+            } else {
+                f.freeze()
+            };
+            passing_pair(&mut f, &a, 0);
+            if scenario != "ignored-selected" {
+                git(&f.repo, &["add", "file.txt"]);
+            }
+            (f, a)
+        } else {
+            staged_review(true)
+        };
+        if scenario == "omitted-commit" {
+            fs::write(f.repo.join("deleted.txt"), "unreviewed omitted change\n").unwrap();
+            git(&f.repo, &["add", "deleted.txt"]);
+        }
+        let old_head = head(&f.repo);
+        git(&f.repo, &["commit", "--allow-empty", "-qm", "commit"]);
+        let mut input = accept_spec(&f, &a);
+        let expected = match scenario {
+            "omitted-commit" | "unstaged-review" | "unstaged-mode" => {
+                "complete frozen index changed"
+            }
+            "dirty" => {
+                fs::write(f.repo.join("deleted.txt"), "dirty omitted file\n").unwrap();
+                "tracked working bytes"
+            }
+            "untracked" => {
+                fs::write(f.repo.join("extra.txt"), "extra\n").unwrap();
+                "requires clean"
+            }
+            "assume-unchanged" | "skip-worktree" => {
+                git(
+                    &f.repo,
+                    &["update-index", &format!("--{scenario}"), "deleted.txt"],
+                );
+                fs::write(f.repo.join("deleted.txt"), "hidden dirty omitted file\n").unwrap();
+                "tracked working bytes"
+            }
+            "wrong-head" => {
+                input["commit"] = json!(old_head);
+                "current HEAD"
+            }
+            "unrelated" => {
+                let tree = Command::new("git")
+                    .arg("-C")
+                    .arg(&f.repo)
+                    .args(["rev-parse", "HEAD^{tree}"])
+                    .output()
+                    .unwrap();
+                let out = Command::new("git")
+                    .arg("-C")
+                    .arg(&f.repo)
+                    .args([
+                        "commit-tree",
+                        String::from_utf8(tree.stdout).unwrap().trim(),
+                        "-m",
+                        "unrelated root",
+                    ])
+                    .output()
+                    .unwrap();
+                assert!(out.status.success());
+                let commit = String::from_utf8(out.stdout).unwrap();
+                git(&f.repo, &["reset", "--hard", commit.trim()]);
+                input["commit"] = json!(head(&f.repo));
+                "Git inspection failed"
+            }
+            "changed-stage" => {
+                fs::write(f.repo.join("deleted.txt"), "different stage\n").unwrap();
+                git(&f.repo, &["add", "deleted.txt"]);
+                "complete frozen index changed"
+            }
+            "missing-source" => {
+                fs::rename(&f.repo, f.repo.with_file_name("moved")).unwrap();
+                "No such file"
+            }
+            "ignored-selected" => {
+                fs::write(f.repo.join("ignored.txt"), "changed ignored evidence\n").unwrap();
+                "selected reviewed working"
+            }
+            _ => unreachable!(),
+        };
+        let before = f.show();
+        f.reject("task accept-commit", input, expected);
+        assert_eq!(f.show(), before, "failed acceptance mutated {scenario}");
+    }
+}
+
+#[test]
+fn acceptance_handles_staged_deletion_executable_and_symlink_and_rejects_later_drift() {
+    let mut f = Fixture::new();
+    f.create();
+    f.apply("task activate", json!({"reason":"start"}));
+    fs::remove_file(f.repo.join("deleted.txt")).unwrap();
+    fs::set_permissions(f.repo.join("file.txt"), fs::Permissions::from_mode(0o755)).unwrap();
+    symlink("file.txt", f.repo.join("link.txt")).unwrap();
+    git(&f.repo, &["add", "-A"]);
+    let a = f.apply("artifact freeze", json!({"paths":[".gitignore","deleted.txt","file.txt","link.txt"],"omissions":{},"acknowledged_sensitive":[],"quiescence":"writer stopped","atomic_required":false,"base":"HEAD"}))["artifact"].as_str().unwrap().to_owned();
+    passing_pair(&mut f, &a, 0);
+    git(&f.repo, &["commit", "-qm", "reviewed types and modes"]);
+    f.apply("task accept-commit", accept_spec(&f, &a));
+    for scenario in ["mode", "link", "deletion", "head"] {
+        match scenario {
+            "mode" => {
+                fs::set_permissions(f.repo.join("file.txt"), fs::Permissions::from_mode(0o644))
+                    .unwrap()
+            }
+            "link" => {
+                fs::remove_file(f.repo.join("link.txt")).unwrap();
+                symlink("deleted.txt", f.repo.join("link.txt")).unwrap();
+            }
+            "deletion" => fs::write(f.repo.join("deleted.txt"), "restored\n").unwrap(),
+            "head" => git(&f.repo, &["commit", "--allow-empty", "-qm", "later commit"]),
+            _ => unreachable!(),
+        }
+        let check = good(&execute(
+            "task check",
+            &f.record,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ));
+        assert!(!check["completion_blockers"].as_array().unwrap().is_empty());
+        let input = f.file(completion_spec(&a));
+        assert!(
+            !execute(
+                "task complete",
+                &f.record,
+                Some(&input),
+                Some(scenario),
+                Some(f.rev),
+                None,
+                None
+            )
+            .status
+            .success()
+        );
+        f.apply("task block", json!({"reason":"drift observed"}));
+        for cmd in ["task activate", "task reconcile"] {
+            let input = f.file(json!({"reason":"must verify binding"}));
+            assert!(
+                !execute(
+                    cmd,
+                    &f.record,
+                    Some(&input),
+                    Some(&format!("{cmd}-{scenario}")),
+                    Some(f.rev),
+                    None,
+                    None
+                )
+                .status
+                .success()
+            );
+        }
+        match scenario {
+            "mode" => {
+                fs::set_permissions(f.repo.join("file.txt"), fs::Permissions::from_mode(0o755))
+                    .unwrap()
+            }
+            "link" => {
+                fs::remove_file(f.repo.join("link.txt")).unwrap();
+                symlink("file.txt", f.repo.join("link.txt")).unwrap();
+            }
+            "deletion" => fs::remove_file(f.repo.join("deleted.txt")).unwrap(),
+            "head" => git(&f.repo, &["reset", "--hard", "HEAD~1"]),
+            _ => unreachable!(),
+        }
+        f.apply(
+            "task activate",
+            json!({"reason":"original bound source restored"}),
+        );
+    }
+    assert_eq!(f.complete(&a)["state"], "completed");
+}
+
+#[test]
+fn acceptance_requires_authority_current_artifact_reviews_and_all_assignment_gates() {
+    let (mut f, a) = staged_review(false);
+    git(&f.repo, &["commit", "-qm", "reviewed"]);
+    for (field, value, error) in [
+        ("authority", json!("stranger"), "authority/actor"),
+        ("artifact", json!("wrong"), "artifact mismatch"),
+        ("reason", json!(" "), "nonempty"),
+        ("decision_evidence", json!([]), "evidence references"),
+        ("commit", json!(&head(&f.repo)[..8]), "exact full commit"),
+    ] {
+        let mut spec = accept_spec(&f, &a);
+        spec[field] = value;
+        f.reject("task accept-commit", spec, error);
+    }
+    for state in [
+        "prepared",
+        "launching",
+        "running",
+        "unknown",
+        "blocked",
+        "interrupted",
+    ] {
+        let mut f = Fixture::new();
+        f.create();
+        f.apply("task activate", json!({"reason":"start"}));
+        fs::write(f.repo.join("file.txt"), "staged change\n").unwrap();
+        git(&f.repo, &["add", "file.txt"]);
+        let a = f.freeze();
+        let packet = f.packet(&a, 0);
+        f.prepare("A", "alpha", &packet);
+        f.finish_invocation("A");
+        f.review("A", &a, &packet);
+        f.prepare("extra", "beta", &packet);
+        if state != "prepared" {
+            f.apply("assignment observe", f.receipt("extra", "launching"));
+            if state != "launching" {
+                f.apply("assignment observe", f.receipt("extra", state));
+            }
+        }
+        git(&f.repo, &["commit", "-qm", "reviewed"]);
+        f.reject(
+            "task accept-commit",
+            accept_spec(&f, &a),
+            "commit acceptance blocked",
+        );
+    }
+    for verdict in ["missing", "changes_required", "material"] {
+        let mut f = Fixture::new();
+        f.create();
+        f.apply("task activate", json!({"reason":"start"}));
+        let a = f.freeze();
+        let p = f.packet(&a, 0);
+        for (id, agent) in [("A", "alpha"), ("B", "beta")] {
+            f.prepare(id, agent, &p);
+            f.finish_invocation(id);
+            if verdict == "missing" && id == "B" {
+                continue;
+            }
+            let mut r = f.review_spec(id, &a, &p);
+            if id == "A" && verdict == "changes_required" {
+                r["verdict"] = json!("changes_required");
+            }
+            if id == "A" && verdict == "material" {
+                r["verdict"] = json!("changes_required");
+                r["findings"] = json!([{"id":"F1","location":"file.txt","scenario":"synthetic material risk","evidence":"fixture","uncertainty":"none","material":true,"recommendation":"resolve"}]);
+            }
+            f.apply("review import", r);
+        }
+        git(&f.repo, &["commit", "--allow-empty", "-qm", "descendant"]);
+        f.reject(
+            "task accept-commit",
+            accept_spec(&f, &a),
+            "commit acceptance blocked",
+        );
+    }
+}
+
+#[test]
+fn acceptance_migrates_legacy_formats_atomically_and_replays_without_duplicate_binding() {
+    for prior in [1, 2, 3] {
+        let (mut f, a) = staged_review(false);
+        let db = rusqlite::Connection::open(f.record.join("state.sqlite3")).unwrap();
+        let mut state = f.show();
+        state["schema_version"] = json!(prior);
+        let versions = (1..=prior)
+            .map(|n| n.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+        db.execute_batch(&format!("ALTER TABLE state RENAME TO old_state; CREATE TABLE state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN ({versions})), revision INTEGER NOT NULL, body TEXT NOT NULL); INSERT INTO state SELECT singleton,{prior},revision,body FROM old_state; DROP TABLE old_state;")).unwrap();
+        db.execute(
+            "UPDATE state SET body=?",
+            [serde_json::to_string(&state).unwrap()],
+        )
+        .unwrap();
+        git(&f.repo, &["commit", "-qm", "reviewed"]);
+        let before = f.show();
+        let input = f.file(accept_spec(&f, &a));
+        let expected = f.rev;
+        let failed = execute(
+            "task accept-commit",
+            &f.record,
+            Some(&input),
+            Some("accept"),
+            Some(expected),
+            None,
+            Some("before-commit"),
+        );
+        assert!(!failed.status.success());
+        assert_eq!(f.show(), before);
+        let version: i64 = db
+            .query_row("SELECT schema_version FROM state", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(version, prior);
+        let committed = execute(
+            "task accept-commit",
+            &f.record,
+            Some(&input),
+            Some("accept"),
+            Some(expected),
+            None,
+            Some("after-commit"),
+        );
+        assert!(!committed.status.success());
+        let replay = good(&execute(
+            "task accept-commit",
+            &f.record,
+            Some(&input),
+            Some("accept"),
+            Some(expected),
+            None,
+            None,
+        ));
+        f.rev = replay["revision"].as_u64().unwrap();
+        assert_eq!(f.show()["commit_acceptances"].as_array().unwrap().len(), 1);
+        let version: i64 = db
+            .query_row("SELECT schema_version FROM state", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(version, 4);
+        let stale = execute(
+            "task accept-commit",
+            &f.record,
+            Some(&input),
+            Some("stale"),
+            Some(expected),
+            None,
+            None,
+        );
+        assert!(
+            body(&stale)["error"]["message"]
+                .as_str()
+                .unwrap()
+                .contains("stale revision")
+        );
+        let mut altered = accept_spec(&f, &a);
+        altered["reason"] = json!("different request");
+        let altered = f.file(altered);
+        let conflict = execute(
+            "task accept-commit",
+            &f.record,
+            Some(&altered),
+            Some("accept"),
+            Some(expected),
+            None,
+            None,
+        );
+        assert!(
+            body(&conflict)["error"]["message"]
+                .as_str()
+                .unwrap()
+                .contains("idempotency key conflicts")
+        );
+        if let Some(old) = std::env::var_os("AGENTS_COLLAB_PRE_ACCEPT_TEST_BINARY") {
+            let bytes = fs::read(f.record.join("state.sqlite3")).unwrap();
+            let out = Command::new(old)
+                .args(["task", "show", "--json", "--record"])
+                .arg(&f.record)
+                .output()
+                .unwrap();
+            assert!(!out.status.success());
+            assert!(
+                body(&out)["error"]["message"]
+                    .as_str()
+                    .unwrap()
+                    .contains("unsupported schema")
+            );
+            assert_eq!(fs::read(f.record.join("state.sqlite3")).unwrap(), bytes);
+        }
+        // Read-only frozen evidence remains usable even if the checkout vanishes.
+        fs::rename(&f.repo, f.repo.with_file_name("moved")).unwrap();
+        assert_eq!(f.show()["artifacts"], before["artifacts"]);
+        let p =
+            f.file(json!({"fields":["commit_acceptances","current_commit_acceptance","reviews"]}));
+        good(&execute(
+            "task export",
+            &f.record,
+            Some(&p),
+            None,
+            None,
+            None,
+            None,
+        ));
+    }
+}
+
+#[test]
+fn new_artifact_invalidates_binding_and_later_review_extension_never_downgrades_format() {
+    let (mut f, a) = staged_review(false);
+    git(&f.repo, &["commit", "-qm", "reviewed"]);
+    f.apply("task accept-commit", accept_spec(&f, &a));
+    let bindings = f.show()["commit_acceptances"].clone();
+    fs::write(f.repo.join("file.txt"), "new work\n").unwrap();
+    let next = f.freeze();
+    assert_ne!(next, a);
+    assert!(f.show()["current_commit_acceptance"].is_null());
+    assert_eq!(f.show()["commit_acceptances"], bindings);
+    f.reject(
+        "task complete",
+        completion_spec(&next),
+        "completion blocked",
+    );
+    let p = passing_pair(&mut f, &next, 1);
+    f.apply("task extend-review", extension(&p, &next, 1));
+    assert_eq!(f.show()["schema_version"], 4);
+    let db = rusqlite::Connection::open(f.record.join("state.sqlite3")).unwrap();
+    let v: i64 = db
+        .query_row("SELECT schema_version FROM state", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(v, 4);
+    assert_eq!(f.complete(&next)["state"], "completed");
+}
+
+#[test]
+fn acceptance_double_scan_rejects_concurrent_omitted_worktree_change() {
+    use std::io::{BufRead, BufReader};
+    let (mut f, a) = staged_review(true);
+    git(&f.repo, &["commit", "-qm", "reviewed"]);
+    let before = f.show();
+    let input = f.file(accept_spec(&f, &a));
+    let mut child = Command::new(env!("CARGO_BIN_EXE_agents-collab"))
+        .args(["task", "accept-commit", "--json", "--record"])
+        .arg(&f.record)
+        .arg("--input")
+        .arg(input)
+        .args([
+            "--key",
+            "concurrent-accept",
+            "--actor",
+            "owner",
+            "--expect",
+            &f.rev.to_string(),
+        ])
+        .env("AGENTS_COLLAB_ACCEPT_COMMIT_PAUSE", "test")
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut line = String::new();
+    BufReader::new(child.stderr.take().unwrap())
+        .read_line(&mut line)
+        .unwrap();
+    assert!(line.contains("accept-commit-scanned-test-gate"));
+    fs::write(f.repo.join("deleted.txt"), "concurrent omitted change\n").unwrap();
+    let out = child.wait_with_output().unwrap();
+    assert!(!out.status.success());
+    assert!(
+        body(&out)["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("tracked working bytes")
+    );
+    assert_eq!(f.show(), before);
+}
+
+#[test]
+fn acceptance_rejects_head_tree_mismatch_unstaged_only_evidence_and_filesystem_aliases() {
+    for scenario in ["tree", "unstaged-only", "ignored", "hardlink"] {
+        let (mut f, a) = if scenario == "tree" {
+            staged_review(true)
+        } else {
+            let mut f = Fixture::new();
+            f.create();
+            f.apply("task activate", json!({"reason":"start"}));
+            if scenario == "unstaged-only" {
+                fs::write(f.repo.join("file.txt"), "unstaged evidence\n").unwrap();
+            } else if scenario == "ignored" {
+                fs::write(f.repo.join("ignored.txt"), "ignored evidence\n").unwrap();
+            } else {
+                fs::remove_file(f.repo.join("deleted.txt")).unwrap();
+                fs::hard_link(f.repo.join("file.txt"), f.repo.join("deleted.txt")).unwrap();
+                git(&f.repo, &["add", "deleted.txt"]);
+            }
+            let a = if scenario == "ignored" {
+                f.apply("artifact freeze", json!({"paths":[".gitignore","deleted.txt","file.txt","ignored.txt"],"omissions":{},"acknowledged_sensitive":[],"quiescence":"writer stopped","atomic_required":false,"base":"HEAD"}))["artifact"].as_str().unwrap().to_owned()
+            } else {
+                f.freeze()
+            };
+            passing_pair(&mut f, &a, 0);
+            (f, a)
+        };
+        let expected = if scenario == "tree" {
+            let reviewed_index = f.inputs.join("reviewed-index");
+            fs::copy(f.repo.join(".git/index"), &reviewed_index).unwrap();
+            fs::write(f.repo.join("deleted.txt"), "unreviewed tree content\n").unwrap();
+            git(&f.repo, &["add", "deleted.txt"]);
+            git(&f.repo, &["commit", "-qm", "different tree"]);
+            fs::copy(reviewed_index, f.repo.join(".git/index")).unwrap();
+            fs::write(f.repo.join("deleted.txt"), "old\n").unwrap();
+            "entire committed tree differs"
+        } else {
+            if scenario == "unstaged-only" {
+                git(&f.repo, &["restore", "file.txt"]);
+            }
+            git(&f.repo, &["commit", "--allow-empty", "-qm", "descendant"]);
+            match scenario {
+                "unstaged-only" => "selected reviewed working bytes",
+                "ignored" => "selected reviewed work was not staged",
+                "hardlink" => "unsafe filesystem path alias",
+                _ => unreachable!(),
+            }
+        };
+        let before = f.show();
+        f.reject("task accept-commit", accept_spec(&f, &a), expected);
+        assert_eq!(before, f.show());
+    }
+}

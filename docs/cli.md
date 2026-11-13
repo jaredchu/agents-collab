@@ -550,10 +550,12 @@ Activation permits prepared/blocked tasks. Completed/cancelled tasks cannot
 reopen or mutate except reconciliation. Cancellation does not claim worker
 termination. `check` verifies committed object integrity and reports structural
 completion blockers; it does not itself complete a task or validate liveness.
-Frozen-record inspection, selected export, packet access and reconciliation
+Frozen-record inspection, selected export and packet access
 remain available when the original live checkout is removed or unavailable.
-Their `live_source` observation reports that condition explicitly; capture and
-new completion still require the canonical live source, and `check` reports its
+Their `live_source` observation reports that condition explicitly. Unbound
+reconciliation also remains available. A commit-bound task requires source
+verification before reconciliation or activation. Capture and new completion
+still require the canonical live source, and `check` reports its
 unavailability as a completion blocker. Stored original path overlap checks and
 any currently resolvable source alias remain enforced.
 
@@ -602,10 +604,75 @@ actual check/approval, not merely a coordinator's assertion.
 `export.json` is, for example, `{ "fields": ["state", "revision", "reviews"] }`.
 Allowed explicit fields are `spec`, `state`, `revision`, `artifacts`,
 `current_artifact`, `packets`, `assignments`, `reviews`, `findings`,
-`invalid_results`, `events`, `completion`, `review_extensions`. Profiles and raw object directories
+`invalid_results`, `events`, `completion`, `review_extensions`,
+`commit_acceptances`, `current_commit_acceptance`. Profiles and raw object directories
 are not exported automatically. **Selection is not sanitization:** these records
 can contain private paths, model preferences and text. Inspect/redact them before
 sharing; the binary cannot determine the intended audience.
+
+## Explicit acceptance of a reviewed commit
+
+A normal Git commit changes HEAD and status even when it commits exactly the
+reviewed staged work. Ordinary `check` and `complete` keep their strict frozen
+identity checks. The low-level `task accept-commit` operation explicitly binds
+the current approved artifact to one exact current descendant commit:
+
+```json
+{"artifact":"ARTIFACT","commit":"FULL_CURRENT_HEAD_HASH","authority":"owner","decision_evidence":["OBJECT"],"reason":"Explain the authorized acceptance of the reviewed staged tree"}
+```
+
+```sh
+"$CLI" task accept-commit --record "$RECORD" --input "$INPUT/accept-commit.json" \
+  --actor owner --key accept-commit-1 --expect 12 --json
+```
+
+Use the actual revision from the preceding response. The actor must match a
+registered decision authority, the reason must be nonempty, and decision evidence
+must reference retained objects. These checks establish a declared decision and
+attribution, not human authentication or the truth of those evidence bytes. The
+host must establish the real authorization and coordinate a quiescent source.
+
+Acceptance requires active or blocked state, all required current-artifact
+reviews passing, no unfinished/blocked/interrupted assignment, and resolved
+compatible material findings. It does not activate or complete the task. A
+blocked task may then be explicitly activated and completed using the original
+artifact and existing completion evidence. A disposition cannot override a
+current `changes_required` verdict.
+
+Verification requires all of the following on repeated scans:
+
+- The supplied full hash is current HEAD and a strict descendant of frozen HEAD.
+- The **complete** current index matches the frozen index, and the entire HEAD
+  tree matches that index, including omitted paths.
+- Every tracked index path has its committed bytes, type and Git mode in the
+  worktree; direct reads detect changes hidden by assume-unchanged or skip-worktree
+  flags. Status must also contain no tracked or nonignored untracked changes.
+- Every selected working entry still has its reviewed bytes, length, type and
+  exact filesystem mode, and is represented by the frozen staged version.
+  Selected ignored or unstaged-only evidence cannot be accepted merely because
+  other files were committed. Deleted selected entries must remain deleted.
+
+Submodules, unmerged indexes, unsafe paths, case-aliased index paths and
+distinct paths resolving to the same filesystem object (including hardlinks)
+are refused. Filters or checkout transformations whose working bytes differ from
+Git blobs are conservatively refused. This performs no Git writes. The repeated
+scans detect observed drift but do not establish an atomic snapshot against an
+external editor; coordinated quiescence remains necessary.
+
+The operation appends a content-addressed binding and audit event. Original
+artifacts, packets, assignments, reviews, findings, profile, caps and earlier
+objects/events remain unchanged. No replacement snapshot or review reset is
+needed. `check`, `activate`, `reconcile` and `complete` subsequently verify the
+bound post-commit identity and reject later drift (including a later commit with
+identical contents). `check` reports drift as a completion blocker. Frozen
+inspection and export remain available without the source. A genuinely new
+artifact invalidates the active binding and requires its own reviews; historical
+bindings remain retained and cannot authorize the new artifact.
+
+Only one active binding is allowed. Identical operation-key retries return the
+original receipt under the existing revision/idempotency contract, even after
+later source changes; they do not revalidate the source. Use `check` for a fresh
+verification. A different request using the same key fails.
 
 ## Storage and failure limits
 
@@ -615,14 +682,16 @@ a versioned enclosing task state. The first explicit `assignment handoff`
 transaction upgrades both SQL marker and enclosing state to format 2; ordinary
 records stay format 1. The first explicit `task extend-review` upgrades SQL and
 enclosing state to format 3, retaining append-only review allowances separately
-from the frozen profile. Later handoffs preserve format 3. This engine reads
-formats 1–3; older engines refuse unsupported formats before decoding their
-semantics. JSON response envelopes remain
+from the frozen profile. The first explicit `task accept-commit` upgrades SQL
+and enclosing state transactionally to format 4, retaining its post-commit
+binding separately from original artifacts. Later handoffs and review amendments
+preserve the highest format. This engine reads formats 1–4; older engines refuse
+unsupported formats before decoding their semantics. JSON response envelopes remain
 schema 1. There is no downgrade or silent profile migration. SQLite stores the
 complete typed state in one row with revision and operation-key constraints; references are checked in the
 application, not independent relational foreign-key tables. Apart from the
-explicit handoff/review-amendment upgrades, incompatible formats require an explicit supported
-migration; preserve originals.
+explicit handoff/review-amendment/commit-acceptance upgrades, incompatible formats
+require an explicit supported migration; preserve originals.
 
 Runtime checks currently allow only local APFS on macOS. Network storage, other
 filesystems and other platforms are refused. The configured root must exist;
