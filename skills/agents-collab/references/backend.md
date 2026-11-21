@@ -213,11 +213,12 @@ if [ "$REVIEWER_TRANSPORT" = "codex-native" ]; then
   $B native-dispatch --record "$RECORD" --assignment review-1
   # Pass its message verbatim, exact task_name and requested model/effort and
   # fresh-session controls to the native host tool. Do not pass only review-0.txt.
+elif [ "$REVIEWER_TRANSPORT" = "claude-cli" ]; then
+  $B claude-dispatch --record "$RECORD" --assignment review-1
+  # Pass its message verbatim on stdin and capture the exact terminal result.
 else
-  # Other transports (native-dispatch refuses them): send the sealed review
-  # instructions, full frozen context, exact assignment/packet/artifact
-  # identities and final-output contract.
-  :
+  printf '%s\n' 'Unsupported reviewer transport' >&2
+  exit 1
 fi
 # Dispatch the fresh reviewer, retain its terminal result, then:
 # Add --exit-code only when the host exposes an actual code; native hosts may not.
@@ -451,14 +452,7 @@ labelled continuation, never an original matched result.
    Inspect `show` after any uncertain response; never repeat the whole workflow
    blindly. The old assignment becomes `superseded` and cannot resume or import
    a second result. A race loses through CAS or the already-used slot.
-5. Record `observe --assignment NEW_ID --state launching` before dispatch. Use a
-   fresh invocation with the chosen model/effort and attach its real identity.
-   A reviewer receives the same neutral frozen packet and no writer transcript;
-   it must not reuse the writer's or original reviewer's session. Its review
-   `fresh_session` must equal the completed invocation string exactly, with no
-   explanatory prefix or suffix. Put boundary observations in `limits` or
-   `tool_boundary`. The backend checks retained identities, not actual context
-   isolation.
+5. Dispatch through the [replacement procedure](#dispatch-the-quota-replacement).
 
 Example reviewer handoff (replace symbolic hashes and paths with actual values):
 
@@ -467,15 +461,102 @@ Example reviewer handoff (replace symbolic hashes and paths with actual values):
   "assignment": "review-1", "replacement": "review-1-continuation",
   "packet": "PACKET", "agent": "continuation-reviewer",
   "selection": {"model": "codex-model-id", "transport": "codex-native", "reasoning": "inherit"},
-  "output_destination": "HOST/review-1-continuation.json",
+  "output_destination": "HOST/handoff-output/review-1-continuation.json",
   "decision": "continue_with_codex", "authority": "lead",
   "decision_evidence": ["DECISION_OBJECT"],
   "reason": "Owner explicitly chose available Codex after quota interruption",
   "previous_invocation": "OLD_SESSION", "timing": "preserve_deadline",
-  "instructions": "Fresh review of the same neutral frozen packet; no writer transcript; report actual model and context limits",
+  "instructions": "Fresh review of the original neutral frozen packet. Follow the complete replacement review contract supplied at dispatch. Wait for the exact invocation ID if needed before returning the final JSON.",
   "partial_work": null
 }
 ```
+
+### Dispatch the quota replacement
+
+Prepare the message below and record launch intent. Run the read-only check
+against the saved destination of the replacement assignment immediately before
+starting the fresh invocation.
+
+```sh
+$B observe --record "$RECORD" --assignment "$NEW_ID" --state launching \
+  --boundary-observations "Replacement launch intent recorded"
+$B check-replacement-output --record "$RECORD" --assignment "$NEW_ID"
+```
+
+On success, use the returned `output_destination` for that assignment. The
+check uses the same path rules as the ordinary renderers and leaves the
+record unchanged. A successful check describes the location at that moment.
+Repeat it if the launch is delayed or the location changes. Launch with the
+selected model and effort and attach the actual invocation identity once the
+host exposes it.
+
+Pause dispatch after any refusal. For a missing launch intent, stale artifact,
+unverified record integrity or inactive task, follow the reported error and
+reconcile the record before repeating the check. If an invocation is already
+attached, reconcile that worker through `observe` before any further action.
+
+For a destination or storage refusal, use the read-only `show` command to
+check whether the helper can still bind the same record. Inspect host or
+supervisor evidence to establish whether a worker ran.
+
+If storage validation fails for the record or its `host/` directory, the
+binding step also refuses `show`, `observe`, and `evidence`. Keep dispatch
+paused and retain host observations in authorized private storage outside
+the affected record, host directory, and any Git checkout. The recorded
+intent stays as it was. Resume record operations only once authorized
+recovery restores the saved layout and `show` and `check` verify the same
+record. Then reconcile the actual worker state before recording evidence
+or repeating preflight.
+
+If Git covers either task directory, leave the repository and its metadata
+intact. An owner-approved storage repair may relocate the conflicting
+checkout intact to private storage and restore the original private task
+directories from verified copies at their recorded paths. A probe or
+environment error needs an authorized correction that allows storage
+validation to succeed. If the original layout cannot be restored safely,
+leave the task unresolved and retain the observations outside the record.
+
+If the helper can still bind the record and the refusal applies only to
+the destination, use the following recovery steps.
+
+- If the host confirms that none ran, keep the registered destination fixed.
+  For a stray file or directory layout problem outside Git, restore safe
+  storage only with authorization, preserving unexpected files in private
+  storage. Then repeat `check-replacement-output` using the original recorded
+  launch intent. If Git covers only the output subdirectory, leave that
+  repository and its metadata in place and record the replacement as
+  `blocked` with the reason.
+  Record the same outcome if safe storage otherwise cannot be restored.
+- If a worker ran, use `observe` to attach its actual invocation and state.
+  If liveness is uncertain, record `unknown` and keep dispatch paused pending
+  reconciliation.
+
+An indeterminate Git probe or an explicit Git worktree override is a storage
+refusal. Repeat the check only after an authorized correction establishes the
+actual private path. The check is for pending launch intents. For an
+`unknown` or `blocked` replacement, record the actual host observations and
+keep the slot unresolved if no invocation can be safely attached. Preserve the
+existing intent history.
+
+Keep host evidence privately while the intent is unresolved. The `evidence`
+command refuses while any assignment remains in `launching` state.
+
+For a reviewer, send the original neutral sealed packet and its frozen source
+with the **complete [review contract](#review-contract)**, including the JSON
+object and its formatting and field rules. Populate `assignment` with the
+replacement ID and `packet` and `artifact` with the original registered hashes.
+Use that artifact hash for the default verification `object`. Keep the original
+packet unchanged. The lead assembles this message because the ordinary
+renderers refuse quota continuations.
+
+The reviewer's `fresh_session` must exactly equal the actual replacement
+invocation string that the lead records on completion. Use a host path that
+can supply that string to the reviewer before its final response. If the
+identity becomes available only after launch, instruct the reviewer to wait
+for it before finalizing. Attach the real identity and send it to the same
+replacement session. Keep boundary observations in `limits` or
+`tool_boundary`, and keep the writer transcript and old reviewer session out
+of the replacement.
 
 For a writer, `instructions` must say this is a continuation using **current
 partial source**, not fresh writing from an old snapshot. Supply `partial_work`
@@ -516,7 +597,8 @@ to **2** in the same transaction; a record already at format 3 (review amendment
 or format 4 (low-level `task accept-commit`, which explicitly binds approved
 staged work to its later commit) keeps its higher format. Ordinary records remain
 format 1. This procedure applies to ordinary records in formats 1–4. The CLI
-refuses unsupported formats before interpreting them. Keep using a compatible
+reads format 6 for the opt-in route and refuses unsupported formats before
+interpreting them. Keep using a compatible
 binary; no downgrade or automatic backend switch is supported. No quota API,
 dispatcher, GUI prompt, absence detection or authority attestation is provided.
 
@@ -548,12 +630,23 @@ context to preserve just the header. The message_sha256 describes constructed me
 it does not attest delivery or complete delivered-context equality. Do not
 send only a context-file path or substitute an older assignment's message for a
 new packet. The renderer checks active task, launching/no-invocation state,
-native transport, current artifact, role/purpose and immutable record integrity.
+native transport, current artifact, role/purpose, immutable record integrity and
+the registered output destination's private storage boundary.
 It creates no directories, traces, assignments or workers. Rendering is not
 permission, a lease, a liveness check or delivery evidence; inspect the host
 before any uncertain dispatch and never retry blindly. Quota continuations are
 refused here because their dedicated instructions/partial-work handoff must be
 preserved. The existing continuation procedure remains authoritative.
+
+For an ordinary `claude-cli` reviewer, `claude-dispatch --record RECORD
+--assignment ID` applies the same state, identity and immutable-context
+checks with the Claude transport. Its `message` includes the reviewer contract
+and full frozen context, and its `message_sha256` identifies those exact intended
+stdin bytes. Use the [Claude review procedure](review-protocol.md#fresh-claude-cli-review)
+for launch, timing and terminal capture. Confirm the interface accepts the entire
+message. If it does not fit, stop and reconcile the launch intent. The renderer runs no process or transport
+and does not attest delivery. Use the existing writer and continuation procedures
+for their respective assignments.
 
 Raw native argument fields can be opaque. An envelope-shaped message without
 visible hashes cannot establish what plaintext the caller sent or the child
@@ -675,13 +768,14 @@ The reviewer's terminal final message is this complete JSON object and nothing
 else: no prose, heading or fences before or after it. Any summary belongs in
 `limits`, verification descriptions or findings. If the reviewer also writes the
 assigned output file, the file holds the same JSON object as the final message.
-For an ordinary `codex-native` reviewer, `native-dispatch` places this contract,
+For an ordinary `codex-native` or `claude-cli` reviewer, the matching renderer
+places this contract,
 with the exact recorded assignment, packet and artifact identities, after the
 identity header and before the frozen context (`final_output` in its result);
 writer messages get a report contract instead and are never asked for this JSON.
-For other transports, copy the contract with identity placeholders into the
-review instructions before sealing, and supply the actual hashes and assignment
-ID at dispatch; do not edit a sealed packet to insert its own hash.
+Manual mode uses its own output contract. For a quota replacement, the lead
+supplies this complete contract using the
+[replacement dispatch procedure](#dispatch-the-quota-replacement).
 
 Review instructions must not ask for a different final output, such as "a JSON
 file plus a concise summary". Ask for findings in the schema fields. The native

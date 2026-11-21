@@ -53,6 +53,28 @@ or content hashes and any relevant environment limits. Reconcile material drift
 between reviewers before claiming they assessed equivalent inputs. Do not imply
 that hashing the patch freezes external services or the whole test environment.
 
+## Shared checkout handoff
+
+When Codex and Claude Code share a checkout, agree on one writer for overlapping
+paths through the user or an existing authorized task channel. The handoff
+identifies the checkout, relative paths, writer, and whether edits are active,
+held for review or released. Keep private packets, receipts and context contents
+out of that signal. If an independent session cannot confirm ownership, it can
+read and report findings while it pauses overlapping writes.
+
+The outgoing writer finishes its edits and explicitly releases ownership when
+transferring it. The incoming writer acknowledges the release and rereads the
+current files before making changes. For a freeze, the lead confirms the writer
+has stopped and marks the paths held for review. The lead releases that hold at
+completion or coordinates the next authorized writer before repair. This is
+session coordination. File access remains unlocked.
+
+Include authorized reviewable Context Docs changes in the editable scope before
+writing and finish them before freezing. Defer separate context maintenance
+until the review hold is released. Local-only context and journal payloads
+stay private unless sharing is separately authorized. Include the applicable
+safeguards in reviewer instructions without copying private content.
+
 ## Context and permission boundary
 
 Every native dispatch message must carry its exact registered assignment ID,
@@ -70,7 +92,7 @@ that independence cannot be established through that path.
 
 For CLI review use a fresh process, not resume/continue, and a neutral working
 directory where practical. Explicitly account for automatically loaded memory,
-project instructions, hooks, plugins and MCP tools. Tool-less review can consume
+project instructions, skills, hooks, plugins and MCP tools. Tool-less review can consume
 a supplied text packet, but it cannot claim independent repository/test inspection.
 When using a neutral directory, include the applicable project instructions in
 the packet; do not omit project safeguards along with unwanted conversation state.
@@ -88,22 +110,42 @@ The lead runs these steps itself. No bundled script dispatches reviewers.
    key already in the environment may change which account or billing the CLI
    uses. Under `existing-subscriptions`, resolve that with the user before
    dispatch; do not run it silently.
-3. Start one new process per reviewer with the configured model and effort. Pass
-   the frozen packet on standard input or as a file in the working directory.
+3. For an ordinary CLI-backed reviewer, after recorded launch intent run
+   `backend.py claude-dispatch --record RECORD --assignment ID`. Start one new
+   process per reviewer with the configured model and effort and pass the
+   returned `message` verbatim as UTF-8 on stdin. Confirm that the interface
+   accepts the complete message before launch. Keep any supporting-file identity
+   checks the reviewer cannot perform explicit in its evidence limits. In manual
+   mode pass the full frozen packet with its handoff identities and manual output contract.
    Never use continue/resume options or a shared session ID.
-4. Working directory: use a neutral empty directory inside the private task
-   record for packet-only review. Use the frozen snapshot or project when
+4. Working directory: use a dedicated empty subdirectory of the private
+   `host/` directory for packet-only review. Use the frozen snapshot or project when
    repository inspection is required. Either way, user-level memory and
    settings may still load; report that. Do not add permission-bypass or
    "skip permissions" options. Use only the tool and permission options the
    task permits. If a required tool is denied, report it rather than widening
-   access.
+   access. A working directory alone does not restrict filesystem access.
 5. Apply [assignment timing](configuration.md#assignment-timing): a required
    deadline needs a supervisor that can stop this process; an advisory target
    is labeled as such and does not by itself justify stopping the reviewer.
-6. Record the requested model/effort, what the CLI accepted, the process
-   identity and its final state. Store the reviewer's output as that reviewer's
-   initial result before showing it to anyone else.
+   Use a host session the lead can poll and reconcile independently of a single
+   wait. If the host imposes an unavoidable cutoff, disclose it before launch.
+   An expired wait or lost reply leaves liveness unknown until reconciled.
+   A ProcLease service expiry does not supervise a reviewer invocation.
+6. Choose a CLI output mode that identifies the terminal message. Capture the
+   terminal response and stderr privately. For a structured envelope, require
+   a successful terminal event and decode its designated result field. Preserve
+   its exact UTF-8 bytes, including whitespace, as the terminal original.
+   Recheck the assigned destination's private storage boundary. Create the
+   assigned file exclusively if absent. If a reviewer has written it already,
+   compare its bytes with the independent terminal original. Preserve both on
+   mismatch and leave the result unresolved before import. Observe the actual
+   process state before importing and reconcile uncertainty before any retry.
+7. Record the requested model and effort, what the interface accepted, actual
+   invocation identity and exit state, and permission observations. If a task
+   explicitly permits a reviewer to start a leased service, retain its job ID
+   and registry in the private handoff. The lead reconciles cleanup by exact ID
+   under the task's authorization.
 
 Profiles never contain commands or executable paths. The transport name selects
 these steps, and the lead builds the invocation from the configured fields.

@@ -75,6 +75,13 @@ activation description; dependable implicit activation remains unestablished.
 
 ### Current overview
 
+The unreleased skill source checks both private record and host storage
+boundaries and revalidates saved output paths before rendering a dispatch
+or continuing a quota replacement. The
+[backend procedure](../skills/agents-collab/references/backend.md#observations-and-retries)
+covers native and Claude CLI review messages. The host owns dispatch and
+worker reconciliation. The Rust engine and record formats are unchanged.
+
 [v0.1.0](https://github.com/jaredchu/agents-collab/releases/tag/v0.1.0) is the
 first experimental release, published on 21 November 2026 from `2481df2`.
 It includes the thirteen-file skill ZIP, the optional macOS arm64 CLI archive
@@ -782,3 +789,4 @@ and implicit activation remains unestablished.
 - [x] Integrate the reviewed source into the working checkout.
 - [x] Commit the integrated source and the explicit opt-in review workflow.
 - [x] Merge the reviewed opt-in workflow and publish the verified v0.1.0 release.
+- [x] Prepare the private-storage and dispatch checks in the unreleased skill source.

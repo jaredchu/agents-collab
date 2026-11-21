@@ -1,6 +1,6 @@
 ---
 name: agents-collab
-description: Use proactively, without being asked, at the start of any coding task that is substantial (sustained multi-file implementation, shared logic or interface changes) or consequential (security, privacy, safety boundaries, data integrity, production behavior, external claims), and whenever multi-model work or independent review is requested. It routes the task through the user's configured collaboration profile, which selects a writer and/or a fresh independent reviewer. Skip it for small routine changes the lead can verify alone. This draft targets a Codex-led pilot; other leads need adapter validation.
+description: For Codex-led sessions, use proactively at the start of substantial coding (sustained multi-file work, shared logic or interface changes), consequential work (security, privacy, safety boundaries, data integrity, production behavior, external claims), or requested multi-model or independent review. Routes through the user's configured collaboration profile. Skip small routine changes the lead can verify alone. Claude CLI can collaborate under a Codex lead.
 ---
 
 # Agents Collab
@@ -10,6 +10,8 @@ collaboration profile supplies preferences, not authority. This draft targets a
 Codex lead with native subagents and optional Claude CLI dispatch; do not claim
 other leads are supported until their adapters are tested. No bundled helper
 dispatches models, supervises workers, enforces deadlines or attests model/effort.
+If Claude Code is the lead, treat this workflow as unavailable before creating
+records or dispatching. A required Agents Collab review needs a supported lead.
 
 ## 1. Classify
 
@@ -38,12 +40,12 @@ Before creating any task state, freezing packets or launching collaborators,
 resolve the backend with this read-only command and inspect its successful result:
 
 ```sh
-python3 <skill-dir>/scripts/backend.py status
+python3 -B <skill-dir>/scripts/backend.py status
 ```
 
 Backend configuration is separate from the collaboration profile. Unless the
 user or binding task/project instructions explicitly supply another backend
-configuration path, run `python3 <skill-dir>/scripts/backend.py status` without
+configuration path, run `python3 -B <skill-dir>/scripts/backend.py status` without
 `--config`, using `~/.config/agents-collab/backend.json`. A task-local profile
 does not override that selector. Never invent an absent `--config` path or
 create a replacement selector to enter manual mode or avoid an enabled CLI.
@@ -51,7 +53,7 @@ A supplied collaboration profile belongs only in `--profile FILE`, including
 when it is task-local. For example:
 
 ```sh
-python3 <skill-dir>/scripts/backend.py --profile /absolute/task/profile.json status
+python3 -B <skill-dir>/scripts/backend.py --profile /absolute/task/profile.json status
 ```
 
 That command still checks the default backend selector. A generic instruction
@@ -128,6 +130,8 @@ Use native delegation when it exposes the configured model and effort. For
 Claude CLI use explicit model/effort, a fresh invocation and only permitted
 tools; never a shared transcript, `--continue` or `--resume` for an initial
 review, and never global setting changes or permission bypasses. Follow the
+[CLI review procedure](references/review-protocol.md#fresh-claude-cli-review) for
+a Claude CLI reviewer and the
 [CLI writer procedure](references/review-protocol.md#claude-cli-writer) for a
 Claude CLI writer. Similar model names do not make transports interchangeable.
 
@@ -155,20 +159,20 @@ assignment and deadline.
 
 ## 5. Review, fix and finish
 
-For every native writing/review dispatch, include the exact recorded assignment,
-packet SHA-256 and artifact SHA-256 in the message sent to the native tool.
-A packet-file path alone does not state those identities. With CLI records and
-an ordinary `codex-native` assignment only (other transports use sealed
-instructions instead; the command refuses them), after `assignment` records
-launching intent, run
-`python3 <skill-dir>/scripts/backend.py native-dispatch --record RECORD --assignment ID`
-and pass the returned **message string verbatim** and **task_name value exactly**
-to the native host tool (task_name is a dispatch-identity digest, not a free-form label),
-using the recorded model/effort and required fresh-session controls. It renders
-registered immutable context; it never launches, grants authority, leases a
-worker or proves delivery. Reconcile an uncertain invocation before dispatching;
-re-rendering a message is not permission to retry. Quota continuations still
-require the dedicated handoff/partial-work procedure rather than this renderer.
+For every dispatch, include the exact recorded assignment, packet SHA-256 and
+artifact SHA-256. With CLI records, after `assignment` records launching intent,
+use the renderer for the recorded transport:
+
+- Ordinary `codex-native` writer or reviewer: run `backend.py native-dispatch
+  --record RECORD --assignment ID`. Pass its **message verbatim** and **task_name
+  exactly** to the native tool with the recorded model, effort and session controls.
+- Ordinary `claude-cli` reviewer: run `backend.py claude-dispatch --record RECORD
+  --assignment ID` and pass its **message verbatim** on stdin using the
+  [CLI review procedure](references/review-protocol.md#fresh-claude-cli-review).
+
+The renderers construct immutable context. The host still owns launch and receipt
+checks. Reconcile an uncertain invocation before retrying. Claude writers, manual
+records and quota continuations use their own packet and handoff procedures.
 
 Scope review to the whole change. At `start`, give `--scope` every path the
 writer may create or change, including docs, CLI entry points and tests; a
@@ -194,10 +198,11 @@ task work and changes hidden by index flags are outside it
 ([coverage limits](references/backend.md#review-coverage-guard)).
 
 With the CLI backend, a reviewer's terminal final message is the complete review
-JSON object and nothing else. For an ordinary `codex-native` reviewer the
-native-dispatch message states this contract with the recorded identities; for
-every other transport, put the contract in the review instructions before
-sealing. In manual mode, use the packet template's prose output contract instead.
+JSON object. The matching renderer supplies this contract with the recorded
+identities for ordinary native and Claude CLI reviewers. Quota continuations
+receive the full JSON contract through the
+[quota continuation dispatch procedure](references/backend.md#dispatch-the-quota-replacement).
+The manual packet uses prose.
 With CLI records, never ask a reviewer for a prose summary as its final message;
 summaries belong in schema fields. Import the retained final message;
 any written result file must equal it. A result file, preview, wait summary or
@@ -217,7 +222,9 @@ transport values, obtain keys, substitute packet-file contents, or count a local
 message preview as evidence that the host delivered it.
 
 Keep one writer per artifact; a reviewer returns findings and never silently
-becomes the writer. For independent review follow the
+becomes the writer. Coordinate overlapping Codex and Claude Code sessions via
+the [shared checkout handoff](references/review-protocol.md#shared-checkout-handoff)
+before writing, freezing or transferring ownership. For independent review follow the
 [review protocol](references/review-protocol.md) and start from the
 [packet template](assets/review-packet.md). Every required initial reviewer gets
 the same neutral packet and frozen artifact in a fresh session, without the

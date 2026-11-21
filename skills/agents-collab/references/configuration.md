@@ -148,7 +148,12 @@ existing component, and the actual project root. Reject the target if either
 path contains the other. A `records_root` that is merely an ancestor of
 project trees is not a collision by itself; the final task directory decides.
 Complete this check before creating any directory, file or symlink, and stop
-if either path cannot be resolved.
+if either path cannot be resolved. CLI storage validation checks the actual
+record, host and output directories for Git markers and repositories discoverable
+from those paths. It accepts only an ordinary Git absence; explicit `GIT_DIR`
+or `GIT_WORK_TREE`, permission or ownership errors, unrecognized Git output and
+timeouts block storage. If an externally attached worktree covers a path without
+discoverable Git metadata, choose private storage outside that worktree.
 
 Create the task record only when collaboration actually begins. The
 [task-state template](../assets/task-state.json) is a starting point, not a

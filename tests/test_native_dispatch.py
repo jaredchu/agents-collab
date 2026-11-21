@@ -42,6 +42,7 @@ class NativeDispatchTests(unittest.TestCase):
                                       'state':'launching','observations':[{'receipt':{'invocation':None}}],
                                       'requested':{'transport':'codex-native','model':'synthetic','reasoning':'medium'}}]}
         self.engine = backend.Backend.__new__(backend.Backend);self.engine.record = self.root
+        self.engine.host = self.root
         self.engine.call = mock.Mock(return_value={'integrity':'verified'})
         self.args = argparse.Namespace(assignment='review-1')
 
@@ -70,6 +71,21 @@ class NativeDispatchTests(unittest.TestCase):
             with self.subTest(change=change),self.assertRaises(ValueError):
                 backend.native_dispatch(self.engine,self.args,state)
             self.assertEqual(before,inventory(self.root))
+
+    def test_dispatch_and_replacement_refuse_an_output_created_after_assignment(self):
+        destination = self.root / 'result.json'
+        destination.write_text('unreconciled output')
+        before = inventory(self.root)
+        with self.assertRaisesRegex(ValueError, 'registered output destination already exists'):
+            backend.native_dispatch(self.engine, self.args, self.state)
+        assignment = self.state['assignments'][0]
+        assignment['requested']['transport'] = 'claude-cli'
+        with self.assertRaisesRegex(ValueError, 'registered output destination already exists'):
+            backend.render_dispatch(self.engine, self.args, self.state, 'claude-cli')
+        assignment['continuation'] = {'partial_work': 'required'}
+        with self.assertRaisesRegex(ValueError, 'registered output destination already exists'):
+            backend.check_replacement_output(self.engine, self.args, self.state)
+        self.assertEqual(before, inventory(self.root))
 
     def test_corrupt_object_or_failed_integrity_never_yields_message(self):
         self.engine.call.return_value = {'integrity':'failed'}
