@@ -24,7 +24,63 @@ unless review is requested or required; consequential work follows the
 task/project review requirements. Explain the basis briefly only when it changes
 delegation or review. Routine solo work creates no task records.
 
-## 2. Resolve assignments
+A host can explicitly set `backend.py route --review-required` for a routine
+task that needs one independent review. The [opt-in route](references/backend.md#explicit-opt-in-for-routine-tasks)
+requires a compatible CLI and one saved reviewer. Record the writer assignment
+and its completed invocation, then freeze the finished source and run the
+single required review. If the flag is absent, `route` returns solo without
+reading collaboration settings. Apply other review requirements during
+classification before using the routine route.
+
+## 2. Select the backend before collaboration
+
+Before creating any task state, freezing packets or launching collaborators,
+resolve the backend with this read-only command and inspect its successful result:
+
+```sh
+python3 <skill-dir>/scripts/backend.py status
+```
+
+Backend configuration is separate from the collaboration profile. Unless the
+user or binding task/project instructions explicitly supply another backend
+configuration path, run `python3 <skill-dir>/scripts/backend.py status` without
+`--config`, using `~/.config/agents-collab/backend.json`. A task-local profile
+does not override that selector. Never invent an absent `--config` path or
+create a replacement selector to enter manual mode or avoid an enabled CLI.
+A supplied collaboration profile belongs only in `--profile FILE`, including
+when it is task-local. For example:
+
+```sh
+python3 <skill-dir>/scripts/backend.py --profile /absolute/task/profile.json status
+```
+
+That command still checks the default backend selector. A generic instruction
+supplying a workflow configuration file is not an explicit backend override.
+If the helper says a profile was passed as `--config`, correct the flag and
+retry the read-only status check; do not change the selector or enter manual
+mode. Only an explicitly identified backend-selector path belongs in `--config`.
+Reading the existing selector grants no permission to edit it.
+
+Branch only on the successful status result:
+
+- `mode: cli`: read the [backend procedure](references/backend.md), then use
+  `start`, `context` and `assignment` to record the task, packet and launch intent
+  before dispatch. Native subagents are the model transport, not an alternative
+  record backend. Handwritten JSON or Markdown state cannot replace CLI records.
+- `mode: manual`: use this skill's manual procedure only because settings are absent
+  at the selected path.
+- Any error or unrecognized result: stop the affected collaboration and report it;
+  do not assume manual mode.
+
+Retain the selected mode and config path with the task's private receipts. Do not
+create a manual task record before checking the selector. Never install or enable
+a backend implicitly. A started task keeps its backend and
+record identity through completion. If the backend is unavailable or refuses an
+operation, preserve its state and report the blocker; do not create a second
+manual record, reset review rounds or launch another worker. A backend grants no
+project, execution, spending or publication authority.
+
+## 3. Resolve assignments
 
 Read applicable project instructions and current requirements. Apply the actual
 instruction hierarchy, then explicit current assignments, binding task/project
@@ -42,30 +98,22 @@ profile, run `python3 <skill-dir>/scripts/validate_profile.py <profile>`; on a
 nonzero exit report the listed fields, do not dispatch from it or rewrite it.
 Passing confirms structure only.
 
+Before declaring a storage conflict, inspect the selected profile's actual
+`records_root`; never substitute the default profile's location for a supplied
+profile. In CLI mode, preview the exact task paths without creating state:
+`python3 <skill-dir>/scripts/backend.py --profile FILE storage --repository REPO --project PROJECT --task TASK`.
+Compare both returned `record` and `host` paths with the host's permitted writable
+roots and repository boundary. A host may give temporary files and collaboration
+records different permitted directories. The preview validates path layout only;
+it does not prove write access or grant permission. A genuine conflict or denied
+operation blocks the affected required collaboration; report the paths and
+constraint instead of silently dropping review or treating it as a solo route.
+
 Profile routing grants no permission that project rules withhold. Continue solo
 only if the task allows it and the assignment was a preference; a required named
 writer or review stays blocked until an authorized path exists. Do not request
 delegation only for an optional preference when solo completion is allowed.
 Explicit reviewer names override default selection, not independence.
-
-## 3. Select the backend
-
-Backend configuration is separate from the collaboration profile. Unless the
-user or binding task/project instructions explicitly supply another backend
-configuration path, run `python3 <skill-dir>/scripts/backend.py status` without
-`--config`, using `~/.config/agents-collab/backend.json`. A task-local profile
-does not override that selector. Never invent an absent `--config` path or
-create a replacement selector to enter manual mode or avoid an enabled CLI.
-Reading the existing selector grants no permission to edit it.
-
-Absent settings at the selected path use the manual procedure in this skill;
-an enabled CLI selects the
-[backend procedure](references/backend.md), read before starting that task. Never
-install or enable a backend implicitly. A started task keeps its backend and
-record identity through completion. If the backend is unavailable or refuses an
-operation, preserve its state and report the blocker; do not create a second
-manual record, reset review rounds or launch another worker. A backend grants no
-project, execution, spending or publication authority.
 
 ## 4. Check access, effort and timing
 
@@ -106,6 +154,67 @@ before any retry and never launch its duplicate; a retry keeps the same
 assignment and deadline.
 
 ## 5. Review, fix and finish
+
+For every native writing/review dispatch, include the exact recorded assignment,
+packet SHA-256 and artifact SHA-256 in the message sent to the native tool.
+A packet-file path alone does not state those identities. With CLI records and
+an ordinary `codex-native` assignment only (other transports use sealed
+instructions instead; the command refuses them), after `assignment` records
+launching intent, run
+`python3 <skill-dir>/scripts/backend.py native-dispatch --record RECORD --assignment ID`
+and pass the returned **message string verbatim** and **task_name value exactly**
+to the native host tool (task_name is a dispatch-identity digest, not a free-form label),
+using the recorded model/effort and required fresh-session controls. It renders
+registered immutable context; it never launches, grants authority, leases a
+worker or proves delivery. Reconcile an uncertain invocation before dispatching;
+re-rendering a message is not permission to retry. Quota continuations still
+require the dedicated handoff/partial-work procedure rather than this renderer.
+
+Scope review to the whole change. At `start`, give `--scope` every path the
+writer may create or change, including docs, CLI entry points and tests; a
+directory scope such as `tests` covers new test files. Freeze review context only
+after the writer completed, from its complete final source. Review `context`
+refuses before writing anything unless every staged, unstaged and untracked
+change since HEAD inside that scope is selected; deletions, binary and symlinked
+changes are refused. A trailing-slash, directory-shaped Git entry (for example
+an untracked nested repository) in scope, or containing a scope entry, gets an
+explicit refusal that no selection or declaration bypasses; a scoped staged
+gitlink (no trailing slash) instead gets the ordinary coverage/regular-file
+refusal. These entries cannot be presented as reviewed nested source. A staged
+gitlink above a directory or absent scope entry instead follows the outside-scope
+declaration rule described in the coverage reference below. The path guard does
+not enumerate directory-scoped writer content beneath a gitlink. If the writer
+may have written there, do not declare the gitlink unrelated; use another
+authorized review path. Select changed
+paths outside scope or declare genuinely preexisting, unrelated ones with
+`--unrelated-changes`; a writer change outside scope is a scope violation to
+report, never widen scope or relabel it unrelated.
+The guard sees only changes Git reports against the current HEAD, so committed
+task work and changes hidden by index flags are outside it
+([coverage limits](references/backend.md#review-coverage-guard)).
+
+With the CLI backend, a reviewer's terminal final message is the complete review
+JSON object and nothing else. For an ordinary `codex-native` reviewer the
+native-dispatch message states this contract with the recorded identities; for
+every other transport, put the contract in the review instructions before
+sealing. In manual mode, use the packet template's prose output contract instead.
+With CLI records, never ask a reviewer for a prose summary as its final message;
+summaries belong in schema fields. Import the retained final message;
+any written result file must equal it. A result file, preview, wait summary or
+self-report is not terminal evidence. Writers report changed files and checks,
+never reviewer JSON.
+
+Native transport observations may contain opaque or encrypted argument values.
+Missing visible hashes in such a value do not establish missing plaintext hashes.
+Retain the original evidence and mark plaintext binding unverified unless a separate,
+identity-bound host receipt exposes the actual delivered text. A host may instead
+verify a narrower opaque-delivery binding using the exact recorded task_name
+identity digest, native call/start/thread metadata, and a first-turn AgentMessage
+payload whose opaque bytes exactly match that same call. Name-only matching or
+constructed previews supply no delivery evidence. Label plaintext/full-context
+verification unknown even when that narrower host receipt is valid. Never decrypt
+transport values, obtain keys, substitute packet-file contents, or count a local
+message preview as evidence that the host delivered it.
 
 Keep one writer per artifact; a reviewer returns findings and never silently
 becomes the writer. For independent review follow the

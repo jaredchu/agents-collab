@@ -90,6 +90,16 @@ domain-style project names in source while preserving storage guards. Both the
 adapter and executable need that support; source validation is not installation
 or publication evidence.
 
+The [review coverage and final-output source increment](#review-coverage-native-task-identity-and-final-output-contracts-14-november-2026)
+passed independent source review and is included in commit `4d2a1b0`.
+Source review, installation and deployment are separate milestones.
+
+The working source includes an [explicit task review flag](../skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks).
+The routine route defaults to solo. An opted-in task requires a compatible
+CLI, one recorded writer and one independent review. Its sealed packet
+binds the writer receipt to the final artifact, and completion requires a
+passing review on that same packet. This is an explicit host choice.
+
 ### Historical record: publication, setup wizard and site (8–9 November 2026)
 
 The counts in this subsection and in the dated sections that follow describe the
@@ -362,6 +372,23 @@ up to twelve passes within a three-minute step limit, then fail the workflow.
 The Actions run, live-file check and Cloudflare deployment receipt establish each
 release outcome; this single-run check is not continuous availability monitoring.
 
+### Analytics injection disabled (11 November 2026)
+
+The owner requested disabling the Cloudflare analytics beacon. The Pages
+project's analytics fields were already unset; the injection came from enabled
+zone-level Web Analytics/RUM. That site's RUM ruleset is now disabled
+(`enabled: false`), with its existing automatic-install record retained.
+Pages settings and the other analytics-site records were unchanged. The
+[Cloudflare RUM update API](https://developers.cloudflare.com/api/resources/rum/subresources/site_info/methods/update/)
+controls this separately from Pages analytics and site assets.
+
+After propagation, all nineteen served files matched the deployed `4a71aa8`
+build byte-for-byte, including the skill ZIP, checksums and genuine 404 response.
+All six HTML files also matched under a browser user-agent: twenty-five HTTP
+checks passed without a beacon or response normalization. This resolves the
+earlier injected-script difference without requiring a new deployment. These
+are point-in-time checks of the observed responses, not continuous monitoring.
+
 ## Activation study draft, regression gate and backend clarifications (10 November 2026)
 
 The owner confirmed implicit activation as the required product target and
@@ -477,6 +504,114 @@ new semantics; later quota handoffs preserve that format. Unamended format-1/2
 records remain readable. This is a source increment, not evidence of installation,
 publication, owner authentication or provider runtime behavior.
 
+## Backend selection gate (12 November 2026)
+
+The source skill now resolves the backend before assignment planning or task
+state creation. It explicitly branches on successful selector status: enabled
+CLI records remain required with native model transport; only absent settings
+permit manual records; an error stops collaboration. Status reports the selected
+configuration path in both modes and a next-action reminder. These are host
+workflow instructions, not executable enforcement that an agent reads or obeys
+them. No dispatcher or implicit-activation guarantee is added.
+
+Isolated regressions verify that a task-local profile cannot redirect default
+backend selection, selected absent settings do not trigger a search elsewhere,
+and status performs no task writes. All 146 Python tests passed, including the
+thirteen real-engine cases without skips, and the static/package build passed.
+No Rust engine behavior changed. This verifies local source behavior; installed
+files, saved defaults, publication and participant routing were not changed or
+remeasured by this increment.
+
+## Selector argument handling and native identity guidance (12 November 2026)
+
+The backend helper now accepts its shared `--config`, `--profile` and `--actor`
+options before or after the command. Repeated identical values are accepted;
+conflicting values fail before probing a binary or writing state. A
+collaboration-profile-shaped file passed as `--config` gets a specific
+`--profile` recovery message, with no automatic selector change or manual
+fallback. A task-local profile still leaves the default selector unchanged.
+The skill and [backend contract](../skills/agents-collab/references/backend.md#identities-and-arguments)
+show that distinction explicitly, including generically supplied workflow files.
+
+The [observation guidance](../skills/agents-collab/references/backend.md#observations-and-retries)
+also distinguishes canonical native invocation paths from thread UUIDs. Hosts
+must retain both and join receipts through unique, proven child source/parent
+metadata, without guessing aliases or supplying missing dispatch evidence.
+The record-only engine and its stored invocation strings are unchanged.
+
+All 151 Python tests passed, including thirteen real-engine cases without skips.
+New selector tests exercise option placement, profile misuse without probing or
+writes, conflicting values and preservation of command argument values. These
+checks establish the helper behavior; model adherence and future live receipt
+availability remain unmeasured. This source increment does not install or
+publish changes or rerun historical experiments.
+
+## Exact sentinel argument correction (12 November 2026)
+
+The shared-option normalizer now rejects the exact `--` scalar value with a
+controlled argument error (exit 2), before hashing values, probing the backend
+or writing state. This handles Python 3.9.6 argparse returning a nested empty
+list for inputs such as `--actor=--`; the literal string is also rejected for
+consistent behavior on runtimes that preserve it. The same rule applies to
+`--config` and `--profile`. Other leading-dash values, command argument values,
+option positions, identical repetitions and conflict rejection are preserved.
+See the [argument contract](../skills/agents-collab/references/backend.md#identities-and-arguments).
+
+All 154 Python tests passed, including thirteen real-engine cases without skips,
+and the package/static build passed. New regressions cover all three shared
+options in both positions, repetition/conflict cases, controlled exit without
+backend activity or writes, and unaffected non-sentinel values. No Rust engine,
+saved settings, installed skill or historical experiment was changed by this
+source repair. These are local implementation checks, not participant-runtime
+or implicit-activation evidence.
+
+## Profile storage preview (12 November 2026)
+
+The helper adds a read-only `storage` command that reports the selected profile,
+resolved records root and exact task `record`/`host` paths using the same path
+validation as `start`. It creates no task directories or operation traces and
+does not test write permission or grant authority. The skill requires checking
+the supplied profile and comparing both paths with actual host constraints
+before declaring a storage conflict. A real conflict or denied operation still
+blocks required collaboration; it does not justify silently dropping review.
+See the [path preview contract](../skills/agents-collab/references/backend.md#identities-and-arguments).
+
+Local checks pass all 158 Python tests, including fifteen real-engine cases
+without skips, and the static/package build. New cases verify a supplied profile
+with a different default, symlink-root resolution, preview/start path agreement,
+no preview writes, and rejection of missing or repository-overlapping roots.
+Portable stub-executable cases also cover explicit/default profiles, an existing
+record path and absent-selector refusal without engine execution or fallback.
+These checks establish path handling, not model adherence or write permission.
+This source increment is not installed or published. Independent review status
+is retained separately until completed.
+
+## Native dispatch identity rendering (12 November 2026)
+
+The helper adds read-only `native-dispatch` for ordinary native assignments with
+recorded launching intent. It renders the exact assignment, packet and artifact
+identities plus registered immutable context into one message, with a UTF-8
+digest. The lead passes that message string verbatim to the native host with
+the recorded controls. The command refuses stale, non-native, already-observed,
+terminal and quota-continuation cases and verifies record/object integrity.
+It creates no state or workers and cannot authorize a launch, lease a worker,
+check actual liveness or prove delivery. See the
+[dispatch contract](../skills/agents-collab/references/backend.md#observations-and-retries).
+
+Guidance now distinguishes readable input from opaque transport observations:
+missing visible hashes in an opaque field do not prove missing plaintext
+hashes. A local preview is not a delivery receipt, and an original spawn does
+not bind a later assignment. Hosts need independent identity-bound input
+evidence or must leave binding unverified; no decryption or key access follows.
+
+Local validation passed 164 Python tests, including seventeen real-engine cases
+without skips, and the package/static build. The new checks cover immutable
+writer/reviewer message rendering, explicit identities and UTF-8 digest,
+stale/uncertain state refusal, corrupt objects, mutable context-file replacement
+and no writes during preview. This increment was uninstalled and unpublished at
+that checkpoint. The checks establish message construction behavior. Native
+delivery requires separate evidence.
+
 ## Reviewed commit acceptance source increment (13 November 2026)
 
 The low-level CLI adds explicit `task accept-commit` for approved staged work
@@ -497,6 +632,98 @@ First acceptance upgrades SQL and enclosing state transactionally to format 4.
 Formats 1–3 remain readable; prior binaries refuse format 4, and subsequent review
 amendments or quota handoffs cannot downgrade it. This source increment does not
 establish installation, publication, atomic capture or authenticated authority.
+
+## Review coverage, native task identity and final-output contracts (14 November 2026)
+
+Independent review and validation followed the preparation checkpoint. The
+reviewed source was integrated into the working checkout on 14 November and is
+included in commit `4d2a1b0`. Installation requires separate owner or user
+authorization.
+
+Local implementation validation on 14 November 2026 passed 216 Python tests,
+including 27 opt-in real-engine cases, with no skips. Those results precede the
+documentation-only status corrections; implementation tests were not rerun for
+these wording edits.
+
+The increment integrates reviewed helper and skill text
+into the five package files that differed (`SKILL.md`, `scripts/backend.py`,
+`references/backend.md`, `references/review-protocol.md`,
+`assets/review-packet.md`) while retaining the earlier selector, argument,
+storage-preview and native-rendering corrections. The other eight package files
+are unchanged. No Rust engine behavior, capture or evidence policy changes.
+
+- **Review coverage guard.** Before any workflow trace, record object or output
+  write, review `context` requires every staged, unstaged and untracked
+  non-ignored change since HEAD inside the frozen editable scope to be selected.
+  Scoped deletions and selected absent, binary, symlinked or non-UTF-8 inputs
+  are refused because the readable helper cannot present them. Directory-shaped
+  scoped Git entries, such as an untracked nested repository, get an explicit
+  pre-write refusal directing the host to another authorized review path;
+  they are neither traversed nor skipped. A directory-shaped entry containing a
+  scope entry is treated as scoped for that refusal, so an unrelated declaration
+  cannot cover it; ordinary ancestor files and prefix-only names keep the normal
+  outside-scope rule. A scoped staged gitlink (no trailing slash) keeps the
+  ordinary coverage/regular-file refusals. A staged gitlink above a directory
+  or absent scope entry instead remains outside scope: it requires a genuinely
+  unrelated-work declaration and can then remain an explicit omission while
+  selected regular source is frozen and sealed. Synthetic cases with the tested
+  engine observe that boundary; omitted nested content is not reviewed, and task
+  work must never be declared unrelated. No nested-repository support is added.
+  Directory-scoped writer content beneath a gitlink is not enumerated by the
+  path guard and can leave its coverage report unchanged. If the writer may
+  have written there, the gitlink must not be declared unrelated; another
+  authorized review path is needed. An existing exact scoped regular file
+  beneath the gitlink still requires selection. A synthetic actual-engine case
+  observes that selecting that file with the gitlink declared unrelated passes
+  preflight but fails at freeze after a helper trace, with no artifact, packet,
+  output or record-revision change. The omitted-content case
+  also checks rendered output directly for exclusion of nested-source text.
+  Changed paths
+  outside scope must be selected or explicitly declared with
+  `--unrelated-changes`, recorded per path in frozen omissions; no flag admits a
+  scoped omission. After freezing and before sealing, the helper recomputes the
+  change set and compares frozen objects with live selected bytes; drift leaves
+  the artifact as evidence and seals no packet. Writer context is unchanged.
+  Scope at `start` should therefore cover docs and tests the writer may add.
+  Follow-up guidance refreshes selection against the current full change set,
+  including new docs/tests, and reassesses unrelated-change declarations.
+  The guard sees only changes Git reports against the current HEAD: index flags
+  or Git-normalized differences can hide tracked changes, and task work already
+  committed is not discovered. These limits are documented, not enforced.
+- **Nested-repository engine observations.** Two paths pass the helper
+  preflight: an outside-scope untracked nested repository declared unrelated,
+  and writer context with an untracked nested repository. Synthetic
+  actual-engine cases with the tested engine build observe the exact
+  trailing-slash name passed as an omission. The helper writes a workflow and
+  freeze-operation trace, then the engine rejects the freeze: no artifact,
+  packet or output, and the record revision is unchanged. These are bounded
+  observations, not nested-repository support; the shared path parser and
+  engine are unchanged.
+- **Native task identity.** `native-dispatch` returns a deterministic
+  `task_name` digest of the exact assignment, packet and artifact identities
+  and adds it to the message header; existing header lines are unchanged. Hosts
+  pass it exactly. A matching name alone proves no delivery. A host receipt
+  joining the exact call with an equal opaque first-turn payload establishes at
+  most opaque delivery, narrower than plaintext or full-context attestation.
+- **Role-specific final output.** For ordinary `codex-native` assignments the
+  constructed message carries a reviewer contract (the complete identity-filled
+  review JSON as the terminal final message, superseding conflicting format
+  requests) or a writer work-report contract, never reviewer JSON. Other
+  transports still need the contract in sealed review instructions; the binary
+  never inserts a schema. The initial-cycle example explicitly uses
+  `native-dispatch` for ordinary native reviewers and passes its exact message,
+  task name and controls to the host; it is written as a transport conditional
+  so other transports do not run it as a universal command. A constructed
+  message, written file, preview or self-report is not terminal or delivery
+  evidence.
+
+Portable regressions use disposable Git fixtures and stub engines for scope
+coverage, refusal before writes, freeze drift, nested-repository containment,
+staged gitlinks, identity edge cases and contract fields; opt-in real-engine
+cases, including the nested-repository observations, need an explicit test
+binary. Stub results are
+not real-engine evidence. The helper still dispatches and supervises no model,
+and implicit activation remains unestablished.
 
 ## Progress
 
@@ -542,3 +769,8 @@ establish installation, publication, atomic capture or authenticated authority.
 
 - [x] Implement explicit recorded quota continuation and host procedure in source.
 - [x] Support safe dotted project names in the adapter and CLI, preserving storage guards and validating the full lifecycle.
+- [x] Prepare the uncommitted review-coverage, native task identity and final-output source candidate with portable regressions.
+- [x] Complete independent source review and validation of that increment.
+- [x] Integrate the reviewed source into the working checkout.
+- [x] Commit the integrated source and the explicit opt-in review workflow.
+- [ ] Merge or release under separate owner authorization.

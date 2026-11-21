@@ -16,6 +16,10 @@ use std::{
 };
 use storage::*;
 
+fn flag_is_off(value: &bool) -> bool {
+    !value
+}
+
 pub struct Request {
     pub command: String,
     pub record: Option<PathBuf>,
@@ -45,6 +49,8 @@ struct TaskSpec {
     writer: String,
     editable_scope: Vec<String>,
     reviewers: Vec<String>,
+    #[serde(default, skip_serializing_if = "flag_is_off")]
+    review_required: bool,
     required_checks: Vec<String>,
     required_approvals: Vec<String>,
     decision_authorities: Vec<String>,
@@ -259,6 +265,13 @@ struct Event {
     input_hash: String,
 }
 #[derive(Clone, Serialize, Deserialize)]
+struct OptInCapture {
+    artifact: String,
+    writer_receipt: String,
+    revision: u64,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
 struct State {
     schema_version: u64,
     spec: TaskSpec,
@@ -284,6 +297,8 @@ struct State {
     commit_acceptances: Vec<CommitAcceptance>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     current_commit_acceptance: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    opt_in_capture: Option<OptInCapture>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -345,6 +360,16 @@ fn validate_task(t: &TaskSpec, p: &Profile) -> Result<()> {
         relative(x)?;
     }
     list_unique(&t.reviewers, "reviewers")?;
+    if t.review_required {
+        ensure!(
+            t.reviewers.len() == 1,
+            "opt-in review requires exactly one configured reviewer"
+        );
+        ensure!(
+            !t.editable_scope.is_empty(),
+            "opt-in review requires editable scope"
+        );
+    }
     for n in &t.reviewers {
         let a = p.agent(n)?;
         ensure!(
@@ -402,7 +427,7 @@ fn connection(root: &Path, create: bool) -> Result<Connection> {
                 "task missing or unsupported schema; preserve originals for explicit migration",
             )?;
         ensure!(
-            matches!(version, 1..=4),
+            matches!(version, 1..=4 | 6),
             "unsupported schema; explicit migration required"
         );
     }
@@ -412,7 +437,7 @@ fn connection(root: &Path, create: bool) -> Result<Connection> {
     c.pragma_update(None, "journal_mode", "DELETE")?;
     c.pragma_update(None, "synchronous", "FULL")?;
     if create {
-        c.execute_batch("CREATE TABLE IF NOT EXISTS state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN (1,2,3,4)), revision INTEGER NOT NULL, body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS operations (key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, response TEXT NOT NULL, revision INTEGER NOT NULL);")?;
+        c.execute_batch("CREATE TABLE IF NOT EXISTS state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN (1,2,3,4,6)), revision INTEGER NOT NULL, body TEXT NOT NULL); CREATE TABLE IF NOT EXISTS operations (key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, response TEXT NOT NULL, revision INTEGER NOT NULL);")?;
     }
     Ok(c)
 }
@@ -425,12 +450,12 @@ fn load(c: &Connection) -> Result<State> {
         )
         .context("task missing or unsupported schema; explicit migration required")?;
     ensure!(
-        matches!(version, 1..=4),
+        matches!(version, 1..=4 | 6),
         "unsupported schema; explicit migration required"
     );
     let s: State = parse(body.as_bytes())?;
     ensure!(
-        matches!(s.schema_version, 1..=4) && s.schema_version == version as u64,
+        matches!(s.schema_version, 1..=4 | 6) && s.schema_version == version as u64,
         "unsupported state schema"
     );
     Ok(s)
@@ -507,6 +532,46 @@ fn round_complete(s: &State, p: &Packet) -> bool {
         })
     })
 }
+fn completed_opt_in_writer(s: &State) -> Result<(&Assignment, &Observation)> {
+    let mut writers = s.assignments.iter().filter(|a| a.spec.role == "writer");
+    let writer = writers
+        .next()
+        .context("opt-in review requires a recorded writer")?;
+    ensure!(
+        writers.next().is_none() && writer.state == "completed",
+        "opt-in review requires one completed writer"
+    );
+    let observation = writer
+        .observations
+        .last()
+        .context("missing writer observation")?;
+    Ok((writer, observation))
+}
+
+fn single_review_binding(s: &State, p: &PacketSpec) -> Result<Value> {
+    let (writer, observation) = completed_opt_in_writer(s)?;
+    let invocation = observation
+        .receipt
+        .invocation
+        .as_deref()
+        .context("missing writer invocation")?;
+    let capture = s
+        .opt_in_capture
+        .as_ref()
+        .context("opt-in review requires a capture after writer completion")?;
+    ensure!(
+        capture.artifact == p.artifact && capture.writer_receipt == observation.raw,
+        "opt-in review requires the final artifact captured for this writer receipt"
+    );
+    Ok(json!({
+        "writer_assignment": writer.spec.id,
+        "writer_invocation": invocation,
+        "writer_receipt": observation.raw,
+        "capture_revision": capture.revision,
+        "artifact": p.artifact
+    }))
+}
+
 fn blockers(s: &State) -> Vec<String> {
     let mut b = Vec::new();
     let current = s.current_artifact.as_deref().unwrap_or("");
@@ -516,6 +581,9 @@ fn blockers(s: &State) -> Vec<String> {
     if !s.spec.reviewers.is_empty() {
         match latest_review_packet(s) {
             Some(p) if p.spec.artifact == current && round_complete(s, p) => {
+                if s.spec.review_required && single_review_binding(s, &p.spec).is_err() {
+                    b.push("opt-in review is missing its completed writer binding".into());
+                }
                 for r in s.reviews.iter().filter(|r| r.spec.packet == p.id) {
                     if r.spec.verdict != "pass" {
                         b.push(format!("review {} did not approve current artifact", r.id));
@@ -567,11 +635,18 @@ fn blockers(s: &State) -> Vec<String> {
     b
 }
 fn effective_review_limit(s: &State) -> u64 {
+    if s.spec.review_required {
+        return 0;
+    }
     s.review_extensions
         .last()
         .map_or(s.profile.review.max_followup_rounds, |e| e.spec.new_limit)
 }
 fn extend_review(s: &mut State, input: &Value, actor: &str) -> Result<Value> {
+    ensure!(
+        !s.spec.review_required,
+        "opt-in review permits one review round"
+    );
     let extension: ReviewExtensionSpec = decode(input)?;
     ensure!(
         s.spec.decision_authorities.contains(&extension.authority) && actor == extension.authority,
@@ -710,9 +785,43 @@ fn accept_commit(s: &mut State, root: &Path, input: &Value, actor: &str) -> Resu
         "validation":"coordinated repeated source verification; declared authority only; no automatic activation or completion"}),
     )
 }
-fn summary(s: &State) -> Value {
-    json!({"schema_version":1,"task":s.spec.task,"revision":s.revision,"state":s.state,"blockers":blockers(s),"next_permitted_operations":if s.state=="completed"||s.state=="cancelled"{vec!["task show","task export","task check","task reconcile"]}else{vec!["task show","task check","task reconcile","artifact freeze","packet preview","packet seal","assignment prepare","assignment handoff","assignment observe","review import","finding resolve","task extend-review","task accept-commit","task block","task activate","task cancel","task complete"]},"baseline_review_limit":s.profile.review.max_followup_rounds,"effective_review_limit":effective_review_limit(s),"review_extensions":s.review_extensions,"record":s,"live_source":live_source(s)})
+fn next_permitted_operations(state: &str, review_required: bool) -> Vec<&'static str> {
+    if matches!(state, "completed" | "cancelled") {
+        return vec!["task show", "task export", "task check", "task reconcile"];
+    }
+    let mut operations = vec![
+        "task show",
+        "task check",
+        "task reconcile",
+        "artifact freeze",
+        "packet preview",
+        "packet seal",
+        "assignment prepare",
+        "assignment handoff",
+        "assignment observe",
+        "review import",
+        "finding resolve",
+        "task extend-review",
+        "task accept-commit",
+        "task block",
+        "task activate",
+        "task cancel",
+        "task complete",
+    ];
+    if review_required {
+        operations
+            .retain(|operation| !matches!(*operation, "assignment handoff" | "task extend-review"));
+    }
+    operations
 }
+
+fn summary(s: &State) -> Value {
+    json!({"schema_version":1,"task":s.spec.task,"revision":s.revision,"state":s.state,"blockers":blockers(s),
+        "next_permitted_operations":next_permitted_operations(&s.state, s.spec.review_required),
+        "baseline_review_limit":s.profile.review.max_followup_rounds,"effective_review_limit":effective_review_limit(s),
+        "review_extensions":s.review_extensions,"record":s,"live_source":live_source(s)})
+}
+
 fn packet_validate(s: &State, p: &PacketSpec) -> Result<()> {
     ensure!(
         s.current_artifact.as_deref() == Some(&p.artifact),
@@ -745,6 +854,9 @@ fn packet_validate(s: &State, p: &PacketSpec) -> Result<()> {
     );
     let previous = latest_review_packet(s);
     if p.purpose == "writer_context" {
+        if s.spec.review_required {
+            ensure!(s.assignments.is_empty(), "opt-in route permits one writer");
+        }
         match previous {
             None => ensure!(
                 p.round == 0,
@@ -762,6 +874,9 @@ fn packet_validate(s: &State, p: &PacketSpec) -> Result<()> {
             }
         }
     } else if p.round == 0 {
+        if s.spec.review_required {
+            single_review_binding(s, p)?;
+        }
         ensure!(
             p.neutral_initial,
             "initial packet requires neutral-input declaration"
@@ -787,6 +902,19 @@ fn packet_validate(s: &State, p: &PacketSpec) -> Result<()> {
         "active/unknown/prepared invocations block new packet"
     );
     Ok(())
+}
+
+fn packet_body(s: &State, packet: &PacketSpec) -> Result<Value> {
+    let mut body = json!({
+        "schema_version": 1,
+        "requirements": s.spec.requirements,
+        "authority_boundaries": s.spec.authority_boundaries,
+        "packet": packet
+    });
+    if s.spec.review_required && packet.purpose == "review" {
+        body["writer_binding"] = single_review_binding(s, packet)?;
+    }
+    Ok(body)
 }
 fn evidence(s: &State, e: &Evidence) -> Result<()> {
     ensure!(
@@ -829,6 +957,27 @@ fn observe(s: &mut State, r: Receipt, raw: String) -> Result<()> {
         .iter()
         .position(|a| a.spec.id == r.assignment)
         .ok_or_else(|| anyhow::anyhow!("unknown assignment"))?;
+    if s.spec.review_required {
+        let assignment = &s.assignments[assignment_index];
+        ensure!(
+            assignment.state != "completed",
+            "opt-in route cannot replace a completed invocation"
+        );
+        if let Some(invocation) = &r.invocation {
+            for (index, observed) in s.assignments.iter().enumerate() {
+                ensure!(
+                    observed.observations.iter().all(|observation| observation
+                        .receipt
+                        .invocation
+                        .as_ref()
+                        .is_none_or(
+                            |previous| (previous == invocation) == (index == assignment_index)
+                        )),
+                    "opt-in route requires stable, distinct writer and reviewer invocations"
+                );
+            }
+        }
+    }
     // Preparation is historical: reconciliation may have reattached another
     // writer since then. Recheck immediately before persisting a new intent,
     // inside the caller's serialized mutation transaction. Observations of an
@@ -1018,6 +1167,10 @@ fn review_validate(s: &State, r: &ReviewSpec) -> Result<()> {
     Ok(())
 }
 fn handoff(s: &mut State, root: &Path, input: &Value, actor: &str) -> Result<Value> {
+    ensure!(
+        !s.spec.review_required,
+        "opt-in route permits no replacement invocation"
+    );
     let h: HandoffSpec = decode(input)?;
     component(&h.replacement)?;
     ensure!(
@@ -1231,6 +1384,11 @@ fn mutate(
                 s.assignments.iter().all(terminal),
                 "reconcile active/unknown/prepared invocations before capture"
             );
+            let writer_receipt = if s.spec.review_required && !s.assignments.is_empty() {
+                Some(completed_opt_in_writer(s)?.1.raw.clone())
+            } else {
+                None
+            };
             snapshot::repository(&s.spec.repository)?;
             let selection: snapshot::Selection = decode(input)?;
             let (id, manifest, objects) = snapshot::capture(&s.spec.repository, root, &selection)?;
@@ -1249,15 +1407,20 @@ fn mutate(
                 s.current_commit_acceptance = None;
             }
             s.current_artifact = Some(id.clone());
+            if let Some(writer_receipt) = writer_receipt {
+                s.opt_in_capture = Some(OptInCapture {
+                    artifact: id.clone(),
+                    writer_receipt,
+                    revision: s.revision + 1,
+                });
+            }
             Ok(json!({"artifact":id}))
         }
         "packet seal" => {
             let spec: PacketSpec = decode(input)?;
             packet_validate(s, &spec)?;
             // Freeze verbatim task requirements and boundaries together with the common body.
-            let bytes = encoded(
-                &json!({"schema_version":1,"requirements":s.spec.requirements,"authority_boundaries":s.spec.authority_boundaries,"packet":spec}),
-            )?;
+            let bytes = encoded(&packet_body(s, &spec)?)?;
             let id = put(root, &bytes)?;
             register(s, id.clone(), "packet/common-body");
             s.packets.push(Packet {
@@ -1308,6 +1471,12 @@ fn mutate(
                     p.spec.purpose == "writer_context",
                     "writer requires a writer_context packet, not a review round"
                 );
+                if s.spec.review_required {
+                    ensure!(
+                        !s.assignments.iter().any(|a| a.spec.role == "writer"),
+                        "opt-in route permits one writer"
+                    );
+                }
                 if let Some(review) = latest_review_packet(s) {
                     ensure!(
                         round_complete(s, review) && p.spec.round == review.spec.round + 1,
@@ -1619,7 +1788,7 @@ fn create(req: &Request, raw: &[u8], actor: &str, key: &str, expected: u64) -> R
         "task already exists; preserve its records"
     );
     let mut s = State {
-        schema_version: 1,
+        schema_version: if spec.review_required { 6 } else { 1 },
         spec,
         profile,
         profile_hash: hash(&profile_raw),
@@ -1640,6 +1809,7 @@ fn create(req: &Request, raw: &[u8], actor: &str, key: &str, expected: u64) -> R
         review_extensions: vec![],
         commit_acceptances: vec![],
         current_commit_acceptance: None,
+        opt_in_capture: None,
     };
     let id = put(&root, &profile_raw)?;
     register(&mut s, id, "profile/private-resolved-preferences");
@@ -1656,8 +1826,8 @@ fn create(req: &Request, raw: &[u8], actor: &str, key: &str, expected: u64) -> R
     });
     let response = json!({"record":root,"task":s.spec.task,"revision":1,"state":s.state,"blockers":blockers(&s)});
     tx.execute(
-        "INSERT INTO state VALUES(1,1,1,?)",
-        [serde_json::to_string(&s)?],
+        "INSERT INTO state VALUES(1,?,1,?)",
+        params![i64::try_from(s.schema_version)?, serde_json::to_string(&s)?],
     )?;
     tx.execute(
         "INSERT INTO operations VALUES(?,?,?,1)",
@@ -1777,9 +1947,9 @@ pub fn run(req: Request) -> Result<Value> {
             "packet preview" => {
                 let p: PacketSpec = decode(&input)?;
                 packet_validate(&s, &p)?;
-                Ok(
-                    json!({"schema_version":1,"requirements":s.spec.requirements,"authority_boundaries":s.spec.authority_boundaries,"packet":p,"sealed":false}),
-                )
+                let mut body = packet_body(&s, &p)?;
+                body["sealed"] = json!(false);
+                Ok(body)
             }
             _ => unreachable!(),
         };
@@ -1847,7 +2017,7 @@ pub fn run(req: Request) -> Result<Value> {
         // Rebuild historical CHECK constraints transactionally. Keep the old
         // row intact until the final update; rollback preserves its marker/body.
         tx.execute_batch("ALTER TABLE state RENAME TO state_previous_format;
-            CREATE TABLE state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN (1,2,3,4)), revision INTEGER NOT NULL, body TEXT NOT NULL);
+            CREATE TABLE state (singleton INTEGER PRIMARY KEY CHECK(singleton=1), schema_version INTEGER NOT NULL CHECK(schema_version IN (1,2,3,4,6)), revision INTEGER NOT NULL, body TEXT NOT NULL);
             INSERT INTO state SELECT * FROM state_previous_format;
             DROP TABLE state_previous_format;")?;
     }
@@ -1873,4 +2043,31 @@ pub fn run(req: Request) -> Result<Value> {
     tx.commit()?;
     fault("after-commit")?;
     Ok(response)
+}
+
+#[cfg(test)]
+mod status_operations_tests {
+    use super::next_permitted_operations;
+
+    #[test]
+    fn opt_in_hides_only_unavailable_operations() {
+        for state in ["prepared", "active", "blocked"] {
+            let mut ordinary = next_permitted_operations(state, false);
+            assert!(ordinary.contains(&"assignment handoff"));
+            assert!(ordinary.contains(&"task extend-review"));
+            ordinary.retain(|operation| {
+                !matches!(*operation, "assignment handoff" | "task extend-review")
+            });
+            assert_eq!(next_permitted_operations(state, true), ordinary);
+        }
+    }
+
+    #[test]
+    fn terminal_status_shows_only_terminal_operations() {
+        let terminal = ["task show", "task export", "task check", "task reconcile"];
+        for state in ["completed", "cancelled"] {
+            assert_eq!(next_permitted_operations(state, false), terminal);
+            assert_eq!(next_permitted_operations(state, true), terminal);
+        }
+    }
 }

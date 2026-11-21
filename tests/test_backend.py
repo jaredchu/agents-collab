@@ -58,6 +58,207 @@ class BackendTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("no manual fallback", err)
 
+    def test_task_local_profile_does_not_change_default_backend_selection(self):
+        binary = self.root / "agents-collab"
+        binary.write_text("#!/bin/sh\nprintf 'agents-collab 0.1.0\\n'\n")
+        binary.chmod(0o700)
+        self.config.write_text(json.dumps({"version": 1, "mode": "cli", "binary": str(binary)}))
+        task = self.root / "task"
+        task.mkdir()
+        profile = task / "profile.json"
+        # Status must not use this profile as a backend selector or read it.
+        profile.write_text("not a profile or a selector")
+        before = sorted(self.root.rglob("*"))
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(safe, "DEFAULT_CONFIG", self.config), \
+                contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = backend.main(["--profile", str(profile), "status"])
+        self.assertEqual(code, 0, err.getvalue())
+        status = json.loads(out.getvalue())
+        self.assertEqual(status["mode"], "cli")
+        self.assertEqual(status["config"], str(self.config))
+        self.assertIn("start/context/assignment", status["next_action"])
+        self.assertEqual(sorted(self.root.rglob("*")), before)
+        self.assertFalse((task / "backend.json").exists())
+
+    def test_status_reports_selected_absent_path_without_implicit_search(self):
+        elsewhere = self.root / "elsewhere"
+        elsewhere.mkdir()
+        (elsewhere / "backend.json").write_text("invalid unrelated selector")
+        code, out, err = self.invoke("--profile", str(elsewhere / "profile.json"), "status")
+        self.assertEqual(code, 0, err)
+        status = json.loads(out)
+        self.assertEqual(status["mode"], "manual")
+        self.assertEqual(status["config"], str(self.config))
+        self.assertIn("settings are absent", status["next_action"])
+        self.assertFalse(self.config.exists())
+
+    def test_storage_manual_mode_refuses_without_writes_or_fallback(self):
+        before = list(self.root.iterdir())
+        code, out, err = self.invoke("storage", "--repository", str(self.root),
+                                     "--project", "fixture", "--task", "preview")
+        self.assertEqual((code, out), (1, ""))
+        self.assertEqual(json.loads(err)["fallback"], "none")
+        self.assertEqual(list(self.root.iterdir()), before)
+
+    def test_storage_portable_supplied_default_and_existing_paths(self):
+        binary = self.root / "agents-collab"
+        # Any attempt to execute this target fails. The preview needs only the
+        # selected executable path, and performs no CLI mutation or version call.
+        binary.write_text("#!/bin/sh\nexit 99\n");binary.chmod(0o700)
+        self.config.write_text(json.dumps({"version":1,"mode":"cli","binary":str(binary)}))
+        repo = self.root / "repo";repo.mkdir()
+        subprocess.run(["git","init","-q",str(repo)],check=True)
+        (repo / "source.txt").write_text("synthetic\n")
+        subprocess.run(["git","-C",str(repo),"add","."],check=True)
+        subprocess.run(["git","-C",str(repo),"-c","user.name=Fixture","-c",
+                        "user.email=fixture@example.invalid","commit","-qm","base"],check=True)
+        records = self.root / "records";records.mkdir()
+        profile = self.root / "supplied-profile.json"
+        data = json.loads((SCRIPTS.parent / "examples/profile.example.json").read_text())
+        data["records_root"] = str(records);profile.write_text(json.dumps(data))
+        expected = records / "fixture/preview/collaboration"
+        for mode in ("supplied", "default", "existing"):
+            if mode == "existing":expected.mkdir(parents=True)
+            before = sorted(str(p.relative_to(self.root)) for p in self.root.rglob("*"))
+            default = profile if mode == "default" else self.root / "missing-default.json"
+            flags = [] if mode == "default" else ["--profile", str(profile)]
+            with mock.patch.object(backend, "DEFAULT_PROFILE", default):
+                code, out, err = self.invoke(*flags, "storage", "--repository", str(repo),
+                                             "--project", "fixture", "--task", "preview")
+            with self.subTest(mode=mode):
+                self.assertEqual(code,0,err)
+                value = json.loads(out)
+                self.assertEqual(value["record"],str(expected))
+                self.assertIs(value["writes"],False)
+                self.assertEqual(before,sorted(str(p.relative_to(self.root)) for p in self.root.rglob("*")))
+
+    def test_shared_options_work_before_after_and_across_command(self):
+        binary = self.root / "agents-collab"
+        binary.write_text("#!/bin/sh\nprintf 'agents-collab 0.1.0\\n'\n")
+        binary.chmod(0o700)
+        self.config.write_text(json.dumps({"version": 1, "mode": "cli", "binary": str(binary)}))
+        profile = self.root / "profile.json"
+        profile.write_text("status must not read this profile")
+        placements = (
+            ["--config", str(self.config), "--profile", str(profile), "status"],
+            ["status", "--profile", str(profile), "--config", str(self.config)],
+            ["--profile=" + str(profile), "status", "--config=" + str(self.config)],
+            ["--config", str(self.config), "status", "--config", str(self.config)],
+        )
+        for argv in placements:
+            with self.subTest(argv=argv):
+                out, err = io.StringIO(), io.StringIO()
+                with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                    code = backend.main(argv)
+                self.assertEqual(code, 0, err.getvalue())
+                self.assertEqual(json.loads(out.getvalue())["config"], str(self.config))
+
+    def test_profile_used_as_selector_is_rejected_with_recovery_and_no_probe(self):
+        self.config.write_text(json.dumps({"version": 1, "agents": {}, "routing": {}}))
+        original = self.config.read_bytes()
+        for argv in (["--config", str(self.config), "status"],
+                     ["status", "--config", str(self.config)]):
+            with self.subTest(argv=argv), mock.patch.object(backend.subprocess, "run") as probe:
+                out, err = io.StringIO(), io.StringIO()
+                with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                    code = backend.main(argv)
+                self.assertEqual(code, 1)
+                self.assertEqual(out.getvalue(), "")
+                error = json.loads(err.getvalue())
+                self.assertEqual(error["fallback"], "none")
+                self.assertIn("pass it with --profile FILE", error["error"])
+                self.assertIn("omit --config", error["error"])
+                probe.assert_not_called()
+                self.assertEqual(self.config.read_bytes(), original)
+        self.assertEqual(list(self.root.iterdir()), [self.config])
+
+    def test_conflicting_shared_options_refused_before_probe_or_writes(self):
+        for option in ("config", "profile", "actor"):
+            with self.subTest(option=option), mock.patch.object(backend.subprocess, "run") as probe:
+                with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                    backend.main(["--" + option, "one", "status", "--" + option, "two"])
+                probe.assert_not_called()
+                self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_global_normalization_preserves_command_values(self):
+        args = backend.parser().parse_args([
+            "observe", "--record", "/synthetic/record", "--assignment", "review-1",
+            "--state", "completed", "--invocation", "child", "--actor", "coordinator",
+            "--boundary-observations", "Text mentioning --config and --profile",
+            "--reason=--profile", "--profile", "/synthetic/profile.json"])
+        self.assertEqual(args.actor, "coordinator")
+        self.assertEqual(args.reason, "--profile")
+        self.assertEqual(args.boundary_observations, "Text mentioning --config and --profile")
+        self.assertEqual(args.profile, "/synthetic/profile.json")
+
+    def test_attached_shared_values_starting_with_dash_are_preserved(self):
+        for argv in (["--actor=-coordinator", "status"],
+                     ["status", "--actor=-coordinator"]):
+            with self.subTest(argv=argv):
+                self.assertEqual(backend.parser().parse_args(argv).actor, "-coordinator")
+
+    def test_exact_shared_sentinel_is_controlled_error_without_backend_activity(self):
+        for name in ("actor", "config", "profile"):
+            token = "--" + name + "=--"
+            placements = ([token, "status"], ["status", token],
+                          [token, "status", token],
+                          ["--" + name + "=ordinary", "status", token],
+                          ["--" + name, "--", "status"],
+                          ["status", "--" + name, "--"])
+            for argv in placements:
+                with self.subTest(argv=argv), \
+                        mock.patch.object(safe, "DEFAULT_CONFIG", self.config), \
+                        mock.patch.object(backend, "DEFAULT_PROFILE", self.root / "profile.json"), \
+                        mock.patch.object(backend.subprocess, "run") as probe:
+                    out, err = io.StringIO(), io.StringIO()
+                    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                        with self.assertRaises(SystemExit) as result:
+                            backend.main(argv)
+                    self.assertEqual(result.exception.code, 2)
+                    self.assertEqual(out.getvalue(), "")
+                    self.assertIn("--" + name, err.getvalue())
+                    if token in argv:
+                        self.assertIn("exact '--' sentinel", err.getvalue())
+                    else:
+                        self.assertIn("expected one argument", err.getvalue())
+                    self.assertNotIn("Traceback", err.getvalue())
+                    probe.assert_not_called()
+                    self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_shared_sentinel_shapes_are_rejected_independent_of_runtime(self):
+        for name in ("actor", "config", "profile"):
+            for values in ([[]], ["--"]):
+                options = argparse.Namespace(actor=None, config=None, profile=None)
+                setattr(options, name, values)
+                with self.subTest(name=name, values=values), \
+                        mock.patch.object(safe, "DEFAULT_CONFIG", self.config), \
+                        mock.patch.object(backend, "DEFAULT_PROFILE", self.root / "profile.json"), \
+                        mock.patch.object(argparse.ArgumentParser, "parse_known_args",
+                                          return_value=(options, ["status"])), \
+                        mock.patch.object(backend.subprocess, "run") as probe:
+                    err = io.StringIO()
+                    with contextlib.redirect_stderr(err), self.assertRaises(SystemExit) as result:
+                        backend.main(["status", "--" + name + "=--"])
+                    self.assertEqual(result.exception.code, 2)
+                    self.assertIn("exact '--' sentinel", err.getvalue())
+                    self.assertNotIn("Traceback", err.getvalue())
+                    probe.assert_not_called()
+                    self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_other_attached_dash_values_and_command_values_are_preserved(self):
+        for value in ("-coordinator", "---", "--literal"):
+            for argv in (["--actor=" + value, "status"],
+                         ["status", "--actor=" + value]):
+                with self.subTest(argv=argv):
+                    self.assertEqual(backend.parser().parse_args(argv).actor, value)
+        # The guard applies only to the three shared options, not prose values.
+        args = backend.parser().parse_args([
+            "observe", "--record", "/synthetic/record", "--assignment", "review-1",
+            "--state", "completed", "--invocation", "child",
+            "--boundary-observations=--literal"])
+        self.assertEqual(args.boundary_observations, "--literal")
+
     def test_scope_and_identity_traversal_rejected(self):
         for value in ("../file", "/absolute", ".git/config", "a//b", "a/./b", "a\\b"):
             with self.subTest(path=value), self.assertRaises(ValueError):
@@ -281,6 +482,40 @@ class RealBackendTests(unittest.TestCase):
 
     def test_real_frozen_context_assignment_evidence_completion(self):
         self.assert_frozen_context_assignment_evidence_completion("fixture")
+
+    def test_storage_previews_supplied_profile_layout_without_writes(self):
+        before = sorted(str(p.relative_to(self.root)) for p in self.root.rglob("*"))
+        with mock.patch.object(backend, "DEFAULT_PROFILE", self.root / "missing-default.json"):
+            code, out, err = self.invoke("storage", "--repository", str(self.repo),
+                                         "--project", "example.com", "--task", "preview")
+        self.assertEqual(code, 0, err)
+        value = json.loads(out)
+        self.assertEqual(value["profile"], str(self.profile))
+        self.assertEqual(value["records_root"], str(self.records))
+        self.assertEqual(value["record"], str(self.records / "example.com/preview/collaboration"))
+        self.assertEqual(value["host"], str(self.records / "example.com/preview/host"))
+        self.assertIs(value["writes"], False)
+        self.assertNotIn("workflow", value)
+        self.assertEqual(before, sorted(str(p.relative_to(self.root)) for p in self.root.rglob("*")))
+        self.assertEqual(self.profile.read_bytes(), self.original_profile)
+        record, host = self.begin_task(task="preview", project="example.com")
+        self.assertEqual((record, str(host)), (value["record"], value["host"]))
+
+    def test_storage_rejects_unsafe_layout_without_writes(self):
+        cases = (self.repo / "records", self.root / "missing-records")
+        cases[0].mkdir()
+        for root in cases:
+            with self.subTest(root=root):
+                profile = json.loads(self.original_profile)
+                profile["records_root"] = str(root)
+                self.profile.write_text(json.dumps(profile))
+                before = sorted(str(p.relative_to(self.root)) for p in self.root.rglob("*"))
+                code, out, err = self.invoke("storage", "--repository", str(self.repo),
+                                             "--project", "fixture", "--task", "preview")
+                self.assertEqual(code, 1)
+                self.assertEqual(out, "")
+                self.assertEqual(json.loads(err)["fallback"], "none")
+                self.assertEqual(before, sorted(str(p.relative_to(self.root)) for p in self.root.rglob("*")))
 
     def test_real_dotted_project_frozen_context_assignment_evidence_completion(self):
         self.assert_frozen_context_assignment_evidence_completion("example.com")

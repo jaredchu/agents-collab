@@ -1,7 +1,12 @@
 # Optional local CLI backend
 
 Use this procedure when `scripts/backend.py status` reports an enabled CLI.
-Missing settings select the manual workflow. Backend settings are separate from
+Inspect status before creating task state or launching a collaborator. A successful
+`mode: cli` selects CLI records even when model dispatch uses native subagents;
+handwritten state cannot substitute for `start`, `context` and `assignment`.
+The status includes the selected `config` path and a `next_action` reminder.
+Only a successful `mode: manual` permits manual records. Errors stop the affected
+collaboration; they never select manual mode. Missing settings select the manual workflow. Backend settings are separate from
 the collaboration profile: `~/.config/agents-collab/backend.json` contains only
 `version`, `mode` and an absolute `binary` path. Never install or enable it
 implicitly. Installation does not edit the profile, shell or project instructions.
@@ -48,6 +53,17 @@ task to a manual record, rename it or launch extra workers to get around it.
 - `context` renders only selected regular UTF-8 files. Binary, symlink and
   deleted selections need another authorized path. Snapshots are not
   filesystem isolation or frozen external services.
+- A review `context` refuses a task whose scoped change includes a deletion,
+  binary or symlink, because this helper cannot present it. Report the limit
+  and use another authorized review path; do not omit the change.
+- A trailing-slash, directory-shaped Git entry (for example an untracked nested
+  repository) inside the scope, or containing a scope entry, gets an explicit
+  pre-write refusal that no selection or `--unrelated-changes` bypasses. A
+  scoped staged gitlink has no trailing slash and gets the ordinary
+  coverage/regular-file refusal instead. These entries cannot be presented as
+  reviewed nested source; no traversal is added. A staged gitlink above a
+  directory or absent scope entry instead follows the outside-scope declaration
+  rule described in the coverage guard below.
 
 ## Identities and arguments
 
@@ -69,7 +85,42 @@ must echo both. Assignment IDs are new for every writing or review job; there is
 one logical slot per agent and packet. Only the explicit handoff below can link
 a replacement execution to an unfinished slot.
 
-Global `--config`, `--profile` and `--actor` precede the subcommand. `--actor`
+Before deciding that storage conflicts with a host constraint, inspect the
+selected profile and preview the same layout used by `start`:
+
+```sh
+python3 <skill-dir>/scripts/backend.py --profile /absolute/task/profile.json storage \
+  --repository /absolute/source/repo --project demo --task guide-fix-1
+```
+
+`storage` requires the enabled CLI selector, reads the supplied profile and Git
+root, and validates the existing records root, repository separation and symlink
+guards. It returns the effective `profile`, `records_root`, `record` and `host`
+paths without creating directories, task state or operation traces. Compare both
+task paths with the host-authorized writable roots. It does not test filesystem
+write permission, reserve a task, dispatch work or approve a location. `start`
+revalidates current inputs. Do not replace a supplied profile with defaults,
+rewrite its root or silently skip required review because temporary files have
+a different designated directory. A real conflict or denied write remains a
+blocker to report; the preview supplies no fallback or additional authority.
+
+Shared `--config`, `--profile` and `--actor` options are accepted before or after
+the subcommand. Repeated identical values are accepted; conflicting values are
+refused before selecting a backend or writing task state. All three shared scalar
+options reject the exact `--` value with a normal argument error (exit 2), before
+probing the backend or writing state. Other leading-dash text values keep their
+existing parsing behavior; downstream validation still applies. `--profile` always
+means the collaboration profile, and never redirects the backend selector.
+For a supplied task-local profile, check status without a selector override:
+
+```sh
+python3 <skill-dir>/scripts/backend.py --profile /absolute/task/profile.json status
+```
+
+A collaboration profile supplied as `--config` is rejected with an explicit
+`--profile` recovery message. This error does not select manual mode or rewrite
+configuration; correct the invocation rather than creating another selector.
+ `--actor`
 (default `lead`) is attribution on every mutation and, at `start`, the task's
 only declared decision authority. It authenticates no one: naming a person as
 actor is not their approval. Real human approvals need actual evidence through
@@ -84,12 +135,51 @@ follow-up review after every reviewer finished round `N-1`. The profile's
 cap. A follow-up review must name a changed artifact.
 `<command> --help` shows every flag.
 
+## Explicit opt-in for routine tasks
+
+Use the route after classifying routine work and checking applicable review
+requirements. With no flag, this command returns `route: solo` without opening
+a profile, probing the backend or creating a record.
+
+```sh
+python3 <skill-dir>/scripts/backend.py route
+```
+
+For an explicitly flagged task, first resolve the configured CLI as usual.
+Pass the exact editable scope and exactly one distinct reviewer from the saved
+profile.
+
+```sh
+python3 <skill-dir>/scripts/backend.py route --review-required \
+  --repository "$REPO" --project demo --task guide-fix-1 \
+  --writer current-session --reviewer reviewer-a --scope docs/guide.md \
+  --criterion "C1=Update the documented argument" --boundary "Local edit only"
+```
+
+The flagged command creates a record and returns `route: review`. This opt-in
+record requires a CLI that supports record format 6. A missing or incompatible
+backend fails the flagged route. The existing `start` command and its profile
+and review-round behavior still apply to ordinary recorded collaboration.
+
+Follow the initial cycle below, including the writer context and assignment
+before the edit. Complete the writer observation before freezing the final
+artifact. The sealed review packet binds the capture revision and artifact to
+the writer assignment, invocation and terminal receipt. A fresh capture can
+reuse an artifact hash when the source is already correct. The CLI requires
+a passing review from the one configured reviewer on that exact packet with a distinct recorded
+invocation. The route allows the initial writer and review only. If either
+cannot finish, retain the record and report the outcome.
+
+The host owns the flag, launch and observations. The CLI checks structural
+identity and completion. It does not infer the flag from the ticket, launch a
+model, or attest runtime identity or independence.
+
 ## Initial cycle
 
 ```sh
 B="python3 <skill-dir>/scripts/backend.py"
 $B start --repository "$REPO" --project demo --task guide-fix-1 \
-  --writer current-session --reviewer reviewer-a --scope docs/guide.md \
+  --writer current-session --reviewer reviewer-a --scope docs/guide.md --scope tests \
   --requirement "R1=Keep documented commands accurate" \
   --criterion "C1=Unit tests pass" --boundary "No publication" --check unit-tests
 # -> {"record": RECORD, "host": HOST, ...}
@@ -105,16 +195,35 @@ $B assignment --record "$RECORD" --id write-1 --packet "$WRITER_PACKET" \
 $B observe --record "$RECORD" --assignment write-1 --state completed \
   --invocation "$SESSION" --boundary-observations "Lead session; no isolation"
 
-# Initial review on the finished source (neutral instructions only).
+# Initial review on the finished source (neutral instructions only); select every
+# changed scoped path, e.g. the edited guide and the writer's new test.
 $B context --record "$RECORD" --purpose review --round 0 --paths docs/guide.md \
+  --paths tests/test_guide.py \
   --omit-other-paths "Unrelated to this edit" --quiescence "Writer stopped" \
   --instructions "$HOST/review.txt" --output "$HOST/review-0.txt"   # -> ARTIFACT, PACKET
 $B assignment --record "$RECORD" --id review-1 --packet "$PACKET" \
   --agent reviewer-a --role reviewer --output-destination "$HOST/review-1.json"
-# Dispatch a fresh reviewer with review-0.txt, then:
+# Transport-conditional dispatch. REVIEWER_TRANSPORT is review-1's recorded
+# requested transport (`show`: record.assignments[], select spec.id == "review-1",
+# then read requested.transport). Set REVIEWER_TRANSPORT to that value first;
+# a continuation assignment uses the quota-continuation procedure instead.
+: "${REVIEWER_TRANSPORT:?Set review-1 recorded transport from show first}"
+if [ "$REVIEWER_TRANSPORT" = "codex-native" ]; then
+  # Ordinary codex-native reviewer only: render the identity-bound message.
+  $B native-dispatch --record "$RECORD" --assignment review-1
+  # Pass its message verbatim, exact task_name and requested model/effort and
+  # fresh-session controls to the native host tool. Do not pass only review-0.txt.
+else
+  # Other transports (native-dispatch refuses them): send the sealed review
+  # instructions, full frozen context, exact assignment/packet/artifact
+  # identities and final-output contract.
+  :
+fi
+# Dispatch the fresh reviewer, retain its terminal result, then:
+# Add --exit-code only when the host exposes an actual code; native hosts may not.
 $B observe --record "$RECORD" --assignment review-1 --state completed \
-  --invocation "$REVIEW_SESSION" --exit-code 0 \
-  --boundary-observations "Fresh CLI process; tools disabled; memory may load"
+  --invocation "$REVIEW_SESSION" \
+  --boundary-observations "$ACTUAL_REVIEW_BOUNDARIES"
 $B import-review --record "$RECORD" --input "$HOST/review-1.json"
 ```
 
@@ -123,6 +232,105 @@ writer transcript, persuasive report or other initial findings. Select enough
 source for adequate context; a diff alone is not enough, and no implicit file
 sweep is authorized. `--omit-other-paths` gives one reason for all unselected
 inventory.
+
+### Review coverage guard
+
+Scope at `start` must name every path the task may change: docs, CLI entry
+points and tests as well as the main source. Use a directory scope (for example
+`tests`) when the writer may add files; the frozen scope cannot be widened later.
+Freeze review context only after the writer's completion is observed, so the
+reviewer receives the complete final source.
+
+Before writing any workflow trace, record object or output, a review `context`
+computes changes against the HEAD commit (the artifact's recorded base): staged
+and unstaged tracked differences, including deletions and both sides of a rename,
+plus untracked files Git does not ignore. Then it requires:
+
+- every changed path inside the editable scope (exact path or directory
+  descendant) to be selected; existing exact scope entries ignored by Git count;
+- no scoped deletion and no selected absent, binary, symlinked or non-UTF-8 input;
+- every changed path outside scope to be selected, or declared with
+  `--unrelated-changes REASON`. Use that only for preexisting or unrelated work
+  you have not attributed to the task; it is recorded per path in the frozen
+  omissions and cannot omit a scoped change. A task change outside scope is a
+  scope violation: report it rather than declaring it unrelated.
+
+Directory-shaped scoped changes reported by Git (for example `tests/embedded/`
+for an untracked nested repository) are explicitly refused before any write.
+The helper neither traverses nor skips them; use another authorized review path
+for such task work. Omitting the entry or selecting its name without the trailing
+slash still gets that refusal. A raw trailing-slash `--paths` value fails the
+shared normalized-relative-path validation first; it is not a supported selection.
+A directory-shaped entry that contains a scope entry (scope
+`vendor/lib/source.txt` beneath an untracked nested repository listed as
+`vendor/lib/`) is treated as scoped for this refusal, so `--unrelated-changes`
+cannot cover it. Only the trailing-slash shape is treated this way; an ordinary
+file whose name is an ancestor of a scope entry, or a name that merely shares a
+prefix such as `vendor/library`, keeps the normal outside-scope rule. Nested
+repositories are not traversed or supported.
+
+A **staged** nested repository is a gitlink, which Git lists without a trailing
+slash. In scope it receives the ordinary refusals instead: an omission is a
+missing task-scoped selection, and a selection is refused as not a regular file.
+It is unsupported, not silently admitted.
+
+A staged gitlink **above** a directory or absent scope entry follows a different
+rule. For example, Git reports `vendor/lib` without a slash when the scope names
+`vendor/lib/pending`. The trailing-slash containment rule does not apply, so that
+gitlink is outside scope. Without an unrelated-work declaration the helper
+refuses; with a genuinely preexisting unrelated-work declaration, synthetic
+cases with the tested engine build freeze and seal the selected regular source
+while retaining the gitlink as an explicit omission. The omission includes no
+reviewed content beneath the gitlink and adds no nested-repository support.
+Task work must never be declared unrelated to use this boundary.
+
+The path guard does not enumerate directory-scoped content beneath a gitlink.
+Adding writer content there can leave its reported coverage unchanged; this is
+not a claim that Git status metadata is unchanged. A preexisting gitlink does
+not establish that the writer did no work beneath it. If the writer may have
+written there, do not declare the gitlink unrelated; use another authorized
+review path. Adversarial synthetic cases demonstrate the visibility limit, not
+permission to make an incorrect declaration.
+
+An existing exact scoped regular file beneath the gitlink must still be
+selected: omitting it is refused before writes, even with a declaration. In a
+synthetic case with the tested engine build, selecting that file while declaring
+the gitlink unrelated passes helper preflight, then the engine refuses the
+freeze after the helper writes its workflow and freeze-operation trace. No
+artifact, packet or rendered output is created and the record revision is
+unchanged. This observation adds no support for selecting nested content; use
+another authorized review path rather than treating the declaration as a
+workaround.
+
+Observed actual-engine outcomes for two paths that pass this preflight, using
+synthetic fixtures with the engine build tested at preparation: an untracked
+nested repository outside scope declared with `--unrelated-changes`, and any
+untracked nested repository during writer context. The helper passes the exact
+trailing-slash Git name to the engine as an omission. The helper first writes
+its workflow and freeze-operation trace in `host/`; the engine then rejects the
+freeze, with no artifact, packet or output and an unchanged record revision.
+Stderr names `incomplete_workflow`. This is an observation of that engine build,
+not a support claim; treat such a refusal as a nested-repository limit, not a
+reason to delete or hide the entry.
+
+Git errors and non-UTF-8 path names fail closed. After freezing and before
+sealing, the helper recomputes the same change set and compares every frozen
+manifest object with the live selected bytes; drift fails without a packet,
+leaving the frozen artifact as evidence (see partial helper failure). The result's
+`coverage` lists the baseline, scope, selected task changes, declared unrelated
+paths and ignored in-scope paths that were not inspected. An empty change set
+means no task change was found, not that review is unnecessary. Ignored files
+under a directory scope are not discovered; select them explicitly when they are
+task inputs. There is no flag that skips the guard. Writer context is unchanged.
+
+Coverage limits: the guard sees only what Git reports as changed. Tracked paths
+carrying assume-unchanged or skip-worktree index flags, and differences Git
+normalizes away (for example through line-ending or clean filters), can hide a
+tracked change from it. The baseline is the HEAD current at review time, so
+task work already committed before review is not discovered. Keep the writer
+from committing, inspect such flags and filters when they may apply, and
+select those paths yourself. The guard does not attribute arbitrary changes to
+a task; it enforces selection of the change set Git reports.
 
 ## Follow-up round
 
@@ -140,8 +348,15 @@ $B assignment --record "$RECORD" --id review-2 --packet "$PACKET" \
   --agent reviewer-a --role reviewer --output-destination "$HOST/review-2.json"
 ```
 
-`...` repeats the same `--paths`, `--omit-other-paths`, `--quiescence` and
-`--instructions` choices. The fix is a new assignment; see
+Replace `...` with choices for this round. Refresh review `--paths` against the
+**current full change set**, including newly added or edited docs and tests;
+copying the initial selection can omit the fix's work. Select every changed
+scoped path and enough additional source for review. Use `--unrelated-changes`
+only when actual preexisting or unrelated outside-scope changes remain unselected;
+it cannot excuse a scoped omission. Reassess `--omit-other-paths`, writer
+quiescence and the `--instructions` for the new packet. Dispatch its new reviewer
+assignment using the same transport-specific procedure as the initial cycle.
+The fix is a new assignment; see
 [assignment timing](configuration.md#assignment-timing). A follow-up packet may
 include prior findings, labeled as follow-up input.
 
@@ -194,8 +409,10 @@ through the ordinary workflow. Existing completion gates still apply.
 
 The first amendment upgrades SQL marker and state body to **format 3** in the
 same transaction, so older CLIs refuse it before interpreting the new allowance.
-A later quota handoff preserves format 3. This engine also reads unchanged
-format-1/2 records. No saved profile or backend selector is written.
+A record already at format 4 (after a low-level `task accept-commit`) stays at
+format 4. Later quota handoffs and amendments never downgrade the format. This
+procedure applies to ordinary records in formats 1–4. No saved profile or
+backend selector is written.
 
 ## Quota-aware continuation
 
@@ -295,19 +512,70 @@ blocks because this engine cannot validate a supervisor. An advisory overrun is
 reported and is not a stop condition on its own.
 
 The first handoff explicitly upgrades the task's SQL and enclosing state format
-to **2** in the same transaction (or retains format 3 after a review amendment).
-Ordinary records remain format 1; this CLI reads formats 1–3. Older CLIs refuse
-unsupported formats before interpreting them. Keep using a compatible
+to **2** in the same transaction; a record already at format 3 (review amendment)
+or format 4 (low-level `task accept-commit`, which explicitly binds approved
+staged work to its later commit) keeps its higher format. Ordinary records remain
+format 1. This procedure applies to ordinary records in formats 1–4. The CLI
+refuses unsupported formats before interpreting them. Keep using a compatible
 binary; no downgrade or automatic backend switch is supported. No quota API,
 dispatcher, GUI prompt, absence detection or authority attestation is provided.
 
 ## Observations and retries
+
+For an ordinary `codex-native` assignment with recorded `launching` intent,
+construct the dispatch body from the registered immutable objects:
+
+```sh
+python3 <skill-dir>/scripts/backend.py native-dispatch --record RECORD --assignment review-1
+```
+
+The read-only result includes assignment/packet/artifact identities, requested
+controls, a deterministic `task_name` identity digest, a `message` string containing the explicit hashes, the
+role's [final-output contract](#review-contract) and the full frozen context, its
+`final_output` (contract name and, for reviewers, the identity-filled schema
+template) and its UTF-8 `message_sha256`. The identity header lines are unchanged. Pass that message string verbatim to the
+native tool with its returned task_name exactly and the required model/effort
+and fresh-session controls. Do not substitute a free-form name. The digest uses
+all three exact identities with a versioned domain; it is not a message digest
+or authorization. A host may join that exact observed call/start/path with a
+first-turn opaque AgentMessage payload equal to the same call bytes. This proves
+only native invocation identity and opaque delivery, not plaintext/full-context
+equality. A name alone, model summary, preview or reconstructed packet proves no
+delivery; absent received-input provenance remains unverified. The helper
+has no transport-specific payload-size guarantee: the host must confirm that its
+interface accepts the complete message and stop if it cannot. Do not truncate
+context to preserve just the header. The message_sha256 describes constructed message bytes;
+it does not attest delivery or complete delivered-context equality. Do not
+send only a context-file path or substitute an older assignment's message for a
+new packet. The renderer checks active task, launching/no-invocation state,
+native transport, current artifact, role/purpose and immutable record integrity.
+It creates no directories, traces, assignments or workers. Rendering is not
+permission, a lease, a liveness check or delivery evidence; inspect the host
+before any uncertain dispatch and never retry blindly. Quota continuations are
+refused here because their dedicated instructions/partial-work handoff must be
+preserved. The existing continuation procedure remains authoritative.
+
+Raw native argument fields can be opaque. An envelope-shaped message without
+visible hashes cannot establish what plaintext the caller sent or the child
+received. A local preview also proves no delivery. Preserve the original field
+and distinguish readable-but-unbound from opaque/unavailable. Only a separate
+host-owned, exactly identity-bound delivered-input receipt can supply readable
+text when available; do not decrypt, read keys or infer it from packet contents
+or participant summaries. Unknown binding remains unverified.
 
 `assignment` prepares the assignment, then records `launching` intent with no
 invocation. Dispatch only after both steps commit. `observe` then attaches what
 the host actually saw. Record interface model/effort separately; runtime
 attestation stays unknown. Omit `--exit-code` when a native host exposes none;
 an exit code alone proves no valid review. The backend never cancels a worker.
+
+Native hosts can expose a canonical invocation path separately from a thread
+UUID. Retain both identities and use an exact, unique mapping from host-owned
+child source/parent metadata before joining lifecycle or review receipts. Do not
+match a nickname, role or path suffix, guess a UUID, or use the writer and reviewer
+aliases to hide one shared thread. Ambiguous, conflicting or unproven mappings
+remain unverified. Resolving identity supplies no missing spawn request,
+packet/artifact binding, accepted controls or terminal reviewer output.
 
 `--reconciled` and `--absence-established` default to false and are recorded
 host assertions, not proof. Use them only after checking the host or
@@ -403,12 +671,25 @@ assignment.
 
 ## Review contract
 
-Copy this contract, with identity placeholders, into the review instructions
-before sealing the packet. At dispatch, supply the actual artifact/packet hashes
-returned by `context` and the prepared assignment ID; do not edit a sealed packet
-to insert its own hash. The helper renders the supplied instructions and sources;
-it does not automatically add a return schema. The reviewer returns only this
-JSON, without prose or fences:
+The reviewer's terminal final message is this complete JSON object and nothing
+else: no prose, heading or fences before or after it. Any summary belongs in
+`limits`, verification descriptions or findings. If the reviewer also writes the
+assigned output file, the file holds the same JSON object as the final message.
+For an ordinary `codex-native` reviewer, `native-dispatch` places this contract,
+with the exact recorded assignment, packet and artifact identities, after the
+identity header and before the frozen context (`final_output` in its result);
+writer messages get a report contract instead and are never asked for this JSON.
+For other transports, copy the contract with identity placeholders into the
+review instructions before sealing, and supply the actual hashes and assignment
+ID at dispatch; do not edit a sealed packet to insert its own hash.
+
+Review instructions must not ask for a different final output, such as "a JSON
+file plus a concise summary". Ask for findings in the schema fields. The native
+contract states that it supersedes a conflicting request, but a contradictory
+packet still wastes the review. A result file, preview, wait summary,
+progress note or self-report is not terminal evidence: import the host-retained
+terminal final message, and if a written file differs from it, retain both and
+treat the review as unresolved. The schema:
 
 ```json
 {

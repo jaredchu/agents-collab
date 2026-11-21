@@ -27,8 +27,14 @@ artifact snapshot it names, before the first reviewer launches.
 For mixed staged/unstaged/untracked work, HEAD alone is not the artifact identity.
 Capture the relevant patch and included new files as a frozen snapshot; preserve
 unrelated work without including it as the review target. Do not revert files to
-create a clean workspace. A filesystem snapshot/hash helper is a possible later
-runner feature, not an enforcement guarantee of this prompt-only draft.
+create a clean workspace. The review artifact must contain every task change:
+edited docs, CLI entry points and tests, and every new test file, not only the
+main source. Scope the task so new tests are inside it. Freeze after the writer
+completes so reviewers get its complete final source. The CLI backend's review
+`context` enforces this against HEAD for the task's editable scope
+([coverage guard](backend.md#review-coverage-guard)); in manual mode compare
+`git status --porcelain=v1 --untracked-files=all` with the frozen file list
+yourself and report any deletion or unsupported change you could not present.
 
 Do not include the writer's transcript, suggested verdict, initial reviewer
 findings or persuasive implementation report in the initial packet. Factual
@@ -48,6 +54,15 @@ between reviewers before claiming they assessed equivalent inputs. Do not imply
 that hashing the patch freezes external services or the whole test environment.
 
 ## Context and permission boundary
+
+Every native dispatch message must carry its exact registered assignment ID,
+packet SHA-256 and artifact SHA-256. Use the backend's read-only `native-dispatch`
+renderer after launch intent for ordinary native assignments, and send its
+message string verbatim. A context path is not a replacement for these fields.
+This constructs intended input only; it cannot attest that the host delivered
+the bytes. Preserve opaque transport observations with plaintext delivery unverified,
+without inferring their plaintext; the narrower receipt contract below is separate. Later assignments need their own identity-bearing
+message; an original spawn receipt does not bind a later writer handoff.
 
 Use a new reviewer session with no writer/parent transcript inheritance. Native
 subagents must use an available no-history mechanism; if unavailable, report
@@ -133,8 +148,9 @@ directory and read-only reviewer settings above do not apply to writers.
 8. Verify: the lead inspects the change against scope and runs targeted checks
    itself where permitted, stating which ran and which could not.
 9. Freeze: before the first independent reviewer launches, freeze the finished
-   artifact as in [Neutral packet](#neutral-packet). Later writer edits create a
-   new identity.
+   artifact as in [Neutral packet](#neutral-packet), selecting every changed
+   and new file the writer listed or Git shows in scope, including docs and
+   tests. Later writer edits create a new identity.
 
 ## Finding contract
 
@@ -143,6 +159,12 @@ verification limits. Each material finding needs a source location, failure
 scenario, evidence or reasoning, and recommended action. Label uncertain claims.
 For ideas/plans, cite the relevant requirement or assumption instead of inventing
 code line numbers. Return no-findings honestly; do not manufacture disagreement.
+
+Specify exactly one final output. With the CLI backend the reviewer's terminal
+final message is the complete [review JSON](backend.md#review-contract) and
+nothing else; summaries go in its fields, and any written result file holds the
+same object. Do not also request a prose summary as the final message. A saved
+file, preview, wait summary or self-report is not the terminal result.
 
 Store each reviewer's initial result before sharing findings or asking for fixes.
 Then consolidate duplicates while preserving distinct reasoning and provenance.
@@ -238,3 +260,16 @@ Project handoff includes resulting decisions, essential rationale, checked
 behavior, evidence limits and blockers. Keep routine personal model history in
 private records. Include review attribution when it is material evidence or a
 project requirement. This filtering does not authorize deleting old records.
+
+
+## Observable native identity and opaque input
+
+When native-dispatch supplies task_name, send that exact value with its full
+message to the native tool. It binds assignment, packet and artifact independently
+of display text. It is not permission or proof that launch happened. A host may
+verify a narrower source receipt by joining the actual call/start, exact native
+path/metadata and first-turn AgentMessage payload equal to that call's opaque
+bytes. Preserve first-turn order, conflicts, controls and independence. Report
+plaintext/full-context delivery unverified; never convert opacity into readable
+text or substitute a constructed message as delivered-input evidence. Without
+the actual received input, a matching task_name supplies no delivery receipt.
