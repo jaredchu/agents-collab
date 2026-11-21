@@ -91,10 +91,8 @@ adapter and executable need that support; source validation is not installation
 or publication evidence.
 
 The [review coverage and final-output source increment](#review-coverage-native-task-identity-and-final-output-contracts-14-november-2026)
-has passed independent source review and is integrated into the working checkout.
-It remains uncommitted and unpublished. Its section distinguishes the completed
-source work from the earlier preparation checkpoint; installation and deployment
-are separate from that source status.
+passed independent source review and is included in commit `4d2a1b0`.
+Source review, installation and deployment are separate milestones.
 
 The working source includes an [explicit task review flag](../skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks).
 The routine route defaults to solo. An opted-in task requires a compatible
@@ -610,8 +608,9 @@ Local validation passed 164 Python tests, including seventeen real-engine cases
 without skips, and the package/static build. The new checks cover immutable
 writer/reviewer message rendering, explicit identities and UTF-8 digest,
 stale/uncertain state refusal, corrupt objects, mutable context-file replacement
-and no writes during preview. This source increment is uninstalled and
-unpublished; these checks establish construction behavior, not native delivery.
+and no writes during preview. This increment was uninstalled and unpublished at
+that checkpoint. The checks establish message construction behavior. Native
+delivery requires separate evidence.
 
 ## Reviewed commit acceptance source increment (13 November 2026)
 
@@ -636,12 +635,10 @@ establish installation, publication, atomic capture or authenticated authority.
 
 ## Review coverage, native task identity and final-output contracts (14 November 2026)
 
-**Status: independently reviewed source integrated into the working checkout;
-uncommitted and unpublished.** The earlier preparation checkpoint described an
-uninstalled candidate awaiting independent review. Source review, validation and
-working-checkout integration are now complete. Installation requires separate
-owner or user authorization; this source status does not establish installation
-or deployed behavior.
+Independent review and validation followed the preparation checkpoint. The
+reviewed source was integrated into the working checkout on 14 November and is
+included in commit `4d2a1b0`. Installation requires separate owner or user
+authorization.
 
 Local implementation validation on 14 November 2026 passed 216 Python tests,
 including 27 opt-in real-engine cases, with no skips. Those results precede the
@@ -775,4 +772,5 @@ and implicit activation remains unestablished.
 - [x] Prepare the uncommitted review-coverage, native task identity and final-output source candidate with portable regressions.
 - [x] Complete independent source review and validation of that increment.
 - [x] Integrate the reviewed source into the working checkout.
-- [ ] Commit or publish the integrated source under separate owner authorization; installation requires separate owner or user authorization.
+- [x] Commit the integrated source and the explicit opt-in review workflow.
+- [ ] Merge or release under separate owner authorization.
