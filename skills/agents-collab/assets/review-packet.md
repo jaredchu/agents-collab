@@ -48,18 +48,17 @@ unrelated personal instructions and no other project's private context.>
 
 ## Output contract
 
-With the CLI backend, replace the prose contract below with the exact JSON
-contract from [the backend reference](../references/backend.md#review-contract)
-before sealing. Your final message is that complete JSON object and nothing
-else, without fences; put any summary in its `limits`, verification descriptions
-or findings. If you write the assigned output file, it holds the same object; a
-written file never replaces the final message. Do not add a request for a
-separate prose summary. For a `codex-native` reviewer, `native-dispatch` also
-states this contract with the exact assignment/packet/artifact identities; for
-other transports supply the returned hashes and assignment ID at dispatch. Do
-not edit the sealed packet to insert its own hash. Keep the string field types;
-a quota continuation's `fresh_session` must be the exact completed invocation
-string, with boundary observations in `limits` or `tool_boundary`.
+For an ordinary CLI-backed reviewer, remove the manual prose contract below.
+`native-dispatch` or `claude-dispatch` supplies the applicable
+[JSON contract](../references/backend.md#review-contract) with the registered
+assignment, packet and artifact in the message. Return that complete JSON object
+without fences. Put any summary in `limits`, verification descriptions or
+findings. The host retains the terminal message as evidence. If you also write
+the assigned file, make its bytes match the terminal message. Leave sealed
+instructions unchanged. For a quota continuation, the lead supplies the full
+JSON contract through the
+[replacement dispatch procedure](../references/backend.md#dispatch-the-quota-replacement),
+including the exact invocation string for `fresh_session`.
 
 For the manual workflow, use the following prose contract:
 

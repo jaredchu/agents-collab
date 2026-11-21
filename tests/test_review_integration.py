@@ -605,6 +605,7 @@ class DispatchFixture(unittest.TestCase):
         (self.root / "objects").mkdir()
         self.engine = backend.Backend.__new__(backend.Backend)
         self.engine.record = self.root
+        self.engine.host = self.root
         self.engine.call = lambda entity, action: {"integrity": "verified"}
 
     def store(self, value):

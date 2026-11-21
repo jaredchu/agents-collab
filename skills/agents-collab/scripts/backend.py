@@ -16,6 +16,10 @@ import sys
 import uuid
 from pathlib import Path
 
+# A script invocation may be a read-only probe or renderer.
+if __name__ == "__main__":
+    sys.dont_write_bytecode = True
+
 import install_backend as safe
 import validate_profile as validator
 
@@ -79,6 +83,38 @@ def overlap(left, right):
     return left == right or left in right.parents or right in left.parents
 
 
+def require_outside_git(path):
+    """Accept ordinary Git absence only, including for a prospective directory."""
+    if os.environ.get("GIT_DIR") or os.environ.get("GIT_WORK_TREE"):
+        raise ValueError("explicit GIT_DIR or GIT_WORK_TREE prevents private storage validation")
+    ancestor = path
+    while True:
+        try:
+            ancestor.stat()
+        except FileNotFoundError:
+            ancestor = ancestor.parent
+        else:
+            break
+    for directory in (ancestor, *ancestor.parents):
+        try:
+            (directory / ".git").lstat()
+        except FileNotFoundError:
+            continue
+        raise ValueError("private task storage must be outside every Git repository")
+
+    # Probe the actual path with no inherited Git discovery ceiling. Git also
+    # detects bare repositories.
+    env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+    env.update(LC_ALL="C", GIT_OPTIONAL_LOCKS="0", GIT_DISCOVERY_ACROSS_FILESYSTEM="1")
+    probe = subprocess.run(["git", "-C", str(ancestor), "rev-parse", "--git-dir"],
+                           capture_output=True, env=env, timeout=10)
+    if probe.returncode == 0:
+        raise ValueError("private task storage must be outside every Git repository")
+    if (probe.returncode != 128 or probe.stdout or probe.stderr.strip() !=
+            b"fatal: not a git repository (or any of the parent directories): .git"):
+        raise ValueError(f"could not establish private task storage is outside Git: {path}")
+
+
 def storage_paths(profile, project, task, repo):
     # The configured root may intentionally be a symlink to an existing volume.
     # Resolve it once; every task/host child still rejects symlink ancestry.
@@ -89,15 +125,10 @@ def storage_paths(profile, project, task, repo):
     task_root = safe.safe_path(base / project_component(project) / component(task))
     if overlap(task_root, repo):
         raise ValueError("private task storage overlaps the source repository")
-    ancestor = task_root
-    while not ancestor.exists():
-        ancestor = ancestor.parent
-    probe = subprocess.run(["git", "-C", str(ancestor), "rev-parse", "--show-toplevel"],
-                           capture_output=True)
-    if probe.returncode == 0:
-        raise ValueError("private task storage must be outside every Git repository")
     record = safe.safe_path(task_root / "collaboration")
     host = safe.safe_path(task_root / "host")
+    require_outside_git(record)
+    require_outside_git(host)
     return record, host
 
 
@@ -183,12 +214,19 @@ class Backend:
         self.workflow_data["status"] = "finished"
         self.save_workflow()
 
-    def output_path(self, value):
+    def output_path(self, value, *, registered=False):
         path = safe.safe_path(value)
         if self.host not in path.parents:
             raise ValueError("output must be inside this task's private host directory")
+        if any(part.casefold() == ".git" for part in path.relative_to(self.host).parts):
+            raise ValueError("output path may not use a .git component")
+        if registered and str(path) != value:
+            raise ValueError("registered output destination must be a canonical absolute path")
         if path.exists():
+            if registered:
+                raise ValueError("registered output destination already exists; reconcile worker state before dispatch")
             raise ValueError("output already exists; choose a new private output path")
+        require_outside_git(path.parent)
         return path
 
     def mutation(self, entity, action, value=None, raw=None, create=False):
@@ -463,6 +501,7 @@ def context(backend, args, state, plan=None):
               "neutral_initial": args.purpose == "review"}
     packet_id = backend.mutation("packet", "seal", packet)["result"]["packet"]
     body = render_context(backend, packet_id, artifact)
+    require_outside_git(output.parent)
     safe.atomic_write(output, body)
     value = {"artifact": artifact, "packet": packet_id, "output": str(output),
              "limits": "Exact frozen UTF-8 regular files; host must assess neutral instructions and actual isolation"}
@@ -558,22 +597,20 @@ def native_task_name(assignment, packet, artifact):
     return safe.digest(raw)
 
 
-def native_dispatch(backend, args, state):
-    """Render identity-bound native message from immutable objects; never launch."""
+def launching_assignment(state, assignment_id, label):
     if state["state"] != "active":
-        raise ValueError("native dispatch requires an active task")
-    matches = [a for a in state["assignments"] if a["spec"]["id"] == args.assignment]
+        raise ValueError(f"{label} requires an active task")
+    matches = [a for a in state["assignments"] if a["spec"]["id"] == assignment_id]
     if len(matches) != 1:
-        raise ValueError("native dispatch requires one registered assignment")
+        raise ValueError(f"{label} requires one registered assignment")
     assignment = matches[0]
     if assignment["state"] != "launching" or any(
             observation.get("receipt", {}).get("invocation") for observation in assignment.get("observations", [])):
-        raise ValueError("native dispatch requires recorded launching intent without an invocation; inspect actual worker state, never redispatch blindly")
-    if assignment.get("continuation"):
-        raise ValueError("native dispatch does not render quota continuations; retain the documented handoff and partial-work instructions")
-    requested = assignment.get("requested") or {}
-    if requested.get("transport") != "codex-native":
-        raise ValueError("native dispatch supports only a configured codex-native assignment")
+        raise ValueError(f"{label} requires recorded launching intent without an invocation; inspect actual worker state, never redispatch blindly")
+    return assignment
+
+
+def dispatch_packet(state, assignment):
     packet_id = assignment["spec"]["packet"]
     packets = [p for p in state["packets"] if p["id"] == packet_id]
     if len(packets) != 1:
@@ -582,31 +619,78 @@ def native_dispatch(backend, args, state):
     artifact_id = packet["artifact"]
     if artifact_id != state["current_artifact"]:
         raise ValueError("assignment artifact is stale; inspect current task, do not launch")
-    role = assignment["spec"]["role"]
-    if packet["purpose"] != {"writer": "writer_context", "reviewer": "review"}.get(role):
+    if packet["purpose"] != {"writer": "writer_context", "reviewer": "review"}.get(assignment["spec"]["role"]):
         raise ValueError("packet purpose disagrees with assignment role")
+    return packet_id, packet
+
+
+def check_replacement_output(backend, args, state):
+    """Revalidate the immutable destination of a pending quota replacement."""
+    assignment = launching_assignment(state, args.assignment, "replacement output check")
+    if not assignment.get("continuation"):
+        raise ValueError("replacement output check requires a recorded quota replacement")
+    packet_id, packet = dispatch_packet(state, assignment)
+    if backend.call("task", "check").get("integrity") != "verified":
+        raise ValueError("record integrity is not verified")
+    destination = backend.output_path(assignment["spec"]["output_destination"], registered=True)
+    return {"assignment": args.assignment, "packet": packet_id, "artifact": packet["artifact"],
+            "output_destination": str(destination), "writes": False, "dispatch": "none",
+            "limits": "Point-in-time storage check only. Host owns launch, worker reconciliation and receipt checks."}
+
+
+def render_dispatch(backend, args, state, transport):
+    """Render an ordinary dispatch from registered immutable objects; never launch."""
+    native = transport == "codex-native"
+    label = "native dispatch" if native else "Claude CLI dispatch"
+    assignment = launching_assignment(state, args.assignment, label)
+    if assignment.get("continuation"):
+        raise ValueError(f"{label} does not render quota continuations; use check-replacement-output and the documented handoff instructions")
+    requested = assignment.get("requested") or {}
+    if requested.get("transport") != transport:
+        raise ValueError(f"{label} supports only a configured {transport} assignment")
+    role = assignment["spec"]["role"]
+    if not native and role != "reviewer":
+        raise ValueError("Claude CLI dispatch renderer supports only reviewer assignments")
+    packet_id, packet = dispatch_packet(state, assignment)
+    artifact_id = packet["artifact"]
     if backend.call("task", "check").get("integrity") != "verified":
         raise ValueError("record integrity is not verified")
     sealed = safe.strict_json(backend.frozen(packet_id))
     if sealed["packet"] != packet:
         raise ValueError("registered packet differs from immutable packet object")
     body = render_context(backend, packet_id, artifact_id).decode("utf-8")
-    task_name = native_task_name(args.assignment, packet_id, artifact_id)
     contract, template, instructions = output_contract(role, args.assignment, packet_id, artifact_id)
-    # The identity header is unchanged; the contract follows its blank-line terminator.
-    message = ("Agents Collab native dispatch v1\n"
-               f"Assignment: {args.assignment}\nPacket-SHA256: {packet_id}\nArtifact-SHA256: {artifact_id}\n"
-               f"Native-Task-Name: {task_name}\nRole: {role}\nOutput destination: {assignment['spec']['output_destination']}\n\n"
+    identity = f"Assignment: {args.assignment}\nPacket-SHA256: {packet_id}\nArtifact-SHA256: {artifact_id}\n"
+    if native:
+        task_name = native_task_name(args.assignment, packet_id, artifact_id)
+        title = "Agents Collab native dispatch v1"
+        transport_header = f"Native-Task-Name: {task_name}\n"
+        transport_fields = {"task_name": task_name}
+        launch = ("Pass task_name exactly as the native task_name and message verbatim to the native tool "
+                  "with the requested controls. Transport may expose opaque text; never infer its plaintext.")
+    else:
+        title = "Agents Collab Claude CLI dispatch v1"
+        transport_header = ""
+        transport_fields = {}
+        launch = ("Pass message verbatim as UTF-8 on standard input to a fresh Claude CLI process "
+                  "with the requested controls. Retain the CLI-reported terminal message exactly.")
+    destination = backend.output_path(assignment["spec"]["output_destination"], registered=True)
+    message = (f"{title}\n{identity}{transport_header}Role: {role}\n"
+               f"Output destination: {destination}\n\n"
                + instructions + "\n\n" + body)
-    return {"assignment": args.assignment, "packet": packet_id, "artifact": artifact_id, "task_name": task_name,
+    return {"assignment": args.assignment, "packet": packet_id, "artifact": artifact_id, **transport_fields,
             "role": role, "final_output": {"contract": contract, "template": template},
             "requested": requested, "message": message, "message_sha256": safe.digest(message.encode("utf-8")),
             "writes": False, "dispatch": "none",
             "limits": "Read-only message construction, not permission, a lease, delivery evidence or a worker-liveness check. "
-                      "Host must verify authorized launch state, pass task_name exactly as the native task_name, and pass message verbatim to the native tool with the requested controls. "
-                      "Do not replace it with a file path or retry an uncertain invocation. Transport may expose opaque text; never infer its plaintext. "
+                      "The host must verify authorized launch state. " + launch + " "
+                      "Do not replace the message with a file path or retry an uncertain invocation. "
                       "A reviewer's terminal final message must itself be the complete review JSON; import that retained message, "
                       "and treat a result file, preview, wait summary or self-report as no terminal evidence."}
+
+
+def native_dispatch(backend, args, state):
+    return render_dispatch(backend, args, state, "codex-native")
 
 
 LAUNCH_REASON = "Persist intent before authorized host dispatch"
@@ -673,7 +757,9 @@ def run_bound(backend, args, state, plan=None):
         value = safe.strict_json(safe.read_regular(args.input, MAX_INPUT))
         value["output_destination"] = str(backend.output_path(value["output_destination"]))
         result = backend.mutation("assignment", "handoff", value)
-        return {"result": result, "dispatch": "None. Inspect show, then observe launching before host dispatch; use fresh execution identity and retained instructions."}
+        return {"result": result,
+                "dispatch": "None. Inspect show and record observe launching. Run check-replacement-output "
+                            "immediately before launch. Use a fresh execution identity and the retained instructions."}
     if args.command == "observe":
         check_observation(args)
         return backend.mutation("assignment", "observe", receipt(args, state))
@@ -720,6 +806,8 @@ HELP = {
     "check": "verify record integrity and list completion blockers",
     "packet": "print one registered sealed packet",
     "native-dispatch": "read-only identity-bound message for a launching codex-native assignment; does not dispatch",
+    "claude-dispatch": "read-only identity-bound message for a launching claude-cli reviewer; does not dispatch",
+    "check-replacement-output": "revalidate the saved output path for a launching quota replacement; read-only",
     "command": "send a JSON file to one supported low-level command: finding resolve or task block/activate/cancel/reconcile/complete",
 }
 
@@ -780,7 +868,9 @@ def parser():
             ("approval", "NAME", "required real approval; helper cannot complete such tasks"),
         ):
             task_parser.add_argument("--" + flag, action="append", default=[], metavar=metavar, help=description)
-    for name in ("context", "assignment", "native-dispatch", "extend-review", "handoff", "observe", "import-review", "evidence", "complete", "show", "check", "packet", "command"):
+    for name in ("context", "assignment", "native-dispatch", "claude-dispatch", "check-replacement-output",
+                 "extend-review", "handoff", "observe", "import-review", "evidence", "complete",
+                 "show", "check", "packet", "command"):
         p = commands.add_parser(name, help=HELP[name])
         p.add_argument("--record", required=True, metavar="DIR", help="collaboration record returned by start")
         if name == "context":
@@ -801,7 +891,7 @@ def parser():
             p.add_argument("--agent", required=True, metavar="AGENT")
             p.add_argument("--output-destination", required=True, metavar="FILE", help="new file inside task host/")
             p.add_argument("--role", choices=("writer", "reviewer"), required=True)
-        elif name == "native-dispatch":
+        elif name in ("native-dispatch", "claude-dispatch", "check-replacement-output"):
             p.add_argument("--assignment", required=True, metavar="ID")
         elif name == "observe":
             p.add_argument("--assignment", required=True, metavar="ID")
@@ -888,6 +978,10 @@ def main(argv=None):
                         raise ValueError("object is not a registered sealed packet")
                 elif args.command == "native-dispatch":
                     value = native_dispatch(backend, args, state)
+                elif args.command == "claude-dispatch":
+                    value = render_dispatch(backend, args, state, "claude-cli")
+                elif args.command == "check-replacement-output":
+                    value = check_replacement_output(backend, args, state)
                 else:
                     # Review coverage is checked read-only before any workflow trace or mutation.
                     plan = review_preflight(args, state) if args.command == "context" else None

@@ -133,6 +133,23 @@ class BackendTests(unittest.TestCase):
                 self.assertIs(value["writes"],False)
                 self.assertEqual(before,sorted(str(p.relative_to(self.root)) for p in self.root.rglob("*")))
 
+    def test_storage_rejects_git_inside_either_private_sibling(self):
+        source = self.root / "source"
+        source.mkdir()
+        records = self.root / "records"
+        records.mkdir()
+        profile = {"records_root": str(records)}
+        task = records / "fixture/task"
+        for sibling in ("collaboration", "host"):
+            path = task / sibling
+            path.mkdir(parents=True)
+            with self.subTest(sibling=sibling):
+                (path / ".git").mkdir()
+                with self.assertRaisesRegex(ValueError, "outside every Git repository"):
+                    backend.storage_paths(profile, "fixture", "task", source)
+                self.assertEqual(list(path.iterdir()), [path / ".git"])
+                (path / ".git").rmdir()
+
     def test_shared_options_work_before_after_and_across_command(self):
         binary = self.root / "agents-collab"
         binary.write_text("#!/bin/sh\nprintf 'agents-collab 0.1.0\\n'\n")
