@@ -9,8 +9,12 @@ no workers and changes no profile, source checkout or global settings.
 ## Optional backend installation
 
 The skill includes a reusable adapter and offline archive installer. Installing
-the skill alone keeps the manual workflow. Package an already built native
-release executable, using a selected private output directory:
+the skill alone keeps the manual workflow. Download the macOS arm64 archive
+and `SHA256SUMS` from [v0.1.0](https://github.com/jaredchu/agents-collab/releases/tag/v0.1.0).
+Verify the archive digest against `SHA256SUMS` before installation.
+
+To package your own native release executable, use a selected private
+output directory:
 
 ```sh
 python3 scripts/package_cli.py --binary "$CARGO_TARGET_DIR/release/agents-collab" --output-dir "$collab_package"
@@ -18,8 +22,7 @@ python3 scripts/package_cli.py --binary "$CARGO_TARGET_DIR/release/agents-collab
 
 The archive contains the executable, MIT notice and a version/platform/binary-hash
 manifest; `SHA256SUMS` accompanies it. Only macOS arm64 packaging is currently
-supported. See [build instructions](#build-and-checks) below. There is no published
-cross-platform release channel.
+supported. See [build instructions](#build-and-checks) below.
 
 Install a trusted archive using its expected digest, then explicitly enable it:
 

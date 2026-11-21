@@ -75,9 +75,12 @@ activation description; dependable implicit activation remains unestablished.
 
 ### Current overview
 
-Pre-release; no versioned release. The distributable skill is the thirteen-file
-package listed in `scripts/build_website.py`, including the optional backend
-adapter and installer. The portable Python suite, the Rust crate's checks and the
+[v0.1.0](https://github.com/jaredchu/agents-collab/releases/tag/v0.1.0) is the
+first experimental release, published on 21 November 2026 from `2481df2`.
+It includes the thirteen-file skill ZIP, the optional macOS arm64 CLI archive
+for local APFS storage, and checksums for both. The skill package is listed in
+`scripts/build_website.py` and includes the backend adapter and installer.
+The portable Python suite, the Rust crate's checks and the
 [local regression gate](cli.md#local-regression-gate) are the maintained checks;
 pass counts are reported by whoever runs them, with dates, in the sections
 below. Implicit activation remains the unachieved required product target;
@@ -94,11 +97,15 @@ The [review coverage and final-output source increment](#review-coverage-native-
 passed independent source review and is included in commit `4d2a1b0`.
 Source review, installation and deployment are separate milestones.
 
-The working source includes an [explicit task review flag](../skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks).
+The release includes an [explicit task review flag](../skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks).
 The routine route defaults to solo. An opted-in task requires a compatible
 CLI, one recorded writer and one independent review. Its sealed packet
 binds the writer receipt to the final artifact, and completion requires a
-passing review on that same packet. This is an explicit host choice.
+passing review on that same packet. The host sets the flag and dispatches
+the collaborators. A fresh isolated install completed one such task with a
+passing independent review and a verified format 6 record. The released
+source tree was the tree tested by the local regression gate, with 48 Rust
+and 220 Python tests passing.
 
 ### Historical record: publication, setup wizard and site (8–9 November 2026)
 
@@ -111,7 +118,8 @@ https://github.com/jaredchu/agents-collab as the public repository
 (license URL: https://github.com/jaredchu/agents-collab/blob/main/LICENSE).
 On the same date the repository was published publicly and GitHub recognized
 its MIT License. https://agents-collab.com serves the public website with an
-active custom-domain certificate. No versioned release has been made.
+active custom-domain certificate. The initial publication preceded the
+first versioned release.
 
 The five website pages carry a quiet creator credit linking Jared Chu to his
 canonical CV (2026-11-09). The notebook byline, experimental status, methodological
@@ -773,4 +781,4 @@ and implicit activation remains unestablished.
 - [x] Complete independent source review and validation of that increment.
 - [x] Integrate the reviewed source into the working checkout.
 - [x] Commit the integrated source and the explicit opt-in review workflow.
-- [ ] Merge or release under separate owner authorization.
+- [x] Merge the reviewed opt-in workflow and publish the verified v0.1.0 release.
