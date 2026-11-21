@@ -3,11 +3,14 @@
 An experimental skill for configured model collaboration and independent review,
 plus the lab notebook of how it came about.
 
-> **Status: experimental, pre-release.** The skill comes from a Codex-led pilot.
+> **Status: experimental.** The skill comes from a Codex-led pilot.
 > Licensed under the [MIT License](LICENSE).
 > [Source](https://github.com/jaredchu/agents-collab) ·
 > [Website and experiment journal](https://agents-collab.com).
-> No versioned release has been made.
+> [v0.1.0](https://github.com/jaredchu/agents-collab/releases/tag/v0.1.0) includes
+> the skill ZIP, an optional macOS arm64 CLI for local APFS storage, and SHA-256
+> checksums. A fresh isolated installation completed one explicit opt-in review
+> task with a verified format 6 record.
 
 > **Product target and current limitation.** The goal is that a lead agent uses
 > Agents Collab for appropriate configured teamwork without the user naming the

@@ -286,7 +286,12 @@ class Website(unittest.TestCase):
         self.assertEqual(build.check_links(WEBSITE, skip_prefixes=("downloads/",)), [])
 
     def test_repository_and_license_links(self):
-        allowed = {REPO_URL, LICENSE_URL}
+        allowed = {
+            REPO_URL,
+            LICENSE_URL,
+            REPO_URL + "/releases/tag/v0.1.0",
+            REPO_URL + "/blob/v0.1.0/skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks",
+        }
         for rel in PAGES:
             with self.subTest(page=rel):
                 text = self.read(rel)
