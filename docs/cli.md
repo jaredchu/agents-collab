@@ -286,7 +286,13 @@ or a reasoned omission. Ignored files are never swept; they require an explicit
 path. Sensitive-looking names additionally require a matching acknowledgement.
 This name heuristic is not a secret scanner: inspect every selected input.
 Include necessary surrounding source, tests and lockfiles; coverage is a host
-responsibility, not inferred from file extensions.
+responsibility, not inferred from file extensions. The binary itself does not
+check that a selection covers a task's change. The skill helper's review
+`context` adds a read-only [coverage guard](../skills/agents-collab/references/backend.md#review-coverage-guard)
+before freezing: every staged, unstaged and untracked change since HEAD inside
+the editable scope must be selected, and changed paths outside scope must be
+selected or explicitly declared unrelated. Writer context and this low-level
+command are unchanged.
 
 The artifact identity is the SHA-256 of its versioned manifest. It captures HEAD,
 resolved base, complete Git status/index objects, selected working bytes, selected
@@ -486,8 +492,16 @@ strings, not arrays. For a quota-continuation review, `fresh_session` must equal
 the completed invocation string exactly; put explanatory boundary text in
 `limits` or `tool_boundary`. For ordinary reviews it remains a free-text session
 observation. The installed [backend review contract](../skills/agents-collab/references/backend.md#review-contract)
-describes the complete shape. Include it in the review instructions before
-sealing; the helper does not append it automatically.
+describes the complete shape. This binary never inserts a schema, and neither
+the binary nor the helper changes sealed packets or packet instructions. For an
+ordinary `codex-native` reviewer, the skill helper's read-only `native-dispatch`
+places the role-specific final-output contract, with the exact recorded
+assignment, packet and artifact identities, in the constructed dispatch message
+after its identity header; writer messages get a work-report contract instead.
+For every other transport, include the contract in the review instructions
+before sealing. The reviewer's terminal final message is the complete JSON
+object; a constructed message, written file or preview is not evidence that the
+host delivered the contract or that the reviewer returned it.
 
 ```sh
 "$CLI" review import --record "$RECORD" --input "$INPUT/review.json" \
@@ -685,8 +699,9 @@ enclosing state to format 3, retaining append-only review allowances separately
 from the frozen profile. The first explicit `task accept-commit` upgrades SQL
 and enclosing state transactionally to format 4, retaining its post-commit
 binding separately from original artifacts. Later handoffs and review amendments
-preserve the highest format. This engine reads formats 1–4; older engines refuse
-unsupported formats before decoding their semantics. JSON response envelopes remain
+preserve the highest format. An explicit opt-in review task uses format 6.
+This engine reads formats 1–4 and 6. Other formats are refused before decoding
+their semantics. JSON response envelopes remain
 schema 1. There is no downgrade or silent profile migration. SQLite stores the
 complete typed state in one row with revision and operation-key constraints; references are checked in the
 application, not independent relational foreign-key tables. Apart from the

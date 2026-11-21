@@ -21,6 +21,17 @@ guidelines describe how changes and evidence are handled.
 
 ## Checks before proposing a change
 
+### Opt in to independent review for a routine contribution
+
+If you want independent review for a routine change, ask the lead to use
+`route --review-required` with the configured CLI backend and a saved reviewer.
+The task records one writer and one independent reviewer. After the writer
+finishes, the lead freezes the final artifact for review. The CLI requires a
+passing review bound to that artifact before the task can be completed. See the
+[opt-in review procedure](skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks).
+
+### Local checks
+
 ```sh
 python3 -m unittest discover -s tests -v
 python3 scripts/build_website.py

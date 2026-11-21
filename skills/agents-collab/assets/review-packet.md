@@ -27,7 +27,8 @@ unrelated personal instructions and no other project's private context.>
 - Kind: code change | document | plan | idea
 - Base / head: `<revision or n/a>`
 - Snapshot: `<frozen patch or copy reference>`; content hashes: `<path: hash>`
-- Included new or uncommitted files: `<list or none>`
+- Included new or uncommitted files: `<list or none>`; every changed task path,
+  including docs and tests, is included (CLI review `context` enforces this)
 - Supporting inputs and their revisions/hashes: `<list or none>`
 - Not frozen: `<external services, environment or other limits>`
 
@@ -49,11 +50,16 @@ unrelated personal instructions and no other project's private context.>
 
 With the CLI backend, replace the prose contract below with the exact JSON
 contract from [the backend reference](../references/backend.md#review-contract)
-before sealing. Supply the returned artifact/packet hashes and assignment ID at
-dispatch; do not edit the sealed packet to insert its own hash. The helper does
-not append that schema automatically. Keep the string field types; a quota continuation's
-`fresh_session` must be the exact completed invocation string, with boundary
-observations in `limits` or `tool_boundary`. Return JSON only, without fences.
+before sealing. Your final message is that complete JSON object and nothing
+else, without fences; put any summary in its `limits`, verification descriptions
+or findings. If you write the assigned output file, it holds the same object; a
+written file never replaces the final message. Do not add a request for a
+separate prose summary. For a `codex-native` reviewer, `native-dispatch` also
+states this contract with the exact assignment/packet/artifact identities; for
+other transports supply the returned hashes and assignment ID at dispatch. Do
+not edit the sealed packet to insert its own hash. Keep the string field types;
+a quota continuation's `fresh_session` must be the exact completed invocation
+string, with boundary observations in `limits` or `tool_boundary`.
 
 For the manual workflow, use the following prose contract:
 
