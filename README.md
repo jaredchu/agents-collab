@@ -7,7 +7,7 @@ plus the lab notebook of how it came about.
 > Licensed under the [MIT License](LICENSE).
 > [Source](https://github.com/jaredchu/agents-collab) ·
 > [Website and experiment journal](https://agents-collab.com).
-> [v0.1.0](https://github.com/jaredchu/agents-collab/releases/tag/v0.1.0) includes
+> [v0.1.1](https://github.com/jaredchu/agents-collab/releases/tag/v0.1.1) includes
 > the skill ZIP, an optional macOS arm64 CLI for local APFS storage, and SHA-256
 > checksums. A fresh isolated installation completed one explicit opt-in review
 > task with a verified format 6 record.

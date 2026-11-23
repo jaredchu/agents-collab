@@ -219,11 +219,11 @@ fi</code></pre>
       <p>Your host’s own configuration sets the lead model, its reasoning level and subagent defaults. The profile only tells the skill what to request and check for delegated work. Using the skill never requires changing global configuration or bypassing permissions.</p>
 
       <h2 id="backend">Optional local Rust backend</h2>
-      <p>The manual workflow needs no executable backend. A separately packaged Rust CLI adds immutable source and packet records, local lifecycle gates and review imports. The host dispatches the models. Download the optional CLI archive and checksums from <a href="https://github.com/jaredchu/agents-collab/releases/tag/v0.1.0">v0.1.0</a>. The CLI package supports macOS arm64 and local APFS storage.</p>
+      <p>The manual workflow needs no executable backend. A separately packaged Rust CLI adds immutable source and packet records, local lifecycle gates and review imports. The host dispatches the models. Download the optional CLI archive and checksums from <a href="https://github.com/jaredchu/agents-collab/releases/tag/v0.1.1">v0.1.1</a>. The CLI package supports macOS arm64 and local APFS storage.</p>
       <p>Install and explicitly enable a trusted archive using the <a href="https://github.com/jaredchu/agents-collab/blob/main/docs/cli.md#optional-backend-installation">source repository’s backend instructions</a>. Its separate setting is <code>~/.config/agents-collab/backend.json</code>; your collaboration profile is not rewritten. Check your selected backend with:</p>
       <pre><code>python3 ~/.agents/skills/agents-collab/scripts/backend.py status</code></pre>
       <p>Missing backend settings select manual records. Once enabled, the skill uses the CLI for collaboration records when the skill is loaded. Enablement does not guarantee automatic skill activation, truthful review evidence or fewer tokens.</p>
-      <p>For routine tasks that explicitly require independent review, the host can use <code>route --review-required</code>. The CLI requires a passing independent review of the frozen final artifact before it completes the task. See the <a href="https://github.com/jaredchu/agents-collab/blob/v0.1.0/skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks">opt-in review procedure</a>.</p>
+      <p>For routine tasks that explicitly require independent review, the host can use <code>route --review-required</code>. The CLI requires a passing independent review of the frozen final artifact before it completes the task. See the <a href="https://github.com/jaredchu/agents-collab/blob/v0.1.1/skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks">opt-in review procedure</a>.</p>
 
       <h2 id="run"><span class="num">In practice</span>What happens in a run</h2>
       <ol>
@@ -245,7 +245,7 @@ fi</code></pre>
 
   <footer class="site-footer">
     <div class="inner">
-      <p>Agents Collab · experimental · <a href="https://github.com/jaredchu/agents-collab/releases/tag/v0.1.0">v0.1.0</a>. Licensed under the <a href="https://github.com/jaredchu/agents-collab/blob/main/LICENSE">MIT License</a>. Source repository: <a href="https://github.com/jaredchu/agents-collab">github.com/jaredchu/agents-collab</a>.</p>
+      <p>Agents Collab · experimental · <a href="https://github.com/jaredchu/agents-collab/releases/tag/v0.1.1">v0.1.1</a>. Licensed under the <a href="https://github.com/jaredchu/agents-collab/blob/main/LICENSE">MIT License</a>. Source repository: <a href="https://github.com/jaredchu/agents-collab">github.com/jaredchu/agents-collab</a>.</p>
       <p>A project by <a href="https://cv.jaredchu.com/">Jared Chu</a>.</p>
       <p>The site code adds no analytics or forms. Experiment summaries are sanitized; raw evidence is private.</p>
     </div>

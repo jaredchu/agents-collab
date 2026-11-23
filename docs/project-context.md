@@ -75,7 +75,7 @@ activation description; dependable implicit activation remains unestablished.
 
 ### Current overview
 
-The unreleased skill source checks both private record and host storage
+The v0.1.1 skill checks both private record and host storage
 boundaries and revalidates saved output paths before rendering a dispatch
 or continuing a quota replacement. The
 [backend procedure](../skills/agents-collab/references/backend.md#observations-and-retries)
@@ -104,7 +104,7 @@ The [review coverage and final-output source increment](#review-coverage-native-
 passed independent source review and is included in commit `4d2a1b0`.
 Source review, installation and deployment are separate milestones.
 
-The release includes an [explicit task review flag](../skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks).
+Version 0.1.0 introduced an [explicit task review flag](../skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks).
 The routine route defaults to solo. An opted-in task requires a compatible
 CLI, one recorded writer and one independent review. Its sealed packet
 binds the writer receipt to the final artifact, and completion requires a
@@ -114,13 +114,14 @@ passing independent review and a verified format 6 record. The released
 source tree was the tree tested by the local regression gate, with 48 Rust
 and 220 Python tests passing.
 
-### v0.1.1 release candidate
+### v0.1.1 release
 
-The [v0.1.1 release notes](releases/v0.1.1.md) describe the reviewed storage
-and dispatch updates from [PR #4](https://github.com/jaredchu/agents-collab/pull/4).
-The candidate pairs the updated skill with a matching versioned macOS arm64
-CLI for local APFS. The backend still writes format 6. The public release and
-website release links remain on v0.1.0 during candidate preparation.
+[v0.1.1](https://github.com/jaredchu/agents-collab/releases/tag/v0.1.1) was
+published on 23 November 2026 from `fb2dfa2`. It pairs the updated skill with
+a matching macOS arm64 CLI for local APFS. Both published archives matched
+their checksums. The release candidate passed 48 Rust and 224 Python tests
+on macOS arm64. The website source and installation guide link to v0.1.1.
+See the [release notes](releases/v0.1.1.md) for the changes and validation scope.
 
 ### Historical record: publication, setup wizard and site (8–9 November 2026)
 
@@ -797,5 +798,5 @@ and implicit activation remains unestablished.
 - [x] Integrate the reviewed source into the working checkout.
 - [x] Commit the integrated source and the explicit opt-in review workflow.
 - [x] Merge the reviewed opt-in workflow and publish the verified v0.1.0 release.
-- [x] Prepare the v0.1.1 source and release notes for candidate validation.
-- [x] Prepare the private-storage and dispatch checks in the unreleased skill source.
+- [x] Merge the reviewed private-storage and dispatch checks.
+- [x] Publish the verified v0.1.1 release and update the website and guide pins.

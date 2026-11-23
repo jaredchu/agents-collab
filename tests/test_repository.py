@@ -289,8 +289,8 @@ class Website(unittest.TestCase):
         allowed = {
             REPO_URL,
             LICENSE_URL,
-            REPO_URL + "/releases/tag/v0.1.0",
-            REPO_URL + "/blob/v0.1.0/skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks",
+            REPO_URL + "/releases/tag/v0.1.1",
+            REPO_URL + "/blob/v0.1.1/skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks",
         }
         for rel in PAGES:
             with self.subTest(page=rel):

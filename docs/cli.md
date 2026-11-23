@@ -10,7 +10,7 @@ no workers and changes no profile, source checkout or global settings.
 
 The skill includes a reusable adapter and offline archive installer. Installing
 the skill alone keeps the manual workflow. Download the macOS arm64 archive
-and `SHA256SUMS` from [v0.1.0](https://github.com/jaredchu/agents-collab/releases/tag/v0.1.0).
+and `SHA256SUMS` from [v0.1.1](https://github.com/jaredchu/agents-collab/releases/tag/v0.1.1).
 Verify the archive digest against `SHA256SUMS` before installation.
 
 To package your own native release executable, use a selected private
