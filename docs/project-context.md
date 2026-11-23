@@ -114,6 +114,14 @@ passing independent review and a verified format 6 record. The released
 source tree was the tree tested by the local regression gate, with 48 Rust
 and 220 Python tests passing.
 
+### v0.1.1 release candidate
+
+The [v0.1.1 release notes](releases/v0.1.1.md) describe the reviewed storage
+and dispatch updates from [PR #4](https://github.com/jaredchu/agents-collab/pull/4).
+The candidate pairs the updated skill with a matching versioned macOS arm64
+CLI for local APFS. The backend still writes format 6. The public release and
+website release links remain on v0.1.0 during candidate preparation.
+
 ### Historical record: publication, setup wizard and site (8–9 November 2026)
 
 The counts in this subsection and in the dated sections that follow describe the
@@ -789,4 +797,5 @@ and implicit activation remains unestablished.
 - [x] Integrate the reviewed source into the working checkout.
 - [x] Commit the integrated source and the explicit opt-in review workflow.
 - [x] Merge the reviewed opt-in workflow and publish the verified v0.1.0 release.
+- [x] Prepare the v0.1.1 source and release notes for candidate validation.
 - [x] Prepare the private-storage and dispatch checks in the unreleased skill source.
