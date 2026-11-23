@@ -27,6 +27,8 @@ plus the lab notebook of how it came about.
 
 ## Quick start
 
+Browse the [Agents Collab skill on skills.sh](https://www.skills.sh/jaredchu/agents-collab/agents-collab).
+
 Install for Codex with [Vercel’s Skills CLI](https://github.com/vercel-labs/skills):
 
 ```sh
