@@ -693,7 +693,7 @@ class RealBackendTests(unittest.TestCase):
             with self.subTest(role=role):
                 profile = json.loads(self.profile.read_text())
                 self.use_profile(agents={**profile["agents"], "quota-worker": {
-                    "model": "synthetic-claude", "transport": "claude-cli", "reasoning": "inherit"}})
+                    "model": "synthetic-claude", "transport": "claude-cli", "reasoning": "interface-default"}})
                 extra = ("--reviewer", "quota-worker") if role == "reviewer" else ()
                 # Writer must be explicitly assigned at start; avoid altering saved defaults.
                 start_args = ["start", "--repository", str(self.repo), "--project", "fixture", "--task", "quota-" + role,
@@ -753,9 +753,17 @@ class RealBackendTests(unittest.TestCase):
                 code, out, err = handoff(h)
                 self.assertEqual(code, 1)
                 self.assertIn("replacement identity already used", err)
-                self.ok(self.invoke("observe", "--record", record, "--assignment", "replacement", "--state", "launching", *boundary))
+                code, _, err = self.invoke("observe", "--record", record, "--assignment", "replacement",
+                                            "--state", "launching", *boundary)
+                self.assertEqual(code, 1)
+                self.assertIn("--lead-effort", err)
+                self.ok(self.invoke("observe", "--record", record, "--assignment", "replacement",
+                                    "--state", "launching", "--lead-effort", "xhigh", *boundary))
+                output_check = self.ok(self.invoke("check-replacement-output", "--record", record,
+                                                   "--assignment", "replacement"))
+                self.assertEqual(output_check["effort_resolution"]["resolved"], "xhigh")
                 self.ok(self.invoke("observe", "--record", record, "--assignment", "replacement", "--state", "completed",
-                                    "--invocation", "replacement-session-" + role, *boundary))
+                                    "--invocation", "replacement-session-" + role, "--interface-effort", "xhigh", *boundary))
                 code, out, err = self.invoke("observe", "--record", record, "--assignment", "old", "--state", "running",
                                              "--invocation", "old-session", "--reconciled", "--reason", "Cannot resume old worker", *boundary)
                 self.assertEqual(code, 1)
@@ -777,7 +785,7 @@ class RealBackendTests(unittest.TestCase):
     def test_explicit_review_extension_helper_retains_decision_without_global_writes(self):
         profile = json.loads(self.profile.read_text())
         agents = {**profile["agents"], "reviewer": {"model": "synthetic-reviewer", "transport": "codex-native",
-                                                    "reasoning": "inherit"}}
+                                                    "reasoning": "interface-default"}}
         self.use_profile(agents=agents, review={**profile["review"], "on_consequential_work": "single",
                                                 "candidates": ["reviewer"], "max_followup_rounds": 0})
         selector_bytes = self.config.read_bytes()
@@ -840,7 +848,7 @@ class RealBackendTests(unittest.TestCase):
     def test_followup_round_one_and_shipped_disposition_complete_task(self):
         profile = json.loads(self.profile.read_text())
         agents = {**profile["agents"], "reviewer": {"model": "synthetic-reviewer-1", "transport": "claude-cli",
-                                                    "reasoning": "inherit"}}
+                                                    "reasoning": "interface-default"}}
         self.use_profile(agents=agents, review={**profile["review"], "on_consequential_work": "single",
                                                 "candidates": ["reviewer"], "max_followup_rounds": 1})
         record, host = self.begin_task(extra=("--reviewer", "reviewer"))
@@ -925,7 +933,7 @@ class RealBackendTests(unittest.TestCase):
     def test_rejected_or_deferred_findings_cannot_complete_over_changes_required(self):
         profile = json.loads(self.profile.read_text())
         agents = {**profile["agents"], "reviewer": {"model": "synthetic-reviewer-1", "transport": "claude-cli",
-                                                    "reasoning": "inherit"}}
+                                                    "reasoning": "interface-default"}}
         self.use_profile(agents=agents, review={**profile["review"], "on_consequential_work": "single",
                                                 "candidates": ["reviewer"], "max_followup_rounds": 1})
         record, host = self.begin_task(extra=("--reviewer", "reviewer"))

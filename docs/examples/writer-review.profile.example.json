@@ -3,8 +3,8 @@
   "name": "writer-plus-review-example",
   "agents": {
     "lead": {"model": "current", "transport": "host", "reasoning": "inherit"},
-    "writer": {"model": "<writer-model-id>", "transport": "claude-cli", "reasoning": "inherit"},
-    "reviewer": {"model": "<reviewer-model-id>", "transport": "codex-native", "reasoning": "inherit"}
+    "writer": {"model": "<writer-model-id>", "transport": "claude-cli", "reasoning": "interface-default"},
+    "reviewer": {"model": "<reviewer-model-id>", "transport": "codex-native", "reasoning": "interface-default"}
   },
   "routing": {"small_writer": "current-session", "substantial_writer": "writer"},
   "review": {

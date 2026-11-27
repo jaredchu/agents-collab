@@ -54,6 +54,7 @@ ENFORCEMENT = ("required", "advisory")
 CURRENT_SESSION = "current-session"
 CURRENT_MODEL = "current"
 INHERIT = "inherit"
+INTERFACE_DEFAULT = "interface-default"
 # Words that look like "inherit" but would be ambiguous as a named level.
 AMBIGUOUS_LEVELS = ("default", "current")
 
@@ -305,7 +306,9 @@ def _check_agents(data: Dict[str, Any], issues: List[Issue]) -> Dict[str, Option
             if not isinstance(reasoning, str):
                 issues.append(Issue(path + ".reasoning", f"must be a string, not {_type_name(reasoning)}"))
             elif reasoning in AMBIGUOUS_LEVELS:
-                issues.append(Issue(path + ".reasoning", f"ambiguous value; use '{INHERIT}' to keep the current setting or name an exact level"))
+                issues.append(Issue(path + ".reasoning", "ambiguous value; use 'inherit', 'interface-default', or an exact level"))
+            elif reasoning == "auto" and transport == "host":
+                issues.append(Issue(path + ".reasoning", "'auto' applies to delegated agents; use 'inherit' to keep the lead session's setting"))
             elif reasoning != INHERIT and not LEVEL_RE.match(reasoning):
                 issues.append(Issue(path + ".reasoning", f"must be '{INHERIT}' or a lowercase named level such as the interface documents it"))
 

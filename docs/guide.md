@@ -127,9 +127,9 @@ Adjust the path if you installed the skill elsewhere. The wizard:
   `claude-cli`);
 - asks how many independent reviewers to configure (zero or more), with the same
   details for each;
-- offers `inherit`, common named levels or a custom lowercase level for each
-  delegate's reasoning. These are **requests**: the wizard cannot check that a
-  model or interface supports them;
+- offers `interface-default`, `inherit`, `auto`, common named levels, and custom
+  lowercase levels for each delegate. The wizard checks the profile structure.
+  Model and interface support are checked before dispatch;
 - with reviewers, asks whether consequential work requests one reviewer from the
   pool by default; with several, it also adds a named recipe listing all of them.
   A recipe runs only when you name it (or a policy calls for it);
@@ -218,8 +218,8 @@ template, replace both placeholders before validating. Its full contents are:
   "name": "writer-plus-review-example",
   "agents": {
     "lead": {"model": "current", "transport": "host", "reasoning": "inherit"},
-    "writer": {"model": "<writer-model-id>", "transport": "claude-cli", "reasoning": "inherit"},
-    "reviewer": {"model": "<reviewer-model-id>", "transport": "codex-native", "reasoning": "inherit"}
+    "writer": {"model": "<writer-model-id>", "transport": "claude-cli", "reasoning": "interface-default"},
+    "reviewer": {"model": "<reviewer-model-id>", "transport": "codex-native", "reasoning": "interface-default"}
   },
   "routing": {"small_writer": "current-session", "substantial_writer": "writer"},
   "review": {
@@ -240,8 +240,10 @@ Notes on the fields that cause the most confusion:
 
 - `"model": "current"` with `"transport": "host"` means the lead session you are
   already in. The skill cannot switch the lead's model or reasoning level.
-- `reasoning` is `inherit` or a lowercase level that the interface documents for
-  that model. `inherit` does not mean "high".
+- For a delegate, `inherit` copies the lead session's captured effort,
+  `interface-default` keeps the delegate interface's setting, and `auto` picks
+  Medium or High by scope. You can also name a supported lowercase level.
+  [Profile reasoning rules](../skills/agents-collab/references/configuration.md#lead-effort-inheritance)
 - To add an explicitly requested pair of reviewers, add a second reviewer agent
   and a recipe such as `"recipes": {"pair": ["reviewer", "reviewer2"]}`. A recipe
   is used when you name it or an applicable policy calls for it.

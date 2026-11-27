@@ -39,10 +39,13 @@ and reviewer verdict to the same final artifact. One fresh isolated install
 completed this path with a passing independent review and a verified format 6
 record. [Explicit opt-in workflow](../skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks)
 
-Unreleased source adds [opt-in automatic reviewer effort](../skills/agents-collab/references/configuration.md#opt-in-automatic-review-effort).
-The rule selects Medium for one exact scoped file that matches the sealed
-file and High for broader reviews. It works with the optional CLI adapter
-and manual workflow. Explicit levels and inherited settings remain available.
+Unreleased source adds [opt-in automatic effort for delegates](../skills/agents-collab/references/configuration.md#opt-in-automatic-effort).
+It selects Medium for writing or reviewing one exact scoped file that matches
+the sealed file, and High for broader assignments. The policy applies with the
+optional CLI adapter and in the manual workflow. Explicit levels and inherited
+settings remain available. A delegate using `inherit` can copy the active lead's
+captured level. `interface-default` keeps the delegate interface's setting.
+[Inheritance contract](../skills/agents-collab/references/configuration.md#lead-effort-inheritance)
 
 ### v0.1.1 release
 
@@ -70,6 +73,10 @@ Published archives matched their checksums. [Release checks](verification-histor
   IDs blocked imports. A [ten-case follow-up](experiments.md#6-harder-matched-review-effort-trial)
   found all eleven seeds in both arms, and all twenty original responses
   imported with assignment-prefixed IDs. The trials informed the opt-in rule.
+- A [six-case matched Opus writer trial](experiments.md#7-matched-opus-writer-effort-trial)
+  passed all 24 checks in each arm on the first attempt. The automatic arm
+  used 9.4% less summed writer time on four one-file cases. The result supports
+  local opt-in use on similar tasks.
 - Routing detection, structural validation and release checks measure
   different outcomes. The completed checks do not establish general
   productivity gains or dependable implicit activation. Raw trial evidence

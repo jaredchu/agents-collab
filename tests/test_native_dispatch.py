@@ -153,23 +153,33 @@ class NativeDispatchEngineTests(unittest.TestCase):
             code=backend.main(['--config',str(self.config),'--profile',str(self.profile),*args])
         return code,out.getvalue(),err.getvalue()
 
-    def prepared(self,role):
-        code,out,err=self.invoke('start','--repository',str(self.repo),'--project','fixture','--task',role,
-            '--writer','writer','--reviewer','reviewer','--scope','source.txt','--requirement','R1=Scope',
+    def prepared(self, role, *, task=None, scope=('source.txt',), lead_effort=None):
+        scope_args = [arg for path in scope for arg in ('--scope', path)]
+        path_args = [arg for path in scope for arg in ('--paths', path)]
+        code,out,err=self.invoke('start','--repository',str(self.repo),'--project','fixture','--task',task or role,
+            '--writer','writer','--reviewer','reviewer',*scope_args,'--requirement','R1=Scope',
             '--criterion','C1=Check','--boundary','No model invocation','--check','offline')
         self.assertEqual(code,0,err);task=json.loads(out);record=task['record'];host=Path(task['host'])
         instructions=host/'instructions.txt';instructions.write_text('Read frozen source. No model is called by this test.');output=host/'context.txt'
         code,out,err=self.invoke('context','--record',record,'--purpose','review' if role=='reviewer' else 'writer_context',
-            '--paths','source.txt','--quiescence','Synthetic fixture','--instructions',str(instructions),'--output',str(output))
+            *path_args,'--quiescence','Synthetic fixture','--instructions',str(instructions),'--output',str(output))
         self.assertEqual(code,0,err);context=json.loads(out)
-        code,out,err=self.invoke('assignment','--record',record,'--id','job-1','--packet',context['packet'],
-                                '--agent',role,'--role',role,'--output-destination',str(host/'result.json'))
+        options = ('assignment', '--record', record, '--id', 'job-1', '--packet', context['packet'],
+                   '--agent', role, '--role', role, '--output-destination', str(host / 'result.json'))
+        if lead_effort is not None:
+            code, _, err = self.invoke(*options)
+            self.assertEqual(code, 1)
+            self.assertIn('active lead', err)
+            shown = self.invoke('show', '--record', record)
+            self.assertEqual(json.loads(shown[1])['record']['assignments'], [])
+            options += ('--lead-effort', lead_effort)
+        code, out, err = self.invoke(*options)
         self.assertEqual(code,0,err)
-        return record,context,output
+        return record,context,output,json.loads(out)
 
     def test_real_writer_and_reviewer_messages_ignore_mutable_context_without_writes(self):
         for role in ['writer','reviewer']:
-            record,context,path=self.prepared(role);path.write_text('wrong mutable context file')
+            record,context,path,_=self.prepared(role);path.write_text('wrong mutable context file')
             before=inventory(self.root)
             code,out,err=self.invoke('native-dispatch','--record',record,'--assignment','job-1')
             with self.subTest(role=role):
@@ -184,7 +194,7 @@ class NativeDispatchEngineTests(unittest.TestCase):
         profile = json.loads(self.profile.read_text())
         profile['agents']['reviewer']['reasoning'] = 'auto'
         self.profile.write_text(json.dumps(profile))
-        record, _, output = self.prepared('reviewer')
+        record, _, output, _ = self.prepared('reviewer')
         workflows = [json.loads(path.read_text()) for path in output.parent.glob('workflow-*.json')]
         assignment, = [entry for entry in workflows if entry['command'] == 'assignment']
         self.assertEqual(assignment['effort_resolution']['resolved'], 'medium')
@@ -200,8 +210,61 @@ class NativeDispatchEngineTests(unittest.TestCase):
         code, _, err = self.invoke(*options, '--interface-effort', 'medium')
         self.assertEqual(code, 0, err)
 
+    def test_auto_writer_resolves_effort_and_requires_matching_receipt(self):
+        profile = json.loads(self.profile.read_text())
+        profile['agents']['reviewer']['reasoning'] = 'auto'
+        cases = [
+            ('claude-cli', 'medium', ('source.txt',)),
+            ('codex-native', 'high', ('source.txt', 'notes.txt')),
+        ]
+        for transport, expected, scope in cases:
+            with self.subTest(transport=transport, expected=expected):
+                for path in scope[1:]:
+                    (self.repo / path).write_text('Additional source in the wide case.\n')
+                writer = profile['agents']['writer']
+                writer.update(transport=transport, reasoning='auto', model='synthetic-writer')
+                self.profile.write_text(json.dumps(profile))
+                record, _, _, assignment = self.prepared('writer', task=f'writer-{transport}', scope=scope)
+                effort = assignment['effort_resolution']
+                self.assertEqual((effort['requested'], effort['resolved']), ('auto', expected))
+                if transport == 'codex-native':
+                    code, out, err = self.invoke('native-dispatch', '--record', record, '--assignment', 'job-1')
+                    self.assertEqual(code, 0, err)
+                    self.assertEqual(json.loads(out)['effort_resolution'], effort)
+                options = ('observe', '--record', record, '--assignment', 'job-1', '--state', 'completed',
+                           '--invocation', 'synthetic-writer', '--interface-model', writer['model'],
+                           '--boundary-observations', 'Offline fixture')
+                for incorrect in ('low', 'xhigh', 'ultra'):
+                    code, _, err = self.invoke(*options, '--interface-effort', incorrect)
+                    self.assertEqual(code, 1)
+                    self.assertIn(f'auto reasoning resolved to {expected}', err)
+                code, _, err = self.invoke(*options, '--interface-effort', expected)
+                self.assertEqual(code, 0, err)
+
+    def test_inherit_copies_the_captured_lead_effort_through_both_dispatchers(self):
+        profile = json.loads(self.profile.read_text())
+        worker = profile['agents']['reviewer']
+        for transport, dispatch in [('codex-native', 'native-dispatch'), ('claude-cli', 'claude-dispatch')]:
+            with self.subTest(transport=transport):
+                worker.update(transport=transport, reasoning='inherit')
+                self.profile.write_text(json.dumps(profile))
+                record, _, _, assignment = self.prepared('reviewer', task=transport, lead_effort='xhigh')
+                code, out, err = self.invoke(dispatch, '--record', record, '--assignment', 'job-1')
+                self.assertEqual(code, 0, err)
+                resolution = json.loads(out)['effort_resolution']
+                self.assertEqual(resolution, assignment['effort_resolution'])
+                self.assertEqual((resolution['requested'], resolution['resolved']), ('inherit', 'xhigh'))
+                receipt = ('observe', '--record', record, '--assignment', 'job-1', '--state', 'completed',
+                           '--invocation', 'synthetic-session', '--interface-model', worker['model'],
+                           '--boundary-observations', 'Offline fixture')
+                code, _, err = self.invoke(*receipt, '--interface-effort', 'high')
+                self.assertEqual(code, 1)
+                self.assertIn('inherit reasoning resolved to xhigh', err)
+                code, _, err = self.invoke(*receipt, '--interface-effort', 'xhigh')
+                self.assertEqual(code, 0, err)
+
     def test_real_started_assignment_cannot_be_rendered_for_redispatch(self):
-        record,_,_=self.prepared('reviewer')
+        record,_,_,_=self.prepared('reviewer')
         code,out,err=self.invoke('observe','--record',record,'--assignment','job-1','--state','running',
             '--invocation','synthetic-started','--boundary-observations','Synthetic receipt; no worker actually launched')
         self.assertEqual(code,0,err);before=inventory(self.root)

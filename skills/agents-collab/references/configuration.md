@@ -17,7 +17,7 @@ python3 path/to/agents-collab/scripts/setup_profile.py [--output PATH] [--dry-ru
 The wizard keeps the lead as `host`/`current`/`inherit` and asks for a writer
 (current lead or a delegated model ID with `codex-native` or `claude-cli`), zero
 or more reviewers, each agent's reasoning request, a profile label and
-`records_root`. The reviewer menu includes an explicit `auto` option. It uses
+`records_root`. The delegated reasoning menus include an explicit `auto` option. The wizard uses
 `supported-control`, `existing-authorized-access`, advisory example bounds and
 one follow-up round; edit the file to change them. With reviewers, default
 consequential review is `single`; with several, it adds a named recipe listing
@@ -115,13 +115,18 @@ block the affected assignment; do not silently substitute an adapter.
 Codex-led is the first pilot target, not an already validated runtime. Loading
 the Markdown from another lead does not establish adapter support.
 
-`reasoning` is `inherit`, the reviewer-only policy `auto`, or a named level the
-selected model supports, written in lowercase as the interface documents it.
-`default` and `current` are
-rejected as ambiguous. The validator checks only the format, not whether a model
-supports that level. Never assume identical effort vocabularies across providers. `inherit` explicitly
-allows the current supported setting; it does not mean High. For a named level,
-support and acceptance of the control must be checked. With `supported-control`,
+`reasoning` accepts `inherit`, `interface-default`, `auto` for delegates, or a
+lowercase level the selected model and interface support. `default` and `current`
+are ambiguous and rejected. The wizard defaults delegates to `interface-default`.
+
+- `inherit` keeps the host lead on the current session's effort and gives a
+  delegate the [lead's captured effort](#lead-effort-inheritance).
+- `interface-default` uses the delegate interface's own setting. For Claude
+  CLI, omit the per-invocation effort option. Use `interface-default` to retain
+  the behavior of older profiles that used `inherit` to omit an effort override.
+- `auto` selects Medium or High from the [sealed assignment scope](#opt-in-automatic-effort).
+
+Check support and acceptance of any concrete level. With `supported-control`,
 record unavailable runtime effort as unknown. With `runtime-attestation`, stop
 the affected run unless independent runtime evidence establishes the level.
 This stronger option may be unusable on a particular interface; a model's own
@@ -165,7 +170,8 @@ schema or a requirement to record solo work.
 1. Apply the actual system/organization/project/user instruction hierarchy.
 2. Within remaining choices, honor explicit current model, effort and review recipe.
 3. Use binding task/project requirements, then personal profile defaults.
-4. Use host defaults only for fields explicitly set to `current` or `inherit`.
+4. Keep the current session's model for `current`. For effort, use the lead's
+   current setting for `inherit` and the interface's own setting for `interface-default`.
 
 This list is a preference-resolution procedure, not a replacement instruction
 hierarchy. If a project mandates a writer and the profile prefers another, use
@@ -203,28 +209,53 @@ or team. No particular model, vendor pair, effort level or storage convention is
 mandatory. The example's numeric bounds are illustrative, not universal limits.
 Profile settings do not relax an existing instruction requiring stronger proof.
 
+## Lead effort inheritance
+
+For a delegate with `reasoning: inherit`, confirm the active lead session's
+concrete effort from its current control or the user's confirmation of the
+current selection. A profile preference, model name or default alone does not
+establish the running lead's effort. Check that the delegate's model and
+transport accept that level. If it is unknown or unsupported, pause dispatch
+until the user confirms the current lead effort or selects a supported level.
+
+Pass `--lead-effort LEVEL` to the CLI backend's `assignment` command. The
+backend stores the level in the launch intent and returns it in
+`effort_resolution.resolved`. In manual mode record the level and its source
+in the private assignment before launch. Apply the exact accepted level with
+the native effort control or Claude CLI's effort option. Reuse the captured
+level on retries of that assignment. Capture the active lead effort again
+for a new assignment, including a replacement. The setting only carries the
+effort level. Freshness and review independence rules still apply.
+
+## Opt-in automatic effort
+
+Set `"reasoning": "auto"` on a delegated agent in the profile or select `auto`
+in its setup menu. The same agent entry can write or review on separate
+assignments, subject to the existing review independence rules. The lead can
+keep `"reasoning": "inherit"`.
+
+- **Medium** applies when the declared editable scope names exactly one file
+  and the sealed source contains only that same regular file.
+- **High** applies to cross-file assignments, directory scopes, incomplete
+  scope declarations, and any other assignment that fails the Medium condition.
+
+Medium and High are the only levels `auto` selects. Use an explicit supported
+level when a task or project calls for a different effort. For levels such as
+`xhigh`, use the exact value accepted by the model and interface.
+
+Resolve effort after freezing the assignment packet and before dispatch. With
+the CLI backend, `assignment` returns `effort_resolution` with the request,
+concrete level, policy and basis. Dispatch renderers also return it for `auto`
+assignments they support. In manual mode record the same fields in the private
+assignment before launch. Pass `effort_resolution.resolved` to the selected
+interface after checking that it supports the concrete level. Record acceptance
+separately and pause the assignment if the interface cannot accept the level.
+Reuse the resolution for retries of the same assignment and frozen packet.
+
 ## Opt-in automatic review effort
 
-Set `"reasoning": "auto"` on a delegated reviewer in the profile or select
-`auto` in the reviewer setup menu. This applies to assignments already routed
-to that reviewer. Use `inherit` or an explicit supported level for a writer.
-If the same model writes and reviews, use a separate reviewer alias for `auto`.
-When a task or project requires a specific effort level, select a reviewer
-entry with that explicit level before starting the task.
-
-- **Medium** applies when the declared review scope is exactly one file and
-  the sealed source contains only that same regular file.
-- **High** applies to cross-file reviews, directory scopes, incomplete scope
-  declarations, and any other review that fails the Medium condition.
-
-Resolve after freezing the review packet and before dispatch. With the CLI
-backend, the assignment and dispatch outputs contain `effort_resolution` with
-the request, concrete level, policy and basis. Use `effort_resolution.resolved`
-for the model invocation. In manual mode record those same fields in the
-private assignment before launch. Reuse the resolution for retries of the same
-assignment and frozen packet. The lead checks support for the concrete level
-and records interface acceptance separately. Pause the affected assignment if
-the interface cannot accept that level.
+Reviews use the [same Medium–High scope rule](#opt-in-automatic-effort) as
+writing. Resolve it from the sealed review packet after the writer finishes.
 
 ## Assignment timing
 

@@ -56,7 +56,7 @@ TEAM_PROFILE = {
     "agents": {
         "lead": {"model": "current", "transport": "host", "reasoning": "inherit"},
         "writer": {"model": "vendor-a-model-1", "transport": "claude-cli", "reasoning": "high"},
-        "reviewer1": {"model": "vendor-b-model-2", "transport": "codex-native", "reasoning": "inherit"},
+        "reviewer1": {"model": "vendor-b-model-2", "transport": "codex-native", "reasoning": "interface-default"},
         "reviewer2": {"model": "vendor-c-model-3", "transport": "claude-cli", "reasoning": "deep-think"},
     },
     "routing": {"small_writer": "current-session", "substantial_writer": "writer"},
@@ -137,14 +137,17 @@ class WizardCase(unittest.TestCase):
 
 
 class Flows(WizardCase):
-    def test_reviewer_can_explicitly_choose_auto_without_changing_other_choices(self):
+    def test_delegates_can_explicitly_choose_auto_and_inherit(self):
         answers = list(TEAM_ANSWERS)
-        answers[8] = '6'
+        answers[4] = '6'
+        answers[8] = '7'
         result = self.run_cli(['--output', str(self.out)], answers)
         self.assertEqual(result.returncode, 0, result.stderr)
         actual = self.load(self.out)
-        self.assertEqual(actual['agents']['reviewer1']['reasoning'], 'auto')
-        actual['agents']['reviewer1']['reasoning'] = 'inherit'
+        self.assertEqual(actual['agents']['writer']['reasoning'], 'auto')
+        self.assertEqual(actual['agents']['reviewer1']['reasoning'], 'inherit')
+        actual['agents']['writer']['reasoning'] = 'high'
+        actual['agents']['reviewer1']['reasoning'] = 'interface-default'
         self.assertEqual(actual, TEAM_PROFILE)
 
     def test_delegated_writer_and_reviewers_through_the_script(self):

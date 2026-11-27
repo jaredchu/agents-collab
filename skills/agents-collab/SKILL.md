@@ -126,17 +126,18 @@ effort, API or paid-access fallback. Record requested model/effort separately
 from what the interface accepted and runtime observations. A model's own claim is
 not attestation; do not claim the lead's own reasoning changed.
 
-For a reviewer explicitly configured with `reasoning: auto`, resolve the
-[review effort policy](references/configuration.md#opt-in-automatic-review-effort)
-from the frozen review scope before dispatch. CLI renderers return the concrete
-level in `effort_resolution.resolved`. In manual mode record the same resolution
-in the assignment before launch. Pass the concrete supported level to the
-interface. Keep explicit efforts and `inherit` as configured.
+For delegated `reasoning: inherit`, confirm the [active lead's effort](references/configuration.md#lead-effort-inheritance)
+and pass it with `assignment --lead-effort LEVEL`. For `reasoning: auto`, use
+the [sealed scope policy](references/configuration.md#opt-in-automatic-effort).
+The CLI backend returns the level in `effort_resolution.resolved`. In manual
+mode record the resolution before launch. Pass the concrete supported level to
+the interface. With `interface-default`, use the delegate interface's own setting.
 
 Use native delegation when it exposes the configured model and effort. For
-Claude CLI use explicit model/effort, a fresh invocation and only permitted
-tools; never a shared transcript, `--continue` or `--resume` for an initial
-review, and never global setting changes or permission bypasses. Follow the
+Claude CLI pass the configured model and any concrete effort. Use a fresh
+invocation and only permitted tools. Never use a shared transcript, `--continue`
+or `--resume` for an initial review, or change global settings or bypass
+permissions. Follow the
 [CLI review procedure](references/review-protocol.md#fresh-claude-cli-review) for
 a Claude CLI reviewer and the
 [CLI writer procedure](references/review-protocol.md#claude-cli-writer) for a

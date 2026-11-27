@@ -124,6 +124,14 @@ class Reasoning(ValidatorCase):
                 data["agents"]["writer"]["reasoning"] = value
                 self.assertOnlyIssuesAt(data, "agents.writer.reasoning")
 
+    def test_auto_is_valid_for_all_delegates_and_invalid_for_the_lead(self):
+        data = base_profile()
+        for name in ("writer", "rev1", "rev2"):
+            data["agents"][name]["reasoning"] = "auto"
+        self.assertValid(data)
+        data["agents"]["lead"]["reasoning"] = "auto"
+        self.assertOnlyIssuesAt(data, "agents.lead.reasoning")
+
     def test_non_string_level_rejected(self):
         for value in (3, None, True, ["high"]):
             with self.subTest(value=value):

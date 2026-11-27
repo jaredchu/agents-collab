@@ -260,3 +260,34 @@ assignments. Up to three cases ran concurrently, so the timing is a sum of
 individual invocations in that environment. The result supports an opt-in
 effort rule for further testing. It does not establish runtime effort, accuracy
 on production reviews or a reason to change the default profile.
+
+## 7. Matched Opus writer-effort trial
+
+On November 28, 2026, fresh Opus 5.5 CLI sessions repaired six defective
+Python fixtures from the prior review trial. Each arm started from the same
+Git revision and received the same requirements and editable paths in a separate
+worktree. Fixed High requested High on all six cases. The automatic policy
+resolved to Medium for four one-file cases and High for two cross-file controls.
+Three pairs ran fixed High first and three ran the automatic policy first, with
+up to two cases in flight. Both arms had the same restricted file tools. The
+lead ran four frozen acceptance checks on each resulting patch before giving
+feedback. A failed in-scope first pass would have received one repair round.
+
+| Measure | Fixed High | Medium/High rule |
+| --- | ---: | ---: |
+| First-pass assignments accepted | 6/6 | 6/6 |
+| First-pass acceptance checks passed | 24/24 | 24/24 |
+| Follow-up repairs needed | 0 | 0 |
+| Summed writer time, four one-file cases | 50.81 s | 46.03 s |
+| Summed writer time, two High/High controls | 26.29 s | 27.15 s |
+| Summed writer time, all six cases | 77.10 s | 73.18 s |
+
+The automatic arm was faster on all four one-file cases, with 9.4% less summed
+writer time. The two High/High controls split on which arm was faster. Timing
+sums local process durations. One initial setup collision happened before the
+affected writer launched. The harness kept the completed result and resumed
+the remaining launches from the frozen inputs. All twelve patches stayed in
+scope and their collaboration records passed integrity checks. The trial used
+one model, one run per arm and small synthetic repairs. The results support
+local opt-in dogfooding on similar work. Runtime reasoning and quality or
+savings on broader production work remain unverified.

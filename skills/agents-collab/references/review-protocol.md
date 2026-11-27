@@ -105,19 +105,22 @@ The lead runs these steps itself. No bundled script dispatches reviewers.
 
 1. Check the installed CLI's own help for its print/non-interactive mode, model
    option and effort option. Do not assume option names from this document or
-   another version. If no effort option is accepted, follow `effort_check`.
+   another version. If a required effort option is unavailable, follow `effort_check`.
 2. Keep the user's existing CLI login. Do not supply API keys or tokens. An API
    key already in the environment may change which account or billing the CLI
    uses. Under `existing-subscriptions`, resolve that with the user before
    dispatch; do not run it silently.
 3. For an ordinary CLI-backed reviewer, after recorded launch intent run
    `backend.py claude-dispatch --record RECORD --assignment ID`. Start one new
-   process per reviewer with the configured model and the
-   [concrete review effort](configuration.md#opt-in-automatic-review-effort) and pass the
-   returned `message` verbatim as UTF-8 on stdin. Confirm that the interface
-   accepts the complete message before launch. Keep any supporting-file identity
-   checks the reviewer cannot perform explicit in its evidence limits. In manual
-   mode pass the full frozen packet with its handoff identities and manual output contract.
+   process per reviewer with the configured model and effort. For `auto` or
+   `inherit`, use `effort_resolution.resolved` from `assignment` or the dispatcher.
+   Omit the effort option for `interface-default`. Pass the returned `message` verbatim as
+   UTF-8 on stdin. Confirm that the interface accepts the complete message
+   before launch. Keep any supporting-file identity checks the reviewer cannot
+   perform explicit in its evidence limits. In manual mode resolve
+   [automatic](configuration.md#opt-in-automatic-review-effort) or
+   [inherited](configuration.md#lead-effort-inheritance) effort before launch and
+   pass the full frozen packet with its handoff identities and manual output contract.
    Never use continue/resume options or a shared session ID.
 4. Working directory: use a dedicated empty subdirectory of the private
    `host/` directory for packet-only review. Use the frozen snapshot or project when
@@ -172,9 +175,14 @@ directory and read-only reviewer settings above do not apply to writers.
 1. Scope: use the project (or assigned worktree) root as the working directory.
    Give editable paths, read-only areas, acceptance criteria, applicable project
    instructions, expected test commands and the bound.
-2. Model/effort: check the installed CLI help for non-interactive, model, effort
-   and per-invocation tool/permission options; pass the configured exact model
-   and effort explicitly. If no effort option is accepted, follow `effort_check`.
+2. Check the installed CLI help for non-interactive, model, effort and
+   per-invocation tool and permission options. Pass the configured exact model.
+   Pass the configured concrete effort, or for `auto` or `inherit` use
+   `effort_resolution.resolved` from the backend's `assignment` output. In manual
+   mode resolve [automatic](configuration.md#opt-in-automatic-effort) or
+   [inherited](configuration.md#lead-effort-inheritance) effort, record the level
+   before launch and pass it to the CLI. Omit the effort option for `interface-default`.
+   If a required effort option is unavailable, follow `effort_check`.
 3. Access: preflight as in step 2 of the reviewer recipe above. Check only whether
    an API key override is present; never print its value, login output or tokens.
 4. Tools: permit only the edit and test tools the task allows, per invocation,

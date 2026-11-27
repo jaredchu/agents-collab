@@ -151,8 +151,8 @@ fi</code></pre>
   "name": "writer-plus-review-example",
   "agents": {
     "lead": {"model": "current", "transport": "host", "reasoning": "inherit"},
-    "writer": {"model": "&lt;writer-model-id&gt;", "transport": "claude-cli", "reasoning": "inherit"},
-    "reviewer": {"model": "&lt;reviewer-model-id&gt;", "transport": "codex-native", "reasoning": "inherit"}
+    "writer": {"model": "&lt;writer-model-id&gt;", "transport": "claude-cli", "reasoning": "interface-default"},
+    "reviewer": {"model": "&lt;reviewer-model-id&gt;", "transport": "codex-native", "reasoning": "interface-default"}
   },
   "routing": {"small_writer": "current-session", "substantial_writer": "writer"},
   "review": {
@@ -175,7 +175,7 @@ fi</code></pre>
           <thead><tr><th scope="col">Field</th><th scope="col">What it means</th></tr></thead>
           <tbody>
             <tr><td><code>"model": "current"</code> + <code>"host"</code></td><td>The lead session you are already in. The skill cannot switch the lead’s model or reasoning.</td></tr>
-            <tr><td><code>reasoning</code></td><td><code>inherit</code> or a lowercase level the interface documents for that model. <code>inherit</code> does not mean high.</td></tr>
+            <tr><td><code>reasoning</code></td><td>For delegates, <code>inherit</code> copies the lead’s captured effort, <code>interface-default</code> keeps the delegate interface’s own setting, and <code>auto</code> picks Medium or High by scope. You can also set a supported lowercase level.</td></tr>
             <tr><td><code>review.recipes</code></td><td>Named reviewer lists, such as <code>{"pair": ["reviewer", "reviewer2"]}</code>, used when you name them or a policy applies.</td></tr>
             <tr><td><code>bounds.enforcement</code></td><td><code>advisory</code> labels targets; <code>required</code> needs a real supervisor such as a subprocess timeout.</td></tr>
             <tr><td><code>records_root</code></td><td>Private and outside projects. The lead must confirm the final task directory does not overlap the project; the validator can’t.</td></tr>

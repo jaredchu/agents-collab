@@ -460,7 +460,7 @@ Example reviewer handoff (replace symbolic hashes and paths with actual values):
 {
   "assignment": "review-1", "replacement": "review-1-continuation",
   "packet": "PACKET", "agent": "continuation-reviewer",
-  "selection": {"model": "codex-model-id", "transport": "codex-native", "reasoning": "inherit"},
+  "selection": {"model": "codex-model-id", "transport": "codex-native", "reasoning": "interface-default"},
   "output_destination": "HOST/handoff-output/review-1-continuation.json",
   "decision": "continue_with_codex", "authority": "lead",
   "decision_evidence": ["DECISION_OBJECT"],
@@ -489,6 +489,10 @@ record unchanged. A successful check describes the location at that moment.
 Repeat it if the launch is delayed or the location changes. Launch with the
 selected model and effort and attach the actual invocation identity once the
 host exposes it.
+
+For a replacement configured with `inherit`, pass the active `--lead-effort LEVEL`
+to `observe --state launching`. Use `effort_resolution.resolved` from the
+replacement output check when applying effort to the new invocation.
 
 Pause dispatch after any refusal. For a missing launch intent, stale artifact,
 unverified record integrity or inactive task, follow the reported error and
@@ -604,15 +608,20 @@ dispatcher, GUI prompt, absence detection or authority attestation is provided.
 
 ## Observations and retries
 
-When a delegated reviewer requests `auto`, the helper resolves the
-[review effort policy](configuration.md#opt-in-automatic-review-effort) from
-the recorded scope and sealed artifact. The assignment workflow records the
-policy and concrete level before dispatch. Where a dispatch renderer or
-replacement check returns `effort_resolution`, use `effort_resolution.resolved`
-as the interface effort. The profile's `requested.reasoning` still reads
-`auto`. For running and completed observations, pass the accepted concrete
-level in `--interface-effort`. The helper checks it against the same resolution.
-Record and reconcile an unexpected interface result before further dispatch.
+For delegated `auto`, the helper resolves the [scope policy](configuration.md#opt-in-automatic-effort)
+after the packet is sealed. For delegated `inherit`, give `assignment` the
+[active lead's effort](configuration.md#lead-effort-inheritance) in `--lead-effort LEVEL`.
+If preparation committed before launch intent, provide that level when recording
+`observe --state launching`. The helper keeps the captured value in the launch
+receipt, including across retries. Already recorded launch intents from older
+versions retain their original behavior.
+
+Use `effort_resolution.resolved` from the assignment output or a supported
+dispatch renderer or replacement check as the interface effort. The original
+profile preference stays in `requested.reasoning`. For running and completed
+observations, pass the accepted concrete level in `--interface-effort`. The
+helper checks it against the same resolution. Reconcile an unexpected interface
+result before further dispatch.
 
 For an ordinary `codex-native` assignment with recorded `launching` intent,
 construct the dispatch body from the registered immutable objects:

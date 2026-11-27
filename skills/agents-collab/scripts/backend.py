@@ -270,7 +270,7 @@ class Backend:
 
 
 def start(backend, args):
-    profile = load_profile(args.profile)  # unchanged validator, before writes
+    profile = load_profile(args.profile)  # validate before writes
     repo = repository(args.repository)
     requirements = []
     for kind, values in (("requirement", args.requirement), ("criterion", args.criterion)):
@@ -284,8 +284,6 @@ def start(backend, args):
         raise ValueError("duplicate requirement/criterion ID")
     if args.writer != "current-session" and args.writer not in profile["agents"]:
         raise ValueError("writer must resolve from the saved profile or be current-session")
-    if profile["agents"].get(args.writer, {}).get("reasoning") == "auto":
-        raise ValueError("auto reasoning is reviewer-only; choose a writer with inherit or a supported effort")
     if (len(set(args.reviewer)) != len(args.reviewer)
             or any(name not in profile["agents"] or name == args.writer
                    or profile["agents"][name]["transport"] == "host" for name in args.reviewer)):
@@ -626,21 +624,58 @@ def dispatch_packet(state, assignment):
     return packet_id, packet
 
 
-def resolve_review_effort(backend, state, requested, role, packet_id):
+LEAD_EFFORT_POLICY = "lead-effort-v1"
+LEAD_EFFORT_PREFIX = "Host supplied the lead's effort for this assignment: "
+
+
+def resolve_assignment_effort(backend, state, requested, role, packet_id, *,
+                              lead_effort=None, new_intent=False):
+    delegates = requested.get("transport") in {"codex-native", "claude-cli"}
+    if requested.get("reasoning") == validator.INHERIT and delegates:
+        if lead_effort is None:
+            if new_intent:
+                raise ValueError("inherit requires the active lead's concrete effort in --lead-effort")
+            # Existing launch intents may predate lead inheritance.
+            return None
+        if (not validator.LEVEL_RE.fullmatch(lead_effort) or
+                lead_effort in {"auto", validator.INHERIT, validator.INTERFACE_DEFAULT,
+                                *validator.AMBIGUOUS_LEVELS}):
+            raise ValueError("--lead-effort must name the lead's concrete effort level")
+        return {"requested": validator.INHERIT, "resolved": lead_effort,
+                "policy": LEAD_EFFORT_POLICY, "basis": "lead effort supplied by the host at launch intent"}
+    if lead_effort is not None:
+        raise ValueError("--lead-effort applies only to delegates configured with inherit")
     if requested.get("reasoning") != "auto":
         return None
-    if role != "reviewer" or requested.get("transport") not in {"codex-native", "claude-cli"}:
-        raise ValueError("auto reasoning is only available for delegated reviewers")
+    if not delegates or role not in {"writer", "reviewer"}:
+        raise ValueError("auto reasoning is only available for delegated writers and reviewers")
+    purpose = "writer_context" if role == "writer" else "review"
     packets = [p["spec"] for p in state["packets"] if p["id"] == packet_id]
-    if len(packets) != 1 or packets[0]["purpose"] != "review":
-        raise ValueError("auto reasoning requires a registered sealed review packet")
+    if len(packets) != 1 or packets[0]["purpose"] != purpose:
+        raise ValueError(f"auto reasoning for {role} requires a registered sealed {purpose} packet")
     entries = safe.strict_json(backend.frozen(packets[0]["artifact"]))["entries"]
     bounded = (len(entries) == 1 and entries[0]["kind"] == "file"
                and state["spec"]["editable_scope"] == [entries[0]["path"]])
     return {"requested": "auto", "resolved": "medium" if bounded else "high",
-            "policy": "bounded-review-v1",
+            "policy": "bounded-writer-v1" if role == "writer" else "bounded-review-v1",
             "basis": "one exact scoped file and one matching frozen file" if bounded
-            else "review scope or frozen source extends beyond one exact matching file"}
+            else "scope or frozen source does not match one exact file"}
+
+
+def assignment_effort(backend, state, assignment, *, lead_effort=None, new_intent=False):
+    for observation in assignment["observations"]:
+        launch = observation.get("receipt", {})
+        reason = launch.get("reason") or ""
+        if launch.get("state") == "launching" and reason.startswith(LEAD_EFFORT_PREFIX):
+            saved = reason.removeprefix(LEAD_EFFORT_PREFIX).split("\n", 1)[0]
+            if lead_effort is not None and lead_effort != saved:
+                raise ValueError("--lead-effort must match the effort recorded for this assignment")
+            lead_effort = saved
+            break
+    spec = assignment["spec"]
+    return resolve_assignment_effort(backend, state, assignment.get("requested") or {},
+                                     spec["role"], spec["packet"], lead_effort=lead_effort,
+                                     new_intent=new_intent)
 
 
 def check_replacement_output(backend, args, state):
@@ -655,8 +690,7 @@ def check_replacement_output(backend, args, state):
     result = {"assignment": args.assignment, "packet": packet_id, "artifact": packet["artifact"],
             "output_destination": str(destination), "writes": False, "dispatch": "none",
             "limits": "Point-in-time storage check only. Host owns launch, worker reconciliation and receipt checks."}
-    effort = resolve_review_effort(backend, state, assignment.get("requested") or {},
-                                  assignment["spec"]["role"], packet_id)
+    effort = assignment_effort(backend, state, assignment)
     if effort is not None:
         result["effort_resolution"] = effort
     return result
@@ -699,7 +733,7 @@ def render_dispatch(backend, args, state, transport):
         launch = ("Pass message verbatim as UTF-8 on standard input to a fresh Claude CLI process "
                   "with the requested controls. Retain the CLI-reported terminal message exactly.")
     destination = backend.output_path(assignment["spec"]["output_destination"], registered=True)
-    effort = resolve_review_effort(backend, state, requested, role, packet_id)
+    effort = assignment_effort(backend, state, assignment)
     message = (f"{title}\n{identity}{transport_header}Role: {role}\n"
                f"Output destination: {destination}\n\n"
                + instructions + "\n\n" + body)
@@ -730,21 +764,26 @@ def check_observation(args):
         if args.invocation or reconciled or absent or args.exit_code is not None or getattr(args, "process_start", None):
             raise ValueError("launching records intent only: omit --invocation, --exit-code, --process-start, --reconciled and --absence-established")
         return
+    if getattr(args, "lead_effort", None) is not None:
+        raise ValueError("--lead-effort can be supplied only when recording launch intent")
     if absent and not reconciled:
         raise ValueError("--absence-established requires --reconciled")
     if (reconciled or absent) and not (args.reason and args.reason.strip()):
         raise ValueError("--reconciled/--absence-established require an explicit --reason stating the host evidence")
 
 
-def receipt(args, state, launching=False):
+def receipt(args, state, launching=False, effort=None):
     """Build a host receipt. Flags are host assertions; nothing here proves them."""
     if launching or args.state == "launching":
+        reason = LAUNCH_REASON if launching or not args.reason else nonempty(args.reason)
+        if effort and effort["policy"] == LEAD_EFFORT_POLICY:
+            reason = LEAD_EFFORT_PREFIX + effort["resolved"] + "\n" + reason
         return {"schema_version": 1, "assignment": args.id if launching else args.assignment,
                 "state": "launching", "invocation": None, "process_start": None,
                 "interface_model": None, "interface_effort": None,
                 "observed_model": None, "observed_effort": None,
                 "boundary_observations": "Host dispatch has not occurred; restrictions remain unobserved" if launching else nonempty(args.boundary_observations),
-                "exit_code": None, "reason": LAUNCH_REASON if launching or not args.reason else nonempty(args.reason),
+                "exit_code": None, "reason": reason,
                 "reconciled": False, "absence_established": False}
     reconciled = bool(getattr(args, "reconciled", False))
     absent = bool(getattr(args, "absence_established", False))
@@ -772,14 +811,15 @@ def run_bound(backend, args, state, plan=None):
         return context(backend, args, state, plan)
     if args.command == "assignment":
         requested = state["profile"]["agents"].get(args.agent, {})
-        effort = resolve_review_effort(backend, state, requested, args.role, args.packet)
+        effort = resolve_assignment_effort(backend, state, requested, args.role, args.packet,
+                                           lead_effort=args.lead_effort, new_intent=True)
         if effort is not None:
             backend.workflow_data["effort_resolution"] = effort
         value = {"id": args.id, "packet": args.packet, "agent": args.agent, "role": args.role,
                  "editable_scope": state["spec"]["editable_scope"] if args.role == "writer" else [],
                  "output_destination": str(backend.output_path(args.output_destination))}
         prepared = backend.mutation("assignment", "prepare", value)
-        intent = backend.mutation("assignment", "observe", receipt(args, state, launching=True))
+        intent = backend.mutation("assignment", "observe", receipt(args, state, launching=True, effort=effort))
         result = {"prepared": prepared, "launch_intent": intent, "dispatch": "Host may now dispatch the authorized assignment"}
         if effort is not None:
             result["effort_resolution"] = effort
@@ -795,15 +835,16 @@ def run_bound(backend, args, state, plan=None):
                             "immediately before launch. Use a fresh execution identity and the retained instructions."}
     if args.command == "observe":
         check_observation(args)
+        effort = None
         assignment = next((a for a in state["assignments"] if a["spec"]["id"] == args.assignment), None)
         if assignment is not None and args.state in {"launching", "running", "completed"}:
-            effort = resolve_review_effort(backend, state, assignment.get("requested") or {},
-                                          assignment["spec"]["role"], assignment["spec"]["packet"])
+            effort = assignment_effort(backend, state, assignment, lead_effort=args.lead_effort,
+                                       new_intent=args.state == "launching")
             if effort is not None:
                 if args.state != "launching" and args.interface_effort != effort["resolved"]:
-                    raise ValueError(f"auto reasoning resolved to {effort['resolved']}; record the accepted level with --interface-effort or reconcile the invocation")
+                    raise ValueError(f"{effort['requested']} reasoning resolved to {effort['resolved']}; record the accepted level with --interface-effort or reconcile the invocation")
                 backend.workflow_data["effort_resolution"] = effort
-        return backend.mutation("assignment", "observe", receipt(args, state))
+        return backend.mutation("assignment", "observe", receipt(args, state, effort=effort))
     if args.command == "import-review":
         result = backend.mutation("review", "import", raw=safe.read_regular(args.input, MAX_INPUT))
         return {"result": result, "valid_review": result["result"].get("validation") == "valid_structure_only",
@@ -932,6 +973,7 @@ def parser():
             p.add_argument("--agent", required=True, metavar="AGENT")
             p.add_argument("--output-destination", required=True, metavar="FILE", help="new file inside task host/")
             p.add_argument("--role", choices=("writer", "reviewer"), required=True)
+            p.add_argument("--lead-effort", metavar="LEVEL", help="active lead effort for a delegate using inherit")
         elif name in ("native-dispatch", "claude-dispatch", "check-replacement-output"):
             p.add_argument("--assignment", required=True, metavar="ID")
         elif name == "observe":
@@ -942,6 +984,7 @@ def parser():
             p.add_argument("--process-start", metavar="TEXT", help="optional supplementary process start evidence")
             p.add_argument("--interface-model", metavar="MODEL")
             p.add_argument("--interface-effort", metavar="LEVEL")
+            p.add_argument("--lead-effort", metavar="LEVEL", help="active lead effort for inherited launch intent if not already recorded")
             p.add_argument("--exit-code", type=int, metavar="N", help="leave absent when native host does not expose it")
             p.add_argument("--boundary-observations", required=True, metavar="TEXT")
             p.add_argument("--reason", metavar="TEXT", help="required with --reconciled; state the host evidence")
