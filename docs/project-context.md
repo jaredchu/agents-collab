@@ -39,13 +39,15 @@ and reviewer verdict to the same final artifact. One fresh isolated install
 completed this path with a passing independent review and a verified format 6
 record. [Explicit opt-in workflow](../skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks)
 
-Unreleased source adds [opt-in automatic effort for delegates](../skills/agents-collab/references/configuration.md#opt-in-automatic-effort).
-It selects Medium for writing or reviewing one exact scoped file that matches
-the sealed file, and High for broader assignments. The policy applies with the
-optional CLI adapter and in the manual workflow. Explicit levels and inherited
-settings remain available. A delegate using `inherit` can copy the active lead's
-captured level. `interface-default` keeps the delegate interface's setting.
-[Inheritance contract](../skills/agents-collab/references/configuration.md#lead-effort-inheritance)
+### v0.2.0-preview.1 experimental prerelease
+
+The [v0.2.0-preview.1 prerelease](https://github.com/jaredchu/agents-collab/releases/tag/v0.2.0-preview.1)
+adds [opt-in automatic effort for delegates](../skills/agents-collab/references/configuration.md#opt-in-automatic-effort).
+The rule selects Medium for writing or reviewing one exact scoped file matching
+the sealed source and High for broader assignments. Delegates can inherit the
+active lead's captured level or use `interface-default` to keep their interface's
+setting. The preview pairs the updated skill with the existing optional v0.1.1
+backend. [Migration and downloads](releases/v0.2.0-preview.1.md)
 
 ### v0.1.1 release
 
@@ -86,6 +88,7 @@ Published archives matched their checksums. [Release checks](verification-histor
 ## Progress
 
 - [x] Publish and verify the [experimental skill and optional CLI](releases/v0.1.1.md).
+- [x] Implement and package the [effort policy preview](releases/v0.2.0-preview.1.md).
 - [x] Run the [initial routing gate](../evals/automatic-routing/2026-11-09/report.md).
   The gate failed, so all 36 planned comparison runs stayed unstarted.
 - [ ] Reconcile current source and prior exploratory exposure before freezing and
@@ -100,6 +103,7 @@ Published archives matched their checksums. [Release checks](verification-histor
 | Document | Role |
 | --- | --- |
 | [README](../README.md) and [guide](guide.md) | Status, installation, profiles and invocation |
+| [Changelog](../CHANGELOG.md) | Version history, release notes and migration |
 | [Research](research.md) and [experiments](experiments.md) | Design evidence, pilot outcomes and limits |
 | [History](history.md) and [verification history](verification-history.md) | Project origins and dated implementation evidence |
 | [Rust CLI guide](cli.md) and [original prototype plan](plans/rust-cli-prototype.md) | Current backend contract and retained design rationale |
