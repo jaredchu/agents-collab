@@ -284,6 +284,8 @@ def start(backend, args):
         raise ValueError("duplicate requirement/criterion ID")
     if args.writer != "current-session" and args.writer not in profile["agents"]:
         raise ValueError("writer must resolve from the saved profile or be current-session")
+    if profile["agents"].get(args.writer, {}).get("reasoning") == "auto":
+        raise ValueError("auto reasoning is reviewer-only; choose a writer with inherit or a supported effort")
     if (len(set(args.reviewer)) != len(args.reviewer)
             or any(name not in profile["agents"] or name == args.writer
                    or profile["agents"][name]["transport"] == "host" for name in args.reviewer)):
@@ -624,6 +626,23 @@ def dispatch_packet(state, assignment):
     return packet_id, packet
 
 
+def resolve_review_effort(backend, state, requested, role, packet_id):
+    if requested.get("reasoning") != "auto":
+        return None
+    if role != "reviewer" or requested.get("transport") not in {"codex-native", "claude-cli"}:
+        raise ValueError("auto reasoning is only available for delegated reviewers")
+    packets = [p["spec"] for p in state["packets"] if p["id"] == packet_id]
+    if len(packets) != 1 or packets[0]["purpose"] != "review":
+        raise ValueError("auto reasoning requires a registered sealed review packet")
+    entries = safe.strict_json(backend.frozen(packets[0]["artifact"]))["entries"]
+    bounded = (len(entries) == 1 and entries[0]["kind"] == "file"
+               and state["spec"]["editable_scope"] == [entries[0]["path"]])
+    return {"requested": "auto", "resolved": "medium" if bounded else "high",
+            "policy": "bounded-review-v1",
+            "basis": "one exact scoped file and one matching frozen file" if bounded
+            else "review scope or frozen source extends beyond one exact matching file"}
+
+
 def check_replacement_output(backend, args, state):
     """Revalidate the immutable destination of a pending quota replacement."""
     assignment = launching_assignment(state, args.assignment, "replacement output check")
@@ -633,9 +652,14 @@ def check_replacement_output(backend, args, state):
     if backend.call("task", "check").get("integrity") != "verified":
         raise ValueError("record integrity is not verified")
     destination = backend.output_path(assignment["spec"]["output_destination"], registered=True)
-    return {"assignment": args.assignment, "packet": packet_id, "artifact": packet["artifact"],
+    result = {"assignment": args.assignment, "packet": packet_id, "artifact": packet["artifact"],
             "output_destination": str(destination), "writes": False, "dispatch": "none",
             "limits": "Point-in-time storage check only. Host owns launch, worker reconciliation and receipt checks."}
+    effort = resolve_review_effort(backend, state, assignment.get("requested") or {},
+                                  assignment["spec"]["role"], packet_id)
+    if effort is not None:
+        result["effort_resolution"] = effort
+    return result
 
 
 def render_dispatch(backend, args, state, transport):
@@ -675,12 +699,14 @@ def render_dispatch(backend, args, state, transport):
         launch = ("Pass message verbatim as UTF-8 on standard input to a fresh Claude CLI process "
                   "with the requested controls. Retain the CLI-reported terminal message exactly.")
     destination = backend.output_path(assignment["spec"]["output_destination"], registered=True)
+    effort = resolve_review_effort(backend, state, requested, role, packet_id)
     message = (f"{title}\n{identity}{transport_header}Role: {role}\n"
                f"Output destination: {destination}\n\n"
                + instructions + "\n\n" + body)
     return {"assignment": args.assignment, "packet": packet_id, "artifact": artifact_id, **transport_fields,
             "role": role, "final_output": {"contract": contract, "template": template},
-            "requested": requested, "message": message, "message_sha256": safe.digest(message.encode("utf-8")),
+            "requested": requested, **({"effort_resolution": effort} if effort is not None else {}),
+            "message": message, "message_sha256": safe.digest(message.encode("utf-8")),
             "writes": False, "dispatch": "none",
             "limits": "Read-only message construction, not permission, a lease, delivery evidence or a worker-liveness check. "
                       "The host must verify authorized launch state. " + launch + " "
@@ -745,12 +771,19 @@ def run_bound(backend, args, state, plan=None):
     if args.command == "context":
         return context(backend, args, state, plan)
     if args.command == "assignment":
+        requested = state["profile"]["agents"].get(args.agent, {})
+        effort = resolve_review_effort(backend, state, requested, args.role, args.packet)
+        if effort is not None:
+            backend.workflow_data["effort_resolution"] = effort
         value = {"id": args.id, "packet": args.packet, "agent": args.agent, "role": args.role,
                  "editable_scope": state["spec"]["editable_scope"] if args.role == "writer" else [],
                  "output_destination": str(backend.output_path(args.output_destination))}
         prepared = backend.mutation("assignment", "prepare", value)
         intent = backend.mutation("assignment", "observe", receipt(args, state, launching=True))
-        return {"prepared": prepared, "launch_intent": intent, "dispatch": "Host may now dispatch the authorized assignment"}
+        result = {"prepared": prepared, "launch_intent": intent, "dispatch": "Host may now dispatch the authorized assignment"}
+        if effort is not None:
+            result["effort_resolution"] = effort
+        return result
     if args.command == "extend-review":
         return backend.mutation("task", "extend-review", raw=safe.read_regular(args.input, MAX_INPUT))
     if args.command == "handoff":
@@ -762,6 +795,14 @@ def run_bound(backend, args, state, plan=None):
                             "immediately before launch. Use a fresh execution identity and the retained instructions."}
     if args.command == "observe":
         check_observation(args)
+        assignment = next((a for a in state["assignments"] if a["spec"]["id"] == args.assignment), None)
+        if assignment is not None and args.state in {"launching", "running", "completed"}:
+            effort = resolve_review_effort(backend, state, assignment.get("requested") or {},
+                                          assignment["spec"]["role"], assignment["spec"]["packet"])
+            if effort is not None:
+                if args.state != "launching" and args.interface_effort != effort["resolved"]:
+                    raise ValueError(f"auto reasoning resolved to {effort['resolved']}; record the accepted level with --interface-effort or reconcile the invocation")
+                backend.workflow_data["effort_resolution"] = effort
         return backend.mutation("assignment", "observe", receipt(args, state))
     if args.command == "import-review":
         result = backend.mutation("review", "import", raw=safe.read_regular(args.input, MAX_INPUT))

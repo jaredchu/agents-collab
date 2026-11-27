@@ -604,6 +604,16 @@ dispatcher, GUI prompt, absence detection or authority attestation is provided.
 
 ## Observations and retries
 
+When a delegated reviewer requests `auto`, the helper resolves the
+[review effort policy](configuration.md#opt-in-automatic-review-effort) from
+the recorded scope and sealed artifact. The assignment workflow records the
+policy and concrete level before dispatch. Where a dispatch renderer or
+replacement check returns `effort_resolution`, use `effort_resolution.resolved`
+as the interface effort. The profile's `requested.reasoning` still reads
+`auto`. For running and completed observations, pass the accepted concrete
+level in `--interface-effort`. The helper checks it against the same resolution.
+Record and reconcile an unexpected interface result before further dispatch.
+
 For an ordinary `codex-native` assignment with recorded `launching` intent,
 construct the dispatch body from the registered immutable objects:
 

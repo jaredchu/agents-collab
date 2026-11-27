@@ -255,23 +255,33 @@ def check_reviewer_count(value: str) -> Optional[str]:
 # --- questions -----------------------------------------------------------------
 
 
-def ask_reasoning(p: Prompter, role: str) -> str:
+def ask_reasoning(p: Prompter, role: str, *, reviewer: bool = False) -> str:
     options = ["inherit (keep the interface's current setting; not 'high')"]
     options += list(COMMON_LEVELS)
     options.append("custom lowercase level")
+    if reviewer:
+        options.append("auto (Medium for a bounded one-file review, High otherwise)")
     index = choose(p, f"Reasoning request for {role} (not verified; the lead checks support):",
                    options, default=1)
     if index == 0:
         return vp.INHERIT
     if index <= len(COMMON_LEVELS):
         return COMMON_LEVELS[index - 1]
-    return ask_text(p, "Custom level, as the interface documents it", check_level)
+    if reviewer and index == len(options) - 1:
+        return "auto"
+
+    def check_custom(value):
+        if value == "auto":
+            return "Choose auto from the reviewer menu." if reviewer else "Auto is a reviewer-only policy."
+        return check_level(value)
+
+    return ask_text(p, "Custom level, as the interface documents it", check_custom)
 
 
-def ask_delegate(p: Prompter, role: str) -> Dict[str, str]:
+def ask_delegate(p: Prompter, role: str, *, reviewer: bool = False) -> Dict[str, str]:
     model = ask_text(p, f"Exact model ID for {role}", check_model)
     index = choose(p, f"Transport for {role}:", [label for _, label in TRANSPORT_CHOICES])
-    reasoning = ask_reasoning(p, role)
+    reasoning = ask_reasoning(p, role, reviewer=reviewer)
     return {"model": model, "transport": TRANSPORT_CHOICES[index][0], "reasoning": reasoning}
 
 
@@ -292,7 +302,7 @@ def collect_answers(p: Prompter) -> Dict[str, Any]:
     reviewers: List[Dict[str, str]] = []
     for number in range(1, count + 1):
         p.say()
-        reviewers.append(ask_delegate(p, f"reviewer {number}"))
+        reviewers.append(ask_delegate(p, f"reviewer {number}", reviewer=True))
 
     review_by_default = False
     recipe = None

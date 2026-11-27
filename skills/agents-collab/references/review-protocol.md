@@ -112,7 +112,8 @@ The lead runs these steps itself. No bundled script dispatches reviewers.
    dispatch; do not run it silently.
 3. For an ordinary CLI-backed reviewer, after recorded launch intent run
    `backend.py claude-dispatch --record RECORD --assignment ID`. Start one new
-   process per reviewer with the configured model and effort and pass the
+   process per reviewer with the configured model and the
+   [concrete review effort](configuration.md#opt-in-automatic-review-effort) and pass the
    returned `message` verbatim as UTF-8 on stdin. Confirm that the interface
    accepts the complete message before launch. Keep any supporting-file identity
    checks the reviewer cannot perform explicit in its evidence limits. In manual

@@ -126,6 +126,13 @@ effort, API or paid-access fallback. Record requested model/effort separately
 from what the interface accepted and runtime observations. A model's own claim is
 not attestation; do not claim the lead's own reasoning changed.
 
+For a reviewer explicitly configured with `reasoning: auto`, resolve the
+[review effort policy](references/configuration.md#opt-in-automatic-review-effort)
+from the frozen review scope before dispatch. CLI renderers return the concrete
+level in `effort_resolution.resolved`. In manual mode record the same resolution
+in the assignment before launch. Pass the concrete supported level to the
+interface. Keep explicit efforts and `inherit` as configured.
+
 Use native delegation when it exposes the configured model and effort. For
 Claude CLI use explicit model/effort, a fresh invocation and only permitted
 tools; never a shared transcript, `--continue` or `--resume` for an initial
@@ -165,7 +172,7 @@ use the renderer for the recorded transport:
 
 - Ordinary `codex-native` writer or reviewer: run `backend.py native-dispatch
   --record RECORD --assignment ID`. Pass its **message verbatim** and **task_name
-  exactly** to the native tool with the recorded model, effort and session controls.
+  exactly** to the native tool with the recorded model, concrete effort and session controls.
 - Ordinary `claude-cli` reviewer: run `backend.py claude-dispatch --record RECORD
   --assignment ID` and pass its **message verbatim** on stdin using the
   [CLI review procedure](references/review-protocol.md#fresh-claude-cli-review).

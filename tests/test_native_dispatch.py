@@ -31,6 +31,7 @@ class NativeDispatchTests(unittest.TestCase):
         def store(value):
             raw = backend.encoded(value) if isinstance(value, dict) else value
             key = backend.safe.digest(raw);(objects / key).write_bytes(raw);return key
+        self.store = store
         source = store('original µ frozen source\n'.encode())
         self.artifact = store({'entries':[{'path':'source.txt','kind':'file','object':source}]})
         self.packet = {'purpose':'review','artifact':self.artifact,'instructions':'Neutral review'}
@@ -55,6 +56,32 @@ class NativeDispatchTests(unittest.TestCase):
         self.assertEqual(result['message_sha256'],hashlib.sha256(result['message'].encode()).hexdigest())
         self.assertIs(result['writes'],False);self.assertEqual(result['dispatch'],'none')
         self.assertEqual(before,inventory(self.root))
+        self.assertNotIn('effort_resolution', result)
+
+    def test_auto_resolves_from_exact_scope_and_frozen_source(self):
+        self.state['spec'] = {'editable_scope': ['source.txt']}
+        requested = self.state['assignments'][0]['requested']
+        requested['reasoning'] = 'auto'
+        for transport in ('codex-native', 'claude-cli'):
+            requested['transport'] = transport
+            result = backend.render_dispatch(self.engine, self.args, self.state, transport)
+            self.assertEqual(result['requested']['reasoning'], 'auto')
+            self.assertEqual(result['effort_resolution']['resolved'], 'medium')
+        self.state['spec']['editable_scope'] = []
+        self.assertEqual(backend.render_dispatch(self.engine, self.args, self.state, 'claude-cli')
+                         ['effort_resolution']['resolved'], 'high')
+
+        manifest = backend.safe.strict_json(self.engine.frozen(self.artifact))
+        manifest['entries'].append(dict(manifest['entries'][0], path='support.txt'))
+        self.artifact = self.store(manifest)
+        self.packet = dict(self.packet, artifact=self.artifact)
+        self.packet_id = self.store({'packet': self.packet})
+        self.state.update(current_artifact=self.artifact,
+                          packets=[{'id': self.packet_id, 'spec': self.packet}])
+        self.state['assignments'][0]['spec']['packet'] = self.packet_id
+        self.state['spec']['editable_scope'] = ['source.txt']
+        result = backend.render_dispatch(self.engine, self.args, self.state, 'claude-cli')
+        self.assertEqual(result['effort_resolution']['resolved'], 'high')
 
     def test_wrong_or_uncertain_assignment_states_refuse(self):
         changes = [lambda s:s.update(state='completed'),lambda s:s.update(assignments=[]),
@@ -152,6 +179,26 @@ class NativeDispatchEngineTests(unittest.TestCase):
                 self.assertNotIn('wrong mutable context file',result['message'])
                 self.assertIn(context['packet'],result['message']);self.assertIn(context['artifact'],result['message'])
                 self.assertNotIn('workflow',result);self.assertEqual(before,inventory(self.root))
+
+    def test_real_auto_intent_records_medium_and_requires_matching_interface_receipt(self):
+        profile = json.loads(self.profile.read_text())
+        profile['agents']['reviewer']['reasoning'] = 'auto'
+        self.profile.write_text(json.dumps(profile))
+        record, _, output = self.prepared('reviewer')
+        workflows = [json.loads(path.read_text()) for path in output.parent.glob('workflow-*.json')]
+        assignment, = [entry for entry in workflows if entry['command'] == 'assignment']
+        self.assertEqual(assignment['effort_resolution']['resolved'], 'medium')
+        options = ('observe', '--record', record, '--assignment', 'job-1', '--state', 'completed',
+                   '--invocation', 'synthetic-session', '--interface-model', 'synthetic-native',
+                   '--boundary-observations', 'Offline fixture')
+        code, _, err = self.invoke(*options, '--interface-effort', 'high')
+        self.assertEqual(code, 1)
+        self.assertIn('auto reasoning resolved to medium', err)
+        code, out, err = self.invoke('native-dispatch', '--record', record, '--assignment', 'job-1')
+        self.assertEqual(code, 0, err)
+        self.assertEqual(json.loads(out)['effort_resolution'], assignment['effort_resolution'])
+        code, _, err = self.invoke(*options, '--interface-effort', 'medium')
+        self.assertEqual(code, 0, err)
 
     def test_real_started_assignment_cannot_be_rendered_for_redispatch(self):
         record,_,_=self.prepared('reviewer')

@@ -39,6 +39,11 @@ and reviewer verdict to the same final artifact. One fresh isolated install
 completed this path with a passing independent review and a verified format 6
 record. [Explicit opt-in workflow](../skills/agents-collab/references/backend.md#explicit-opt-in-for-routine-tasks)
 
+Unreleased source adds [opt-in automatic reviewer effort](../skills/agents-collab/references/configuration.md#opt-in-automatic-review-effort).
+The rule selects Medium for one exact scoped file that matches the sealed
+file and High for broader reviews. It works with the optional CLI adapter
+and manual workflow. Explicit levels and inherited settings remain available.
+
 ### v0.1.1 release
 
 The [v0.1.1 experimental release](https://github.com/jaredchu/agents-collab/releases/tag/v0.1.1)
@@ -59,6 +64,12 @@ Published archives matched their checksums. [Release checks](verification-histor
   The CLI usefulness comparison was inconclusive.
   [Quality report](../evals/quality/2026-11-09/report.md) ·
   [CLI comparison](experiments.md#4-same-skill-with-and-without-the-rust-cli)
+- A [matched review-effort pilot](experiments.md#5-matched-review-effort-pilot)
+  found all three synthetic defects in both arms, with lower total time and
+  output tokens for the bounded cases under the rule. Three duplicate finding
+  IDs blocked imports. A [ten-case follow-up](experiments.md#6-harder-matched-review-effort-trial)
+  found all eleven seeds in both arms, and all twenty original responses
+  imported with assignment-prefixed IDs. The trials informed the opt-in rule.
 - Routing detection, structural validation and release checks measure
   different outcomes. The completed checks do not establish general
   productivity gains or dependable implicit activation. Raw trial evidence

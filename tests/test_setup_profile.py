@@ -137,6 +137,16 @@ class WizardCase(unittest.TestCase):
 
 
 class Flows(WizardCase):
+    def test_reviewer_can_explicitly_choose_auto_without_changing_other_choices(self):
+        answers = list(TEAM_ANSWERS)
+        answers[8] = '6'
+        result = self.run_cli(['--output', str(self.out)], answers)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        actual = self.load(self.out)
+        self.assertEqual(actual['agents']['reviewer1']['reasoning'], 'auto')
+        actual['agents']['reviewer1']['reasoning'] = 'inherit'
+        self.assertEqual(actual, TEAM_PROFILE)
+
     def test_delegated_writer_and_reviewers_through_the_script(self):
         result = self.run_cli(["--output", str(self.out)], TEAM_ANSWERS)
         self.assertEqual(result.returncode, 0, result.stderr)

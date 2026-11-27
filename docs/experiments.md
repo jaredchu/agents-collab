@@ -199,3 +199,64 @@ are retained. Manual baseline assertions, first-use setup, operator carryover
 and incomplete work accounting limit inference. Timings are not a speed claim;
 tokens, task-attributable quota and cost remain unknown. The local CLI stays
 experimental and separate from the distributable skill.
+
+## 5. Matched review-effort pilot
+
+On November 27, 2026, eight fresh Opus 5.5 CLI sessions reviewed four synthetic
+cases. Each pair used the same sealed source, instructions and model. Fixed
+High was compared with an experiment-only rule that used Medium for the three
+one-file cases and High for the cross-file case. Arm order was randomized within
+each pair. The lead scored the original findings before revealing the effort
+assignments.
+
+| Measure | Fixed High | Medium/High rule |
+| --- | ---: | ---: |
+| Material seeds found | 3/3 | 3/3 |
+| Unsupported material findings | 0 | 0 |
+| Elapsed time across the three bounded cases | 53.72 s | 42.27 s |
+| Reported output tokens across the three bounded cases | 4,858 | 3,641 |
+
+Both reviewers passed the clean control. The rule used less total time and
+fewer output tokens across the bounded cases. One bounded case took longer
+at Medium. The cross-file case used High in both arms.
+
+All eight sessions returned terminal results. The backend imported five. The
+prompt omitted assignment-specific IDs, and in three pairs both reviewers used
+the same finding ID. The backend retained and rejected each duplicate import.
+The blind quality scores use the original terminal text. The planned import
+check passed only for the clean-control pair.
+
+The pilot covers one model, one run per condition per case and already-routed
+assignments. It leaves runtime effort attestation, real-work performance and
+automatic activation open. The result supports further testing of a bounded
+effort rule. At the time of this trial, fixed effort and `inherit` were the
+supported profile choices.
+
+## 6. Harder matched review-effort trial
+
+On November 27, 2026, twenty fresh Opus 5.5 CLI sessions reviewed ten new
+synthetic cases. The fixtures covered boundaries, state ordering, idempotence,
+mutation and cross-file behavior. Eight cases were one-file reviews, including
+two clean controls. The two cross-file cases used High in both arms. Within
+each case the model and sealed packet matched, and arm order was randomized.
+The lead scored findings against the verified seeds before revealing effort.
+
+| Measure | Fixed High | Medium/High rule |
+| --- | ---: | ---: |
+| Seeded defects found | 11/11 | 11/11 |
+| Unsupported material findings | 0 | 0 |
+| Summed reviewer elapsed time for eight one-file cases | 186.05 s | 157.28 s |
+| Reported output tokens for eight one-file cases | 15,977 | 13,091 |
+| Terminal reviews imported | 10/10 | 10/10 |
+
+Both arms passed both clean controls. Medium found all eight one-file seeds.
+It took less time on seven of the eight one-file cases and used 18.1% fewer
+total output tokens. All 23 finding IDs used their assigned prefixes. The
+backend imported all twenty original terminal responses and verified record
+integrity for every pair.
+
+This trial used one model, one run per effort per case and preselected review
+assignments. Up to three cases ran concurrently, so the timing is a sum of
+individual invocations in that environment. The result supports an opt-in
+effort rule for further testing. It does not establish runtime effort, accuracy
+on production reviews or a reason to change the default profile.

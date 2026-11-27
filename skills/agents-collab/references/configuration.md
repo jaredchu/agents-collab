@@ -16,8 +16,8 @@ python3 path/to/agents-collab/scripts/setup_profile.py [--output PATH] [--dry-ru
 
 The wizard keeps the lead as `host`/`current`/`inherit` and asks for a writer
 (current lead or a delegated model ID with `codex-native` or `claude-cli`), zero
-or more reviewers, each agent's reasoning request (`inherit`, a common level or
-a custom lowercase level), a profile label and `records_root`. It uses
+or more reviewers, each agent's reasoning request, a profile label and
+`records_root`. The reviewer menu includes an explicit `auto` option. It uses
 `supported-control`, `existing-authorized-access`, advisory example bounds and
 one follow-up round; edit the file to change them. With reviewers, default
 consequential review is `single`; with several, it adds a named recipe listing
@@ -115,8 +115,9 @@ block the affected assignment; do not silently substitute an adapter.
 Codex-led is the first pilot target, not an already validated runtime. Loading
 the Markdown from another lead does not establish adapter support.
 
-`reasoning` is `inherit` or a named level the selected model actually supports,
-written in lowercase as the interface documents it. `default` and `current` are
+`reasoning` is `inherit`, the reviewer-only policy `auto`, or a named level the
+selected model supports, written in lowercase as the interface documents it.
+`default` and `current` are
 rejected as ambiguous. The validator checks only the format, not whether a model
 supports that level. Never assume identical effort vocabularies across providers. `inherit` explicitly
 allows the current supported setting; it does not mean High. For a named level,
@@ -201,6 +202,29 @@ Choose model entries, reasoning settings, storage and bounds for the actual user
 or team. No particular model, vendor pair, effort level or storage convention is
 mandatory. The example's numeric bounds are illustrative, not universal limits.
 Profile settings do not relax an existing instruction requiring stronger proof.
+
+## Opt-in automatic review effort
+
+Set `"reasoning": "auto"` on a delegated reviewer in the profile or select
+`auto` in the reviewer setup menu. This applies to assignments already routed
+to that reviewer. Use `inherit` or an explicit supported level for a writer.
+If the same model writes and reviews, use a separate reviewer alias for `auto`.
+When a task or project requires a specific effort level, select a reviewer
+entry with that explicit level before starting the task.
+
+- **Medium** applies when the declared review scope is exactly one file and
+  the sealed source contains only that same regular file.
+- **High** applies to cross-file reviews, directory scopes, incomplete scope
+  declarations, and any other review that fails the Medium condition.
+
+Resolve after freezing the review packet and before dispatch. With the CLI
+backend, the assignment and dispatch outputs contain `effort_resolution` with
+the request, concrete level, policy and basis. Use `effort_resolution.resolved`
+for the model invocation. In manual mode record those same fields in the
+private assignment before launch. Reuse the resolution for retries of the same
+assignment and frozen packet. The lead checks support for the concrete level
+and records interface acceptance separately. Pause the affected assignment if
+the interface cannot accept that level.
 
 ## Assignment timing
 
