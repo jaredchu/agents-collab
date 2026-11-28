@@ -3,6 +3,8 @@
 An experimental skill for configured model collaboration and independent review,
 plus the lab notebook of how it came about.
 
+![GPT says, “It passed on my machine.” Claude lifts a rubber duck, revealing a bug on the keyboard, and replies, “The bug is on your machine.”](website/assets/gpt-claude-debugging.jpg)
+
 > **Status: experimental.** The skill comes from a Codex-led pilot.
 > Licensed under the [MIT License](LICENSE).
 > [Source](https://github.com/jaredchu/agents-collab) ·
